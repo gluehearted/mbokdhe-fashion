@@ -122,8 +122,7 @@ export default function ProfitReportPage() {
 
       if (timeframe === "WEEKLY") {
         const day = dateObj.getDate();
-        const firstDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1).getDay();
-        const weekOfMonth = Math.ceil((day + firstDay) / 7);
+        const weekOfMonth = Math.ceil(day / 7);
         const monthYear = dateObj.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
         groupKey = `Minggu Ke-${weekOfMonth} (${monthYear})`;
       } else if (timeframe === "MONTHLY") {
