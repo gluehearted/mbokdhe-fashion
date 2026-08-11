@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Product {
   id: string;
@@ -14,8 +15,14 @@ interface Product {
   createdAt: string;
 }
 
+interface Shop {
+  id: string;
+  name: string;
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -26,7 +33,7 @@ export default function ProductsPage() {
 
   // Form Fields (Initial state empty / null)
   const [id, setId] = useState("");
-  const [shopOrigin, setShopOrigin] = useState("Sukaraja (Kab. Bogor)");
+  const [shopOrigin, setShopOrigin] = useState("");
   const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
   const [priceInput, setPriceInput] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
@@ -55,18 +62,30 @@ export default function ProductsPage() {
     }
   }, [statusFilter]);
 
+  const fetchShops = useCallback(async () => {
+    try {
+      const res = await fetch("/api/shops");
+      const data = await res.json();
+      if (data.success) {
+        setShops(data.data);
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     async function load() {
       if (isMounted) {
-        await fetchProducts();
+        await Promise.all([fetchProducts(), fetchShops()]);
       }
     }
     load();
     return () => {
       isMounted = false;
     };
-  }, [fetchProducts]);
+  }, [fetchProducts, fetchShops]);
 
   // Debounce Profit Calculation Effect (Calculates after typing stops)
   useEffect(() => {
@@ -86,7 +105,8 @@ export default function ProductsPage() {
   const openCreateModal = () => {
     setEditingProduct(null);
     setId("");
-    setShopOrigin("Sukaraja (Kab. Bogor)");
+    const defaultShop = shops.length > 0 ? shops[0].name : "Sukaraja (Kab. Bogor)";
+    setShopOrigin(defaultShop);
     setCapitalPriceInput("");
     setPriceInput("");
     setDebouncedProfit(null);
@@ -125,6 +145,12 @@ export default function ProductsPage() {
     const capitalVal = parseInt(capitalPriceInput, 10) || 0;
     const priceVal = parseInt(priceInput, 10);
 
+    if (!shopOrigin.trim()) {
+      setErrorMessage("Toko Asal wajib dipilih/diisi.");
+      setSaving(false);
+      return;
+    }
+
     if (isNaN(priceVal) || priceVal <= 0) {
       setErrorMessage("Harga Jual wajib diisi dengan nominal angka valid.");
       setSaving(false);
@@ -134,7 +160,7 @@ export default function ProductsPage() {
     try {
       const formData = new FormData();
       formData.append("id", id);
-      formData.append("shopOrigin", shopOrigin);
+      formData.append("shopOrigin", shopOrigin.trim());
       formData.append("capitalPrice", String(capitalVal));
       formData.append("price", String(priceVal));
       if (file) {
@@ -285,7 +311,10 @@ export default function ProductsPage() {
                           </div>
                         </td>
                         <td className="p-4 font-mono font-extrabold text-blue-600">#{p.id}</td>
-                        <td className="p-4 font-bold text-slate-900">{p.shopOrigin}</td>
+                        <td className="p-4 font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-blue-600 text-sm">storefront</span>
+                          <span>{p.shopOrigin}</span>
+                        </td>
                         <td className="p-4 font-mono text-slate-600">
                           Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
                         </td>
@@ -364,15 +393,37 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Toko Asal / Supplier *</label>
-                <input
-                  type="text"
-                  value={shopOrigin}
-                  onChange={(e) => setShopOrigin(e.target.value)}
-                  placeholder="Sukaraja (Kab. Bogor)"
-                  required
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
-                />
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-slate-600 font-semibold">Toko Asal / Supplier *</label>
+                  <Link href="/shops" className="text-[11px] text-blue-600 font-bold hover:underline">
+                    + Kelola Toko
+                  </Link>
+                </div>
+
+                {shops.length > 0 ? (
+                  <select
+                    value={shopOrigin}
+                    onChange={(e) => setShopOrigin(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-semibold"
+                  >
+                    <option value="">-- Pilih Toko Terdaftar --</option>
+                    {shops.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={shopOrigin}
+                    onChange={(e) => setShopOrigin(e.target.value)}
+                    placeholder="Sukaraja (Kab. Bogor)"
+                    required
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -402,7 +453,7 @@ export default function ProductsPage() {
 
               {/* Debounced Profit Margin Display */}
               {debouncedProfit !== null && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-semibold flex justify-between items-center transition-all">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex justify-between items-center transition-all">
                   <span>Estimasi Profit Margin:</span>
                   <span className="font-mono font-bold text-sm text-emerald-700">
                     {debouncedProfit >= 0 ? `+Rp ${debouncedProfit.toLocaleString("id-ID")}` : `-Rp ${Math.abs(debouncedProfit).toLocaleString("id-ID")}`}
