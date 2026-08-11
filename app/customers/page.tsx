@@ -34,36 +34,36 @@ const COURIER_OPTIONS = [
 ];
 
 const BEHAVIORAL_OPTIONS = [
-  "Loyal",
-  "Repeat Buyer",
-  "Impulse Buyer",
-  "Bargain Hunter",
-  "High Value",
-  "Hesitant",
+  "Pelanggan Setia",
+  "Pembeli Berulang",
+  "Impulsif",
+  "Pemburu Diskon",
+  "Bernilai Tinggi",
+  "Ragu-ragu",
 ];
 
 const CONSUMER_TYPE_OPTIONS = [
-  "Retail",
+  "Eceran",
   "Reseller",
   "Dropshipper",
   "VIP",
-  "Wholesale",
+  "Grosir",
 ];
 
 const RELATIONSHIP_STATUS_OPTIONS = [
-  "Active",
-  "Warm",
-  "Cold",
-  "New Lead",
-  "Churned",
+  "Aktif",
+  "Hangat",
+  "Dingin",
+  "Prospek Baru",
+  "Berhenti",
 ];
 
 const CRISIS_STATUS_OPTIONS = [
   "Normal",
-  "Low Risk",
-  "Medium Risk",
-  "High Risk",
-  "Blacklisted",
+  "Risiko Rendah",
+  "Risiko Sedang",
+  "Risiko Tinggi",
+  "Daftar Hitam",
 ];
 
 function CustomersPageContent() {
@@ -83,9 +83,9 @@ function CustomersPageContent() {
   const [shippingCostInput, setShippingCostInput] = useState<string>("");
   const [courier, setCourier] = useState("JNE");
   const [addressDetail, setAddressDetail] = useState("");
-  const [behavioral, setBehavioral] = useState("Loyal");
-  const [consumerType, setConsumerType] = useState("Retail");
-  const [relationshipStatus, setRelationshipStatus] = useState("Active");
+  const [behavioral, setBehavioral] = useState("Pelanggan Setia");
+  const [consumerType, setConsumerType] = useState("Eceran");
+  const [relationshipStatus, setRelationshipStatus] = useState("Aktif");
   const [crisisStatus, setCrisisStatus] = useState("Normal");
 
   const [saving, setSaving] = useState(false);
@@ -121,9 +121,9 @@ function CustomersPageContent() {
     setShippingCostInput("15000");
     setCourier("JNE");
     setAddressDetail("");
-    setBehavioral("Loyal");
-    setConsumerType("Retail");
-    setRelationshipStatus("Active");
+    setBehavioral("Pelanggan Setia");
+    setConsumerType("Eceran");
+    setRelationshipStatus("Aktif");
     setCrisisStatus("Normal");
     setErrorMessage(null);
     setIsModalOpen(true);

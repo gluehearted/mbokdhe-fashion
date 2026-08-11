@@ -3,17 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
-// GET /api/products?status=Available
+// GET /api/products?status=Tersedia
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    const whereClause = status ? { status } : {};
+    // Support legacy "Available" filter mapped to "Tersedia"
+    let mappedStatus = status;
+    if (status === "Available") mappedStatus = "Tersedia";
+    if (status === "Booked") mappedStatus = "Dibooking";
+    if (status === "Sold") mappedStatus = "Terjual";
+
+    const whereClause = mappedStatus ? { status: mappedStatus } : {};
 
     const products = await prisma.product.findMany({
       where: whereClause,
       include: {
+        shop: true,
         order: {
           select: {
             id: true,
@@ -105,7 +112,6 @@ export async function POST(request: Request) {
     if (!id) {
       id = await generateAutoProductId(shopOrigin);
     } else {
-      // Check if manually provided product ID already exists
       const existing = await prisma.product.findUnique({
         where: { id },
       });
@@ -118,13 +124,18 @@ export async function POST(request: Request) {
       }
     }
 
+    // 1-to-Many Relation: Find or create Shop to link shopId
+    let shopObj = await prisma.shop.findUnique({ where: { name: shopOrigin } });
+    if (!shopObj) {
+      shopObj = await prisma.shop.create({ data: { name: shopOrigin } });
+    }
+
     let photoUrl = "/uploads/placeholder.jpg";
 
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Determine extension
       const fileExt = path.extname(file.name) || ".jpg";
       const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}${fileExt}`;
       const uploadsDir = path.join(process.cwd(), "public", "uploads");
@@ -139,11 +150,12 @@ export async function POST(request: Request) {
     const product = await prisma.product.create({
       data: {
         id,
+        shopId: shopObj.id,
         shopOrigin,
         capitalPrice,
         price,
+        status: "Tersedia",
         photoUrl,
-        status: "Available",
       },
     });
 

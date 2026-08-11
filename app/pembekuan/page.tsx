@@ -55,7 +55,7 @@ export default function PembekuanPage() {
       const data = await res.json();
       if (data.success) {
         const dpList = (data.data as Order[]).filter(
-          (o) => o.status === "DP" || o.status === "Keep" || o.dpAmount > 0
+          (o) => o.status === "DP" || o.status === "Menunggu" || o.status === "Keep" || o.dpAmount > 0
         );
         setOrders(dpList);
       }

@@ -8,9 +8,10 @@ datasource db {
 }
 
 model Shop {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id        String    @id @default(uuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  products  Product[]
 }
 
 model Customer {
@@ -21,12 +22,12 @@ model Customer {
   shippingCost       Int      @default(0) // Ongkir
   courier            String?  // Ekspedisi
   addressDetail      String   // Detail Alamat
-  behavioral         String?  // BEHAVIORAL
-  consumerType       String?  // TIPE KONSUMEN
-  relationshipStatus String?  // STATUS HUBUNGAN
+  behavioral         String?  // BEHAVIORAL ("Pelanggan Setia", "Pembeli Berulang", "Impulsif", "Pemburu Diskon")
+  consumerType       String?  // TIPE KONSUMEN ("Eceran", "Reseller", "Dropshipper", "VIP")
+  relationshipStatus String?  // STATUS HUBUNGAN ("Aktif", "Hangat", "Dingin", "Prospek Baru", "Berhenti")
   totalSpending      Int      @default(0) // TOTAL SPENDING
   totalTransactions  Int      @default(0) // TOTAL TRANSAKSI
-  crisisStatus       String?  // STATUS KRISIS
+  crisisStatus       String?  // STATUS KRISIS ("Normal", "Risiko Rendah", "Risiko Sedang", "Risiko Tinggi", "Daftar Hitam")
   createdAt          DateTime @default(now())
   orders             Order[]
 }
@@ -35,7 +36,7 @@ model Order {
   id              String    @id @default(uuid())
   customerId      String
   customer        Customer  @relation(fields: [customerId], references: [id])
-  status          String    // "Keep", "DP", "Siap_Packing", "Shipped", "Cancelled"
+  status          String    @default("Menunggu") // "Menunggu", "DP", "Siap Packing", "Dikirim", "Dibatalkan"
   shippingCourier String?   // Ekspedisi
   shippingService String?   // Layanan
   shippingCost    Int       @default(0) // Ongkir
@@ -55,10 +56,12 @@ model Product {
   id           String   @id
   orderId      String?
   order        Order?   @relation(fields: [orderId], references: [id])
-  shopOrigin   String
+  shopId       String?
+  shop         Shop?    @relation(fields: [shopId], references: [id])
+  shopOrigin   String   // Nama Toko Asal Supplier
   capitalPrice Int      @default(0)
   price        Int
-  status       String   @default("Available") // "Available", "Booked", "Sold"
+  status       String   @default("Tersedia") // "Tersedia", "Dibooking", "Terjual"
   photoUrl     String
   createdAt    DateTime @default(now())
 }

@@ -8,7 +8,13 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { status, trackingNo, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice } = body;
+    let { status, trackingNo, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice } = body;
+
+    // Map status string if provided in English
+    if (status === "Keep") status = "Menunggu";
+    if (status === "Siap_Packing") status = "Siap Packing";
+    if (status === "Shipped") status = "Dikirim";
+    if (status === "Cancelled") status = "Dibatalkan";
 
     const existingOrder = await prisma.order.findUnique({
       where: { id },
@@ -23,21 +29,21 @@ export async function PATCH(
     }
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
-      // If status is changed to Cancelled, revert all linked products to Available
-      if (status === "Cancelled") {
+      // If status is changed to Dibatalkan/Cancelled, revert all linked products to Tersedia
+      if (status === "Dibatalkan" || status === "Cancelled") {
         await tx.product.updateMany({
           where: { orderId: id },
           data: {
-            status: "Available",
+            status: "Tersedia",
             orderId: null,
           },
         });
-      } else if (status === "Shipped") {
-        // If status changed to Shipped, products become Sold
+      } else if (status === "Dikirim" || status === "Shipped") {
+        // If status changed to Dikirim, products become Terjual
         await tx.product.updateMany({
           where: { orderId: id },
           data: {
-            status: "Sold",
+            status: "Terjual",
           },
         });
       }

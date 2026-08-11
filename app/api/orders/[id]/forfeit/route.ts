@@ -8,7 +8,7 @@ export async function POST(
   try {
     const { id } = await context.params;
     const body = await request.json().catch(() => ({}));
-    const { reason = "Batas waktu DP habis / Cancel Hit & Run" } = body;
+    const { reason = "Batas waktu DP habis / Batal Hit & Run" } = body;
 
     const existingOrder = await prisma.order.findUnique({
       where: { id },
@@ -23,11 +23,11 @@ export async function POST(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // 1. Mark order as Cancelled and DP as forfeited
+      // 1. Mark order as Dibatalkan and DP as forfeited
       const order = await tx.order.update({
         where: { id },
         data: {
-          status: "Cancelled",
+          status: "Dibatalkan",
           dpForfeited: true,
           notes: `DP Rp ${existingOrder.dpAmount.toLocaleString("id-ID")} HANGUS/FORFEIT. Alasan: ${reason}`,
         },
@@ -37,11 +37,11 @@ export async function POST(
         },
       });
 
-      // 2. Revert products back to Available in etalase
+      // 2. Revert products back to "Tersedia" in etalase
       await tx.product.updateMany({
         where: { orderId: id },
         data: {
-          status: "Available",
+          status: "Tersedia",
           orderId: null,
         },
       });

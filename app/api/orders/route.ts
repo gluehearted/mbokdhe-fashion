@@ -8,7 +8,13 @@ export async function GET(request: Request) {
     const customerId = searchParams.get("customerId");
 
     const whereClause: any = {};
-    if (status) whereClause.status = status;
+    if (status) {
+      if (status === "Keep") whereClause.status = "Menunggu";
+      else if (status === "Siap_Packing") whereClause.status = "Siap Packing";
+      else if (status === "Shipped") whereClause.status = "Dikirim";
+      else if (status === "Cancelled") whereClause.status = "Dibatalkan";
+      else whereClause.status = status;
+    }
     if (customerId) whereClause.customerId = customerId;
 
     const orders = await prisma.order.findMany({
@@ -38,12 +44,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const {
+    let {
       customerId,
-      customerData, // { name, whatsapp, addressDetail, cityId } if new
-      productIds, // string array e.g. ["T01", "B12"]
-      customPrices, // Record<string, number> custom selling prices
-      status = "Keep", // "Keep", "DP", "Siap_Packing", "Shipped"
+      customerData,
+      productIds,
+      customPrices,
+      status = "Menunggu",
       shippingCourier,
       shippingService,
       shippingCost = 0,
@@ -53,6 +59,12 @@ export async function POST(request: Request) {
       notes,
     } = body;
 
+    // Map legacy status strings to Indonesian equivalents
+    if (status === "Keep") status = "Menunggu";
+    if (status === "Siap_Packing") status = "Siap Packing";
+    if (status === "Shipped") status = "Dikirim";
+    if (status === "Cancelled") status = "Dibatalkan";
+
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
       return NextResponse.json(
         { success: false, error: "Pilih minimal 1 produk untuk membuat order." },
@@ -60,11 +72,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Execute atomic transaction
     const result = await prisma.$transaction(async (tx) => {
       let finalCustomerId = customerId;
 
-      // Create or upsert customer if customerData provided
       if (!finalCustomerId && customerData) {
         const cleanWa = String(customerData.whatsapp).trim().replace(/[^0-9]/g, "");
         const customer = await tx.customer.upsert({
@@ -89,7 +99,6 @@ export async function POST(request: Request) {
         throw new Error("Pelanggan (Customer) wajib dipilih atau diisi datanya.");
       }
 
-      // If custom prices are provided, update selling price of products before booking
       if (customPrices && typeof customPrices === "object") {
         for (const pId of productIds) {
           if (customPrices[pId] !== undefined) {
@@ -104,14 +113,13 @@ export async function POST(request: Request) {
         }
       }
 
-      // Check product availability and sum prices & weights
       const productsToBook = await tx.product.findMany({
         where: {
           id: { in: productIds },
         },
       });
 
-      const unavailable = productsToBook.filter((p) => p.status !== "Available");
+      const unavailable = productsToBook.filter((p) => p.status !== "Tersedia" && p.status !== "Available");
       if (unavailable.length > 0) {
         throw new Error(
           `Produk [${unavailable.map((p) => p.id).join(", ")}] sedang tidak tersedia.`
@@ -122,13 +130,11 @@ export async function POST(request: Request) {
       const finalTotalPrice = productsPriceSum + parseInt(String(shippingCost), 10);
       const parsedDp = parseInt(String(dpAmount), 10);
 
-      // Determine initial order status
       let initialStatus = status;
-      if (parsedDp > 0 && initialStatus === "Keep") {
+      if (parsedDp > 0 && (initialStatus === "Menunggu" || initialStatus === "Keep")) {
         initialStatus = "DP";
       }
 
-      // Create Order
       const newOrder = await tx.order.create({
         data: {
           customerId: finalCustomerId,
@@ -145,13 +151,13 @@ export async function POST(request: Request) {
         },
       });
 
-      // Update products status to "Booked" and link orderId
+      // Update products status to "Dibooking" and link orderId
       await tx.product.updateMany({
         where: {
           id: { in: productIds },
         },
         data: {
-          status: "Booked",
+          status: "Dibooking",
           orderId: newOrder.id,
         },
       });

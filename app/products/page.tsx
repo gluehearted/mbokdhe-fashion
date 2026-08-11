@@ -255,9 +255,9 @@ export default function ProductsPage() {
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
               { label: "Semua Produk", value: "ALL" },
-              { label: "Tersedia (Available)", value: "Available" },
-              { label: "Dibekukan (Booked)", value: "Booked" },
-              { label: "Terjual (Sold)", value: "Sold" },
+              { label: "Tersedia", value: "Tersedia" },
+              { label: "Dibooking", value: "Dibooking" },
+              { label: "Terjual", value: "Terjual" },
             ].map((tab) => (
               <button
                 key={tab.value}
@@ -355,14 +355,14 @@ export default function ProductsPage() {
                         <td className="p-4 text-center">
                           <span
                             className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase shadow-sm inline-block ${
-                              p.status === "Available"
+                              p.status === "Tersedia" || p.status === "Available"
                                 ? "bg-blue-600 text-white"
-                                : p.status === "Booked"
+                                : p.status === "Dibooking" || p.status === "Booked"
                                 ? "bg-amber-500 text-white"
                                 : "bg-slate-600 text-white"
                             }`}
                           >
-                            {p.status}
+                            {p.status === "Available" ? "Tersedia" : p.status === "Booked" ? "Dibooking" : p.status === "Sold" ? "Terjual" : p.status}
                           </span>
                         </td>
                         <td className="p-4 text-center">

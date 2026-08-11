@@ -21,11 +21,11 @@ export async function POST(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Update order status to Siap_Packing
+      // Update order status to "Siap Packing"
       const order = await tx.order.update({
         where: { id },
         data: {
-          status: "Siap_Packing",
+          status: "Siap Packing",
           notes: `Lunas pada ${new Date().toLocaleDateString("id-ID")}`,
         },
         include: {
@@ -34,11 +34,11 @@ export async function POST(
         },
       });
 
-      // Mark attached products as Sold
+      // Mark attached products as "Terjual"
       await tx.product.updateMany({
         where: { orderId: id },
         data: {
-          status: "Sold",
+          status: "Terjual",
         },
       });
 

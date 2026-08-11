@@ -47,7 +47,7 @@ export default function NewOrderPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
-  const [orderStatus, setOrderStatus] = useState("Keep");
+  const [orderStatus, setOrderStatus] = useState("Menunggu");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
   // Shipping & Courier (Manual Direct Entry, No RajaOngkir)
@@ -64,7 +64,7 @@ export default function NewOrderPage() {
         // API Call: GET /api/customers & GET /api/products
         const [resCust, resProd] = await Promise.all([
           fetch("/api/customers"),
-          fetch("/api/products?status=Available"),
+          fetch("/api/products?status=Tersedia"),
         ]);
         const dataCust = await resCust.json();
         const dataProd = await resProd.json();
@@ -394,9 +394,9 @@ export default function NewOrderPage() {
                     onChange={(e) => setOrderStatus(e.target.value)}
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-semibold"
                   >
-                    <option value="Keep">Keep / Menunggu Pembayaran</option>
+                    <option value="Menunggu">Menunggu Pembayaran</option>
                     <option value="DP">DP (Pembekuan Dana)</option>
-                    <option value="Siap_Packing">Siap Packing (Lunas)</option>
+                    <option value="Siap Packing">Siap Packing (Lunas)</option>
                   </select>
                 </div>
 

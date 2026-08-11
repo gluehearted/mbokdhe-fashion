@@ -111,13 +111,13 @@ export default function OrdersPage() {
     setSavingResi(true);
 
     try {
-      // API Call: PATCH /api/orders/[id] (menyimpan nomor resi pengiriman & update status ke Shipped)
+      // API Call: PATCH /api/orders/[id] (menyimpan nomor resi pengiriman & update status ke Dikirim)
       const res = await fetch(`/api/orders/${editingResiOrder.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           trackingNo: trackingNoInput,
-          status: "Shipped",
+          status: "Dikirim",
         }),
       });
 
@@ -126,19 +126,13 @@ export default function OrdersPage() {
         setEditingResiOrder(null);
         fetchOrders();
       } else {
-        alert(data.error || "Gagal menyimpan resi.");
+        alert(data.error || "Gagal menyimpan nomor resi.");
       }
     } catch {
       alert("Terjadi kesalahan koneksi.");
     } finally {
       setSavingResi(false);
     }
-  };
-
-  const getDaysElapsed = (dateStr?: string | null) => {
-    if (!dateStr) return 0;
-    const diff = Date.now() - new Date(dateStr).getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -175,11 +169,11 @@ export default function OrdersPage() {
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
               { label: "Semua Order", value: "ALL" },
-              { label: "Keep / Menunggu", value: "Keep" },
+              { label: "Menunggu", value: "Menunggu" },
               { label: "DP (Dibekukan)", value: "DP" },
-              { label: "Siap Packing", value: "Siap_Packing" },
-              { label: "Shipped (Dikirim)", value: "Shipped" },
-              { label: "Dibatalkan", value: "Cancelled" },
+              { label: "Siap Packing", value: "Siap Packing" },
+              { label: "Dikirim", value: "Dikirim" },
+              { label: "Dibatalkan", value: "Dibatalkan" },
             ].map((tab) => (
               <button
                 key={tab.value}
@@ -219,18 +213,20 @@ export default function OrdersPage() {
                   <tr>
                     <th className="p-4 text-center">Order ID</th>
                     <th className="p-4 text-center">Pelanggan</th>
-                    <th className="p-4 text-center">Tas Dibeli</th>
-                    <th className="p-4 text-center">Kurir & Layanan</th>
-                    <th className="p-4 text-center">No. Resi Pengiriman</th>
-                    <th className="p-4 text-center">DP / Tagihan</th>
-                    <th className="p-4 text-center">Status Pesanan</th>
+                    <th className="p-4 text-center">Produk Tas</th>
+                    <th className="p-4 text-center">Ekspedisi</th>
+                    <th className="p-4 text-center">No. Resi</th>
+                    <th className="p-4 text-center">Total Price</th>
+                    <th className="p-4 text-center">Status</th>
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredOrders.map((o) => {
-                    const days = getDaysElapsed(o.dpDate || o.createdAt);
-                    const isDpAging = o.status === "DP" && days >= 1;
+                    const isDpAging =
+                      o.status === "DP" &&
+                      o.dpDate &&
+                      Date.now() - new Date(o.dpDate).getTime() > 24 * 60 * 60 * 1000;
 
                     return (
                       <tr key={o.id} className="hover:bg-slate-50 transition-colors">
@@ -239,19 +235,31 @@ export default function OrdersPage() {
                         </td>
 
                         <td className="p-4 text-center">
-                          <span className="font-bold text-slate-900 block">{o.customer?.name}</span>
-                          <a
-                            href={`https://wa.me/${o.customer?.whatsapp}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[11px] text-blue-600 font-mono hover:underline inline-flex items-center gap-1 justify-center"
-                          >
-                            💬 {o.customer?.whatsapp}
-                          </a>
+                          {o.customer ? (
+                            <div>
+                              <p className="font-bold text-slate-900">{o.customer.name}</p>
+                              <p className="text-[11px] font-mono text-slate-500">{o.customer.whatsapp}</p>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-italic">Pelanggan terhapus</span>
+                          )}
                         </td>
 
-                        <td className="p-4 text-center font-mono font-bold text-slate-800">
-                          {o.products.map((p) => p.id).join(", ")}
+                        <td className="p-4 text-center">
+                          <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
+                            {o.products && o.products.length > 0 ? (
+                              o.products.map((p) => (
+                                <span
+                                  key={p.id}
+                                  className="bg-blue-50 text-blue-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200"
+                                >
+                                  #{p.id}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </div>
                         </td>
 
                         <td className="p-4 text-center text-slate-600">
@@ -283,15 +291,15 @@ export default function OrdersPage() {
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <select
-                              value={o.status}
+                              value={o.status === "Keep" ? "Menunggu" : o.status === "Shipped" ? "Dikirim" : o.status}
                               onChange={(e) => updateOrderStatus(o.id, e.target.value)}
                               className="bg-slate-50 text-slate-800 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-blue-600"
                             >
-                              <option value="Keep">Keep</option>
+                              <option value="Menunggu">Menunggu</option>
                               <option value="DP">DP</option>
-                              <option value="Siap_Packing">Siap Packing</option>
-                              <option value="Shipped">Shipped</option>
-                              <option value="Cancelled">Cancelled</option>
+                              <option value="Siap Packing">Siap Packing</option>
+                              <option value="Dikirim">Dikirim</option>
+                              <option value="Dibatalkan">Dibatalkan</option>
                             </select>
 
                             {isDpAging && (
@@ -316,8 +324,8 @@ export default function OrdersPage() {
                               {
                                 label: "Set Lunas (Siap Packing)",
                                 icon: "task_alt",
-                                onClick: () => updateOrderStatus(o.id, "Siap_Packing"),
-                                disabled: o.status === "Siap_Packing" || o.status === "Shipped",
+                                onClick: () => updateOrderStatus(o.id, "Siap Packing"),
+                                disabled: o.status === "Siap Packing" || o.status === "Dikirim",
                               },
                               {
                                 label: "Hapus Order",
