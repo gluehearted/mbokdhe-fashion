@@ -5,10 +5,12 @@ import Image from "next/image";
 export const revalidate = 0;
 
 export default async function HomePage() {
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   const [
     availableProducts,
-    dpOrders,
-    siapPackingOrders,
+    allOrders,
     recentOrders,
   ] = await Promise.all([
     prisma.product.findMany({
@@ -19,24 +21,6 @@ export default async function HomePage() {
       take: 5,
     }),
     prisma.order.findMany({
-      where: { status: "DP", dpForfeited: false },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            whatsapp: true,
-            domisili: true,
-          },
-        },
-        products: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.order.findMany({
-      where: {
-        OR: [{ status: "Siap Packing" }, { status: "Siap_Packing" }],
-      },
       include: {
         customer: {
           select: {
@@ -67,9 +51,35 @@ export default async function HomePage() {
     }),
   ]);
 
+  // Metric 1: Total Available Bags
   const totalAvailableBags = availableProducts.length;
-  const totalFrozenDP = dpOrders.reduce((sum, o) => sum + o.dpAmount, 0);
-  const readyToShipCount = siapPackingOrders.length;
+
+  // Metric 2: Total Keuntungan (Net Profit)
+  let totalProfit = 0;
+  let readyToShipCount = 0;
+  let todayOrderCount = 0;
+
+  allOrders.forEach((o) => {
+    const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
+    if (isCompleted) {
+      if (o.status === "Siap Packing" || o.status === "Siap_Packing") {
+        readyToShipCount++;
+      }
+      const prodRevenue = o.totalPrice - o.shippingCost;
+      const capitalSum = o.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
+      totalProfit += (prodRevenue - capitalSum);
+    }
+
+    if (o.dpForfeited && o.dpAmount > 0) {
+      totalProfit += o.dpAmount;
+    }
+
+    // Check if order was created today
+    const orderDate = new Date(o.createdAt);
+    if (orderDate >= startOfToday) {
+      todayOrderCount++;
+    }
+  });
 
   const getDaysElapsed = (date?: Date | null) => {
     if (!date) return 0;
@@ -96,8 +106,10 @@ export default async function HomePage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
         
-        {/* Metric Cards (Top Section - 3 Columns) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Metric Cards (Top Section - 4 Columns) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Card 1: Total Tas Tersedia */}
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Total Tas Tersedia
@@ -113,24 +125,38 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2 relative overflow-hidden">
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none"></div>
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Total Dana Pembekuan (DP)
+          {/* Card 2: Total Keuntungan (Net Profit) */}
+          <div className="bg-white rounded-xl p-5 border border-emerald-200 shadow-sm flex flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/40">
+            <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+              💰 Total Keuntungan
             </h3>
             <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-slate-900 font-mono">
-                Rp {totalFrozenDP.toLocaleString("id-ID")}
+              <span className="text-2xl font-extrabold text-emerald-700 font-mono">
+                Rp {totalProfit.toLocaleString("id-ID")}
               </span>
-              <span className="text-xs font-bold text-rose-600 flex items-center bg-rose-50 px-2.5 py-1 rounded-md">
-                <span className="material-symbols-outlined text-sm mr-1">schedule</span>
-                {dpOrders.length} Orders
+            </div>
+            <span className="text-[10px] text-emerald-800 font-medium">
+              Profit bersih (Omset - Modal + DP Hangus)
+            </span>
+          </div>
+
+          {/* Card 3: Total Order Hari Ini */}
+          <div className="bg-white rounded-xl p-5 border border-blue-200 shadow-sm flex flex-col gap-2 bg-gradient-to-br from-white to-blue-50/40">
+            <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+              🛒 Total Order Hari Ini
+            </h3>
+            <div className="flex items-end justify-between">
+              <span className="text-3xl font-extrabold text-blue-700 font-mono">
+                {todayOrderCount}
+              </span>
+              <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2.5 py-1 rounded-md">
+                Hari Ini
               </span>
             </div>
           </div>
 
+          {/* Card 4: Siap Packing Hari Ini */}
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2 relative overflow-hidden">
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none"></div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Siap Packing Hari Ini
             </h3>
@@ -138,11 +164,12 @@ export default async function HomePage() {
               <span className="text-3xl font-bold text-slate-900 font-mono">
                 {readyToShipCount}
               </span>
-              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-sm">
                 <span className="material-symbols-outlined text-sm">local_shipping</span>
               </div>
             </div>
           </div>
+
         </div>
 
         {/* DATA TABLE 1: Recent Orders Tracking Table */}
@@ -241,7 +268,6 @@ export default async function HomePage() {
 
         {/* DATA TABLE 2: Available Products Table */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          {/* Header */}
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <span className="material-symbols-outlined text-blue-600 text-lg">inventory_2</span>
