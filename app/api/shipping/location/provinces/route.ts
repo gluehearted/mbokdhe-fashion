@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 function getApiKey(): string | null {
+  // RajaOngkir API Key lookup dari environment variables (.env)
   const key = process.env.RAJAONGKIR_API_KEY || process.env.NEXT_PUBLIC_RAJAONGKIR_API_KEY;
   if (!key || key.includes("YOUR_") || key.includes("masukkan")) return null;
   return key.trim();
@@ -8,6 +9,7 @@ function getApiKey(): string | null {
 
 export async function GET() {
   try {
+    // RajaOngkir API Key verification
     const apiKey = getApiKey();
     if (!apiKey) {
       return NextResponse.json(
@@ -16,11 +18,12 @@ export async function GET() {
       );
     }
 
-    // API Call: GET https://rajaongkir.komerce.id/api/v1/destination/province
+    // API Call (dengan Header Key RajaOngkir): GET https://rajaongkir.komerce.id/api/v1/destination/province
     const res = await fetch("https://rajaongkir.komerce.id/api/v1/destination/province", {
       method: "GET",
       headers: {
         accept: "application/json",
+        // Header Key RajaOngkir API Key:
         key: apiKey,
       },
       cache: "force-cache",

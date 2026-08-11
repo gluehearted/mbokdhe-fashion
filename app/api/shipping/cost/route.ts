@@ -14,8 +14,11 @@ function isPlaceholderKey(key?: string): boolean {
 }
 
 function getValidApiKey(): string | null {
+  // RajaOngkir API Key dari environment variables (.env / .env.local)
   const keys = [
+    // RAJAONGKIR_API_KEY=your_rajaongkir_api_key_here
     process.env.RAJAONGKIR_API_KEY,
+    // NEXT_PUBLIC_RAJAONGKIR_API_KEY=your_rajaongkir_api_key_here
     process.env.NEXT_PUBLIC_RAJAONGKIR_API_KEY,
   ];
   for (const k of keys) {
@@ -28,6 +31,7 @@ function getValidApiKey(): string | null {
 
 export async function POST(request: Request) {
   try {
+    // RajaOngkir API Key verification & lookup
     const apiKey = getValidApiKey();
 
     if (!apiKey) {
