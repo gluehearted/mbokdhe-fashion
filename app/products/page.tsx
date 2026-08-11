@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 
 interface Product {
@@ -39,7 +39,7 @@ export default function ProductsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const url = statusFilter !== "ALL" ? `/api/products?status=${statusFilter}` : "/api/products";
@@ -53,11 +53,20 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [statusFilter]);
+    let isMounted = true;
+    async function load() {
+      if (isMounted) {
+        await fetchProducts();
+      }
+    }
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchProducts]);
 
   // Debounce Profit Calculation Effect (Calculates after typing stops)
   useEffect(() => {
@@ -269,7 +278,7 @@ export default function ProductsPage() {
                         <td className="p-4">
                           <div className="w-12 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center">
                             {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
-                              <Image src={p.photoUrl} alt={p.id} fill className="object-cover" />
+                              <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                             ) : (
                               <span className="material-symbols-outlined text-slate-400 text-base">local_mall</span>
                             )}
@@ -413,7 +422,7 @@ export default function ProductsPage() {
 
               {previewUrl && (
                 <div className="w-full h-32 bg-slate-100 rounded-lg overflow-hidden relative flex items-center justify-center border border-slate-200">
-                  <Image src={previewUrl} alt="Preview" fill className="object-contain" />
+                  <Image src={previewUrl} alt="Preview" fill sizes="300px" className="object-contain" />
                 </div>
               )}
 

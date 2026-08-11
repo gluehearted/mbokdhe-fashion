@@ -9,6 +9,7 @@ export function Sidebar() {
   const navItems = [
     { label: "Dashboard", path: "/", icon: "dashboard" },
     { label: "Products", path: "/products", icon: "inventory_2" },
+    { label: "Kelola Toko", path: "/shops", icon: "store" },
     { label: "Customers", path: "/customers", icon: "group" },
     { label: "Orders", path: "/orders", icon: "shopping_cart" },
     { label: "Pembekuan", path: "/pembekuan", icon: "ac_unit" },

@@ -238,7 +238,7 @@ export default async function HomePage() {
                     <td className="p-4">
                       <div className="w-10 h-10 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center">
                         {prod.photoUrl && !prod.photoUrl.includes("placeholder") ? (
-                          <Image src={prod.photoUrl} alt={prod.id} fill className="object-cover" />
+                          <Image src={prod.photoUrl} alt={prod.id} fill sizes="40px" className="object-cover" />
                         ) : (
                           <span className="material-symbols-outlined text-slate-400 text-sm">local_mall</span>
                         )}

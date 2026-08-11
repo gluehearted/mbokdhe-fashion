@@ -22,6 +22,12 @@ model ShopConfig {
   updatedAt     DateTime @updatedAt
 }
 
+model Shop {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
 model Customer {
   id            String   @id @default(uuid())
   name          String
