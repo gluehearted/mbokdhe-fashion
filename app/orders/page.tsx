@@ -170,7 +170,7 @@ export default function OrdersPage() {
             {[
               { label: "Semua Order", value: "ALL" },
               { label: "Menunggu", value: "Menunggu" },
-              { label: "DP (Dibekukan)", value: "DP" },
+              { label: "DP", value: "DP" },
               { label: "Siap Packing", value: "Siap Packing" },
               { label: "Dikirim", value: "Dikirim" },
               { label: "Dibatalkan", value: "Dibatalkan" },

@@ -13,6 +13,14 @@ interface Product {
   status: string;
   photoUrl: string;
   orderId?: string | null;
+  order?: {
+    id: string;
+    status: string;
+    customer?: {
+      name: string;
+      whatsapp: string;
+    } | null;
+  } | null;
   createdAt: string;
 }
 
@@ -35,7 +43,6 @@ export default function ProductsPage() {
 
   const [viewingPhotoProduct, setViewingPhotoProduct] = useState<Product | null>(null);
 
-  // Initial values set to empty ("") / null by default
   const [id, setId] = useState("");
   const [shopOrigin, setShopOrigin] = useState("");
   const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
@@ -200,7 +207,8 @@ export default function ProductsPage() {
 
   const filteredProducts = products.filter((p) =>
     p.id.toLowerCase().includes(search.toLowerCase()) ||
-    p.shopOrigin.toLowerCase().includes(search.toLowerCase())
+    p.shopOrigin.toLowerCase().includes(search.toLowerCase()) ||
+    (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -246,14 +254,14 @@ export default function ProductsPage() {
 
           <input
             type="text"
-            placeholder="Cari ID produk tas..."
+            placeholder="Cari ID produk, toko, pembeli..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
           />
         </div>
 
-        {/* Products Table View (All Centered) */}
+        {/* Products Table View */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading produk...</div>
@@ -273,6 +281,7 @@ export default function ProductsPage() {
                     <th className="p-4 text-center">Harga Jual</th>
                     <th className="p-4 text-center">Profit Margin</th>
                     <th className="p-4 text-center">Status</th>
+                    <th className="p-4 text-center">Pembeli / Pembook</th>
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
@@ -328,6 +337,26 @@ export default function ProductsPage() {
                             {p.status === "Available" ? "Tersedia" : p.status === "Booked" ? "Dibooking" : p.status === "Sold" ? "Terjual" : p.status}
                           </span>
                         </td>
+                        
+                        {/* Keterangan Pembeli / Pembook */}
+                        <td className="p-4 text-center">
+                          {p.status === "Tersedia" || p.status === "Available" || !p.order?.customer ? (
+                            <span className="text-slate-400 font-normal">-</span>
+                          ) : p.status === "Dibooking" || p.status === "Booked" || p.status === "DP" || p.status === "Menunggu" ? (
+                            <div>
+                              <span className="text-[10px] text-blue-700 font-bold block uppercase">Dibooking oleh:</span>
+                              <span className="font-bold text-slate-900">{p.order.customer.name}</span>
+                              <span className="text-[11px] text-slate-500 block font-mono">{p.order.customer.whatsapp}</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="text-[10px] text-blue-800 font-bold block uppercase">Dibeli oleh:</span>
+                              <span className="font-bold text-slate-900">{p.order.customer.name}</span>
+                              <span className="text-[11px] text-slate-500 block font-mono">{p.order.customer.whatsapp}</span>
+                            </div>
+                          )}
+                        </td>
+
                         <td className="p-4 text-center">
                           <TableActionsMenu
                             items={[
@@ -388,6 +417,18 @@ export default function ProductsPage() {
               )}
             </div>
 
+            {/* Customer Buyer Notice in Lightbox */}
+            {viewingPhotoProduct.order?.customer && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs flex justify-between items-center">
+                <span className="text-blue-700 font-bold uppercase">
+                  {viewingPhotoProduct.status === "Terjual" ? "Dibeli Oleh:" : "Dibooking Oleh:"}
+                </span>
+                <span className="font-bold text-slate-900">
+                  {viewingPhotoProduct.order.customer.name} ({viewingPhotoProduct.order.customer.whatsapp})
+                </span>
+              </div>
+            )}
+
             {/* Price Details Grid */}
             <div className="grid grid-cols-3 gap-3 text-xs font-mono text-center pt-2">
               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
@@ -429,6 +470,9 @@ export default function ProductsPage() {
               <h3 className="text-base font-bold text-slate-900">
                 {editingProduct ? `Edit Produk [${editingProduct.id}]` : "Tambah Produk Tas Baru"}
               </h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">
+                Batal
+              </button>
             </div>
 
             {errorMessage && (

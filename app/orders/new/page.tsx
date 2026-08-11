@@ -393,7 +393,13 @@ export default function NewOrderPage() {
                   <label className="block text-slate-600 font-semibold mb-1">Status Awal Pesanan</label>
                   <select
                     value={orderStatus}
-                    onChange={(e) => setOrderStatus(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setOrderStatus(val);
+                      if (val !== "DP") {
+                        setDpAmountInput("");
+                      }
+                    }}
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-semibold"
                   >
                     <option value="">-- Pilih Status Awal Pesanan --</option>
@@ -403,16 +409,19 @@ export default function NewOrderPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Nominal DP (Opsional)</label>
-                  <input
-                    type="number"
-                    value={dpAmountInput}
-                    onChange={(e) => setDpAmountInput(e.target.value)}
-                    placeholder="Contoh: 50000"
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm"
-                  />
-                </div>
+                {orderStatus === "DP" && (
+                  <div>
+                    <label className="block text-slate-600 font-semibold mb-1">Nominal DP (Rp) *</label>
+                    <input
+                      type="number"
+                      value={dpAmountInput}
+                      onChange={(e) => setDpAmountInput(e.target.value)}
+                      placeholder="Contoh: 50000"
+                      required
+                      className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Summary Tagihan */}
