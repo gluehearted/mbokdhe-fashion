@@ -12,7 +12,7 @@ export function Sidebar() {
     { label: "Kelola Toko", path: "/shops", icon: "store" },
     { label: "Customers", path: "/customers", icon: "group" },
     { label: "Orders", path: "/orders", icon: "shopping_cart" },
-    { label: "Pembekuan", path: "/pembekuan", icon: "ac_unit" },
+    { label: "Laporan Keuntungan", path: "/pembekuan", icon: "payments" },
   ];
 
   return (

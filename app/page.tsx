@@ -12,22 +12,56 @@ export default async function HomePage() {
     recentOrders,
   ] = await Promise.all([
     prisma.product.findMany({
-      where: { status: "Available" },
+      where: {
+        OR: [{ status: "Tersedia" }, { status: "Available" }],
+      },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
     prisma.order.findMany({
       where: { status: "DP", dpForfeited: false },
-      include: { customer: true, products: true },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            whatsapp: true,
+            domisili: true,
+          },
+        },
+        products: true,
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.findMany({
-      where: { status: "Siap_Packing" },
-      include: { customer: true, products: true },
+      where: {
+        OR: [{ status: "Siap Packing" }, { status: "Siap_Packing" }],
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            whatsapp: true,
+            domisili: true,
+          },
+        },
+        products: true,
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.findMany({
-      include: { customer: true, products: true },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            whatsapp: true,
+            domisili: true,
+          },
+        },
+        products: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
@@ -55,7 +89,7 @@ export default async function HomePage() {
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors active:scale-95 shadow-sm"
         >
           <span className="material-symbols-outlined text-sm font-bold">add</span>
-          <span>New Order</span>
+          <span>Buat Pesanan Baru</span>
         </Link>
       </header>
 
@@ -66,7 +100,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Total Available Bags
+              Total Tas Tersedia
             </h3>
             <div className="flex items-end justify-between">
               <span className="text-3xl font-bold text-slate-900 font-mono">
@@ -82,7 +116,7 @@ export default async function HomePage() {
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2 relative overflow-hidden">
             <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none"></div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Pending Payments (DP)
+              Total Dana Pembekuan (DP)
             </h3>
             <div className="flex items-end justify-between">
               <span className="text-3xl font-bold text-slate-900 font-mono">
@@ -98,7 +132,7 @@ export default async function HomePage() {
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2 relative overflow-hidden">
             <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none"></div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Ready to Ship Today
+              Siap Packing Hari Ini
             </h3>
             <div className="flex items-end justify-between">
               <span className="text-3xl font-bold text-slate-900 font-mono">
@@ -130,17 +164,17 @@ export default async function HomePage() {
             <div className="p-8 text-center text-slate-400 text-xs">Belum ada pesanan terdaftar.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
+              <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Order ID</th>
-                    <th className="p-4">Pelanggan</th>
-                    <th className="p-4">Tas Dibeli</th>
-                    <th className="p-4">Kurir</th>
-                    <th className="p-4">No. Resi</th>
-                    <th className="p-4">DP / Status</th>
-                    <th className="p-4">Total Tagihan</th>
-                    <th className="p-4 text-right">Tanggal</th>
+                    <th className="p-4 text-center">Order ID</th>
+                    <th className="p-4 text-center">Pelanggan</th>
+                    <th className="p-4 text-center">Tas Dibeli</th>
+                    <th className="p-4 text-center">Ekspedisi</th>
+                    <th className="p-4 text-center">No. Resi</th>
+                    <th className="p-4 text-center">DP / Status</th>
+                    <th className="p-4 text-center">Total Tagihan</th>
+                    <th className="p-4 text-center">Tanggal</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -150,33 +184,33 @@ export default async function HomePage() {
 
                     return (
                       <tr key={ord.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 font-mono font-extrabold text-blue-600">
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">
                           #{ord.id.slice(0, 8)}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 text-center">
                           <span className="font-bold text-slate-900 block">{ord.customer?.name}</span>
                           <span className="text-[11px] text-slate-500 font-mono">{ord.customer?.whatsapp}</span>
                         </td>
-                        <td className="p-4 font-mono font-bold text-slate-800">
+                        <td className="p-4 text-center font-mono font-bold text-slate-800">
                           {ord.products.map((p) => p.id).join(", ")}
                         </td>
-                        <td className="p-4 text-slate-600">
+                        <td className="p-4 text-center text-slate-600">
                           {ord.shippingCourier} ({ord.shippingService})
                         </td>
-                        <td className="p-4 font-mono text-emerald-700 font-bold">
+                        <td className="p-4 text-center font-mono text-emerald-700 font-bold">
                           {ord.trackingNo || "-"}
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-1.5">
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <span
                               className={`px-2.5 py-1 rounded font-bold uppercase text-[10px] ${
-                                ord.status === "Keep"
+                                ord.status === "Menunggu" || ord.status === "Keep"
                                   ? "bg-blue-100 text-blue-800 border border-blue-200"
                                   : ord.status === "DP"
                                   ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                  : ord.status === "Siap_Packing"
+                                  : ord.status === "Siap Packing" || ord.status === "Siap_Packing"
                                   ? "bg-purple-100 text-purple-800 border border-purple-200"
-                                  : ord.status === "Shipped"
+                                  : ord.status === "Dikirim" || ord.status === "Shipped"
                                   ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                   : "bg-rose-100 text-rose-800 border border-rose-200"
                               }`}
@@ -190,10 +224,10 @@ export default async function HomePage() {
                             )}
                           </div>
                         </td>
-                        <td className="p-4 font-mono font-bold text-slate-900">
+                        <td className="p-4 text-center font-mono font-bold text-slate-900">
                           Rp {ord.totalPrice.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-right text-slate-500 font-mono text-[11px]">
+                        <td className="p-4 text-center text-slate-500 font-mono text-[11px]">
                           {new Date(ord.createdAt).toLocaleDateString("id-ID")}
                         </td>
                       </tr>
@@ -207,6 +241,7 @@ export default async function HomePage() {
 
         {/* DATA TABLE 2: Available Products Table */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          {/* Header */}
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <span className="material-symbols-outlined text-blue-600 text-lg">inventory_2</span>
@@ -221,22 +256,22 @@ export default async function HomePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700">
+            <table className="w-full text-center text-xs text-slate-700">
               <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                 <tr>
-                  <th className="p-4">Foto</th>
-                  <th className="p-4">ID Tas</th>
-                  <th className="p-4">Toko Asal</th>
-                  <th className="p-4">Harga Modal</th>
-                  <th className="p-4">Harga Jual</th>
-                  <th className="p-4">Status</th>
+                  <th className="p-4 text-center">Foto</th>
+                  <th className="p-4 text-center">ID Tas</th>
+                  <th className="p-4 text-center">Toko Asal</th>
+                  <th className="p-4 text-center">Harga Modal</th>
+                  <th className="p-4 text-center">Harga Jual</th>
+                  <th className="p-4 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 {availableProducts.map((prod) => (
                   <tr key={prod.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4">
-                      <div className="w-10 h-10 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center">
+                    <td className="p-4 text-center">
+                      <div className="w-10 h-10 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center mx-auto">
                         {prod.photoUrl && !prod.photoUrl.includes("placeholder") ? (
                           <Image src={prod.photoUrl} alt={prod.id} fill sizes="40px" className="object-cover" />
                         ) : (
@@ -244,13 +279,13 @@ export default async function HomePage() {
                         )}
                       </div>
                     </td>
-                    <td className="p-4 font-mono font-extrabold text-blue-600">#{prod.id}</td>
-                    <td className="p-4 font-bold text-slate-900">{prod.shopOrigin}</td>
-                    <td className="p-4 text-slate-600 font-mono">Rp {(prod.capitalPrice || 0).toLocaleString("id-ID")}</td>
-                    <td className="p-4 font-mono font-bold text-slate-900">
+                    <td className="p-4 text-center font-mono font-extrabold text-blue-600">#{prod.id}</td>
+                    <td className="p-4 text-center font-bold text-slate-900">{prod.shopOrigin}</td>
+                    <td className="p-4 text-center text-slate-600 font-mono">Rp {(prod.capitalPrice || 0).toLocaleString("id-ID")}</td>
+                    <td className="p-4 text-center font-mono font-bold text-slate-900">
                       Rp {prod.price.toLocaleString("id-ID")}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 text-center">
                       <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded font-bold uppercase text-[10px]">
                         {prod.status}
                       </span>

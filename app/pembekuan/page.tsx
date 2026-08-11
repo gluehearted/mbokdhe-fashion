@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { TableActionsMenu } from "@/components/TableActionsMenu";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface Customer {
   id: string;
   name: string;
   whatsapp: string;
-  addressDetail: string;
+  domisili?: string | null;
 }
 
 interface Product {
@@ -35,170 +34,355 @@ interface Order {
   products: Product[];
 }
 
-export default function PembekuanPage() {
+interface DailySummary {
+  date: string;
+  orderCount: number;
+  grossRevenue: number; // Total Penjualan
+  capitalCost: number;  // Total Modal
+  shippingCostSum: number;
+  dpForfeitedSum: number; // Keuntungan dari DP Hangus
+  netProfit: number;     // Gross Revenue - Capital Cost - Shipping (atau Margin + DP Hangus)
+}
+
+export default function ProfitReportPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState<"DAILY" | "WEEKLY" | "MONTHLY" | "ALL">("DAILY");
+  const [search, setSearch] = useState("");
 
-  // Modals state
-  const [actionOrder, setActionOrder] = useState<Order | null>(null);
-  const [modalType, setModalType] = useState<"settle" | "forfeit" | "dp" | null>(null);
-
-  const [dpInput, setDpInput] = useState(50000);
-  const [reasonInput, setReasonInput] = useState("Batas waktu DP habis / Hit & Run");
-  const [processing, setProcessing] = useState(false);
-
-  const fetchDpOrders = async () => {
+  const fetchFinancialOrders = useCallback(async () => {
     setLoading(true);
     try {
-      // API Call: GET /api/orders (mengambil transaksi DP/Keep)
+      // API Call: GET /api/orders (mengambil seluruh transaksi untuk rekapitulasi keuangan)
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
-        const dpList = (data.data as Order[]).filter(
-          (o) => o.status === "DP" || o.status === "Menunggu" || o.status === "Keep" || o.dpAmount > 0
-        );
-        setOrders(dpList);
+        setOrders(data.data as Order[]);
       }
     } catch {
       // Ignore
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchDpOrders();
   }, []);
 
-  const handleSettle = async () => {
-    if (!actionOrder) return;
-    setProcessing(true);
-    try {
-      // API Call: POST /api/orders/[id]/settle (proses pelunasan pesanan)
-      const res = await fetch(`/api/orders/${actionOrder.id}/settle`, { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        setActionOrder(null);
-        setModalType(null);
-        fetchDpOrders();
-      } else {
-        alert(data.error || "Gagal memproses pelunasan.");
-      }
-    } catch {
-      alert("Terjadi kesalahan.");
-    } finally {
-      setProcessing(false);
-    }
-  };
+  useEffect(() => {
+    fetchFinancialOrders();
+  }, [fetchFinancialOrders]);
 
-  const handleForfeit = async () => {
-    if (!actionOrder) return;
-    setProcessing(true);
-    try {
-      // API Call: POST /api/orders/[id]/forfeit (hanguskan dana DP)
-      const res = await fetch(`/api/orders/${actionOrder.id}/forfeit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: reasonInput }),
+  // Compute Overall Metrics across completed/paid orders
+  const metrics = useMemo(() => {
+    let totalGrossRevenue = 0; // Total Price of completed/paid orders
+    let totalCapitalCost = 0;  // Total Capital Price of products sold
+    let totalShippingCost = 0;
+    let totalDpForfeited = 0;  // Profit from forfeited DPs
+    let completedOrderCount = 0;
+
+    orders.forEach((o) => {
+      // Include completed/settled/shipped orders
+      if (o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped") {
+        completedOrderCount++;
+        totalGrossRevenue += o.totalPrice;
+        totalShippingCost += o.shippingCost;
+
+        const prodCapital = o.products.reduce((sum, p) => sum + (p.capitalPrice || 0), 0);
+        totalCapitalCost += prodCapital;
+      }
+
+      // Add forfeited DP earnings
+      if (o.dpForfeited && o.dpAmount > 0) {
+        totalDpForfeited += o.dpAmount;
+      }
+    });
+
+    const totalProductRevenue = totalGrossRevenue - totalShippingCost;
+    const totalNetProfit = (totalProductRevenue - totalCapitalCost) + totalDpForfeited;
+
+    return {
+      totalGrossRevenue,
+      totalCapitalCost,
+      totalShippingCost,
+      totalDpForfeited,
+      totalNetProfit,
+      completedOrderCount,
+    };
+  }, [orders]);
+
+  // Group orders into daily/weekly summaries
+  const summaries = useMemo(() => {
+    const map: Record<string, DailySummary> = {};
+
+    orders.forEach((o) => {
+      const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
+      const isForfeited = o.dpForfeited && o.dpAmount > 0;
+
+      if (!isCompleted && !isForfeited) return;
+
+      const dateObj = new Date(o.createdAt);
+      let groupKey = dateObj.toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        setActionOrder(null);
-        setModalType(null);
-        fetchDpOrders();
-      } else {
-        alert(data.error || "Gagal menghanguskan DP.");
+
+      if (timeframe === "WEEKLY") {
+        // Group by Year & Week Number
+        const startOfYear = new Date(dateObj.getFullYear(), 0, 1);
+        const pastDaysOfYear = (dateObj.getTime() - startOfYear.getTime()) / 86400000;
+        const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+        groupKey = `Minggu Ke-${weekNum} (${dateObj.toLocaleDateString("id-ID", { month: "short", year: "numeric" })})`;
+      } else if (timeframe === "MONTHLY") {
+        groupKey = dateObj.toLocaleDateString("id-ID", {
+          month: "long",
+          year: "numeric",
+        });
+      } else if (timeframe === "ALL") {
+        groupKey = "Semua Riwayat Terkumpul";
       }
-    } catch {
-      alert("Terjadi kesalahan.");
-    } finally {
-      setProcessing(false);
-    }
-  };
 
-  const handleSaveDp = async () => {
-    if (!actionOrder) return;
-    setProcessing(true);
-    try {
-      // API Call: POST /api/orders/[id]/dp (catat nominal DP baru)
-      const res = await fetch(`/api/orders/${actionOrder.id}/dp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dpAmount: dpInput }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message);
-        setActionOrder(null);
-        setModalType(null);
-        fetchDpOrders();
-      } else {
-        alert(data.error || "Gagal mencatat DP.");
+      if (!map[groupKey]) {
+        map[groupKey] = {
+          date: groupKey,
+          orderCount: 0,
+          grossRevenue: 0,
+          capitalCost: 0,
+          shippingCostSum: 0,
+          dpForfeitedSum: 0,
+          netProfit: 0,
+        };
       }
-    } catch {
-      alert("Terjadi kesalahan.");
-    } finally {
-      setProcessing(false);
-    }
-  };
 
-  const getDaysElapsed = (dateStr?: string | null) => {
-    if (!dateStr) return 0;
-    const diff = Date.now() - new Date(dateStr).getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
-  };
+      if (isCompleted) {
+        map[groupKey].orderCount += 1;
+        map[groupKey].grossRevenue += o.totalPrice;
+        map[groupKey].shippingCostSum += o.shippingCost;
 
-  const activeDpOrders = orders.filter((o) => o.status === "DP" && !o.dpForfeited);
-  const totalFrozenDP = activeDpOrders.reduce((sum, o) => sum + o.dpAmount, 0);
+        const prodCapital = o.products.reduce((sum, p) => sum + (p.capitalPrice || 0), 0);
+        map[groupKey].capitalCost += prodCapital;
+      }
+
+      if (isForfeited) {
+        map[groupKey].dpForfeitedSum += o.dpAmount;
+      }
+    });
+
+    // Calculate net profit for each summary group
+    const list = Object.values(map).map((s) => {
+      const prodRevenue = s.grossRevenue - s.shippingCostSum;
+      const profit = (prodRevenue - s.capitalCost) + s.dpForfeitedSum;
+      return {
+        ...s,
+        netProfit: profit,
+      };
+    });
+
+    return list;
+  }, [orders, timeframe]);
+
+  // Filter individual detailed transactions for profit history
+  const filteredCompletedOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped" || o.dpForfeited;
+      const matchesSearch =
+        o.id.toLowerCase().includes(search.toLowerCase()) ||
+        o.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
+        o.customer?.whatsapp.includes(search);
+      return isCompleted && matchesSearch;
+    });
+  }, [orders, search]);
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">Pembekuan (DP Monitor)</h1>
+          <h1 className="text-xl font-bold text-blue-700 tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-blue-600">payments</span>
+            Rekapitulasi Keuangan & Laporan Keuntungan
+          </h1>
         </div>
+        <button
+          onClick={fetchFinancialOrders}
+          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <span className="material-symbols-outlined text-sm">refresh</span>
+          <span>Refresh Rekap</span>
+        </button>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
-        
-        {/* Metric Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-1">
-            <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Total Dana Dibekukan</span>
-            <p className="text-3xl font-bold text-amber-600 font-mono">
-              Rp {totalFrozenDP.toLocaleString("id-ID")}
-            </p>
-            <p className="text-xs text-slate-500">{activeDpOrders.length} transaksi berstatus DP aktif</p>
+
+        {/* Financial KPI Summary Cards (4 Metric Cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Card 1: Total Profit Bersih */}
+          <div className="bg-white rounded-xl p-5 border border-emerald-200 shadow-sm flex flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/40">
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+              💰 Total Profit Bersih
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl font-extrabold text-emerald-700 font-mono">
+                Rp {metrics.totalNetProfit.toLocaleString("id-ID")}
+              </span>
+            </div>
+            <span className="text-[10px] text-emerald-800 font-medium">
+              Keuntungan bersih (Omset Barang - Modal + DP Hangus)
+            </span>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-1">
-            <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">DP Aging Warning (&gt;3 Hari)</span>
-            <p className="text-3xl font-bold text-rose-600 font-mono">
-              {activeDpOrders.filter((o) => getDaysElapsed(o.dpDate || o.createdAt) >= 3).length} Order
-            </p>
-            <p className="text-xs text-rose-600 font-semibold">Perlu di-follow up atau dihanguskan</p>
+          {/* Card 2: Total Omset Penjualan */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              📈 Omset Penjualan (Gross)
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl font-bold text-slate-900 font-mono">
+                Rp {metrics.totalGrossRevenue.toLocaleString("id-ID")}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium">
+              Akumulasi {metrics.completedOrderCount} pesanan selesai/lunas
+            </span>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-1">
-            <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Barang Terikat Keep/DP</span>
-            <p className="text-3xl font-bold text-slate-900 font-mono">
-              {activeDpOrders.reduce((sum, o) => sum + o.products.length, 0)} Tas
-            </p>
-            <p className="text-xs text-slate-500">Status produk otomatis Booked</p>
+          {/* Card 3: Total Modal Pembelian */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              📦 Total Modal Tas
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl font-bold text-slate-900 font-mono">
+                Rp {metrics.totalCapitalCost.toLocaleString("id-ID")}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500 font-medium">
+              Total harga beli modal dari supplier toko
+            </span>
           </div>
+
+          {/* Card 4: DP Hangus / Forfeit Earnings */}
+          <div className="bg-white rounded-xl p-5 border border-amber-200 shadow-sm flex flex-col gap-2 bg-gradient-to-br from-white to-amber-50/40">
+            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+              🔥 Keuntungan DP Hangus
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl font-extrabold text-amber-700 font-mono">
+                Rp {metrics.totalDpForfeited.toLocaleString("id-ID")}
+              </span>
+            </div>
+            <span className="text-[10px] text-amber-800 font-medium">
+              Dana DP terbekukan yang hangus akibat pembatalan
+            </span>
+          </div>
+
         </div>
 
-        {/* Orders Table (Centered) */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        {/* SECTION 1: Rekapitulasi Keuangan Per Periode */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm space-y-4 p-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-600">assessment</span>
+                Tabel Rekapitulasi Laporan Keuangan
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Rekap akumulasi omset, modal, dan profit bersih berdasarkan periode harian, mingguan, atau bulanan.
+              </p>
+            </div>
+
+            {/* Timeframe Filter Buttons */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+              {[
+                { label: "Per Hari (Harian)", value: "DAILY" },
+                { label: "Per Minggu (Mingguan)", value: "WEEKLY" },
+                { label: "Per Bulan (Bulanan)", value: "MONTHLY" },
+                { label: "Semua Riwayat", value: "ALL" },
+              ].map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => setTimeframe(tab.value as any)}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    timeframe === tab.value
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {loading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">Loading data pembekuan dana...</div>
-          ) : orders.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
-              Tidak ada transaksi pembekuan dana (DP/Keep) aktif.
+            <div className="text-center py-12 text-slate-500 text-sm">Mengkalkulasi rekapitulasi keuangan...</div>
+          ) : summaries.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-sm">
+              Belum ada riwayat transaksi selesai untuk dikalkulasi.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-center text-xs text-slate-700">
+                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="p-4 text-center">Periode Tanggal</th>
+                    <th className="p-4 text-center">Order Selesai</th>
+                    <th className="p-4 text-center">Omset Penjualan</th>
+                    <th className="p-4 text-center">Total Modal Tas</th>
+                    <th className="p-4 text-center">Total Ongkir</th>
+                    <th className="p-4 text-center">DP Hangus (Forfeit)</th>
+                    <th className="p-4 text-center">Profit Bersih</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {summaries.map((s, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-center font-bold text-slate-900">{s.date}</td>
+                      <td className="p-4 text-center font-mono font-bold text-blue-600">{s.orderCount} Pesanan</td>
+                      <td className="p-4 text-center font-mono font-bold text-slate-900">
+                        Rp {s.grossRevenue.toLocaleString("id-ID")}
+                      </td>
+                      <td className="p-4 text-center font-mono text-slate-600">
+                        Rp {s.capitalCost.toLocaleString("id-ID")}
+                      </td>
+                      <td className="p-4 text-center font-mono text-slate-500">
+                        Rp {s.shippingCostSum.toLocaleString("id-ID")}
+                      </td>
+                      <td className="p-4 text-center font-mono font-bold text-amber-700">
+                        +Rp {s.dpForfeitedSum.toLocaleString("id-ID")}
+                      </td>
+                      <td className="p-4 text-center font-mono font-extrabold text-emerald-600 bg-emerald-50/50">
+                        +Rp {s.netProfit.toLocaleString("id-ID")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 2: Rincian Profit Per Transaksi Pesanan */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-600">receipt_long</span>
+                Rincian Margin Profit Transaksi Lunas / Selesai
+              </h2>
+            </div>
+            <input
+              type="text"
+              placeholder="Cari ID order, nama pelanggan, WA..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+            />
+          </div>
+
+          {filteredCompletedOrders.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-sm">
+              Tidak ada rincian transaksi selesai yang cocok.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -207,103 +391,56 @@ export default function PembekuanPage() {
                   <tr>
                     <th className="p-4 text-center">Order ID</th>
                     <th className="p-4 text-center">Pelanggan</th>
-                    <th className="p-4 text-center">Barang</th>
-                    <th className="p-4 text-center">Total Tagihan</th>
-                    <th className="p-4 text-center">DP Dibayar</th>
-                    <th className="p-4 text-center">Sisa Tagihan</th>
-                    <th className="p-4 text-center">Usia DP</th>
-                    <th className="p-4 text-center">Status</th>
-                    <th className="p-4 text-center">Aksi</th>
+                    <th className="p-4 text-center">Produk Tas</th>
+                    <th className="p-4 text-center">Status Pesanan</th>
+                    <th className="p-4 text-center">Harga Modal</th>
+                    <th className="p-4 text-center">Harga Jual</th>
+                    <th className="p-4 text-center">Margin Profit Bersih</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {orders.map((o) => {
-                    const days = getDaysElapsed(o.dpDate || o.createdAt);
-                    const sisa = o.totalPrice - o.dpAmount;
-                    const isOld = days >= 3 && o.status === "DP";
+                  {filteredCompletedOrders.map((o) => {
+                    const capitalSum = o.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
+                    const sellingSum = o.totalPrice - o.shippingCost;
+                    const netMargin = (sellingSum - capitalSum) + (o.dpForfeited ? o.dpAmount : 0);
 
                     return (
                       <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 text-center font-mono font-bold text-blue-600">#{o.id.slice(0, 8)}</td>
-                        <td className="p-4 text-center font-bold text-slate-900">
-                          {o.customer?.name}
-                          <br />
-                          <span className="text-[11px] text-slate-500 font-mono">{o.customer?.whatsapp}</span>
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">
+                          #{o.id.slice(0, 8)}
                         </td>
-                        <td className="p-4 text-center font-mono">{o.products.map((p) => p.id).join(", ")}</td>
-                        <td className="p-4 text-center font-mono font-bold text-slate-900">
-                          Rp {o.totalPrice.toLocaleString("id-ID")}
+                        <td className="p-4 text-center">
+                          <span className="font-bold text-slate-900 block">{o.customer?.name}</span>
+                          <span className="text-[11px] font-mono text-slate-500">{o.customer?.whatsapp}</span>
                         </td>
-                        <td className="p-4 text-center font-mono font-bold text-blue-600">
-                          Rp {o.dpAmount.toLocaleString("id-ID")}
-                        </td>
-                        <td className="p-4 text-center font-mono font-bold text-amber-600">
-                          Rp {sisa.toLocaleString("id-ID")}
+                        <td className="p-4 text-center">
+                          <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
+                            {o.products.map((p) => (
+                              <span key={p.id} className="bg-blue-50 text-blue-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200">
+                                #{p.id} ({p.shopOrigin})
+                              </span>
+                            ))}
+                          </div>
                         </td>
                         <td className="p-4 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] inline-block ${
-                              isOld
-                                ? "bg-rose-100 text-rose-700 border border-rose-200 animate-pulse"
-                                : "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            ⏱️ {days} Hari
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span
-                            className={`px-2.5 py-1 rounded font-bold uppercase text-[10px] inline-block ${
+                            className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${
                               o.dpForfeited
-                                ? "bg-rose-100 text-rose-700 border border-rose-200"
-                                : o.status === "DP"
-                                ? "bg-blue-100 text-blue-800 border border-blue-200"
-                                : "bg-amber-100 text-amber-800 border border-amber-200"
+                                ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                             }`}
                           >
-                            {o.dpForfeited ? "DP Hangus" : o.status}
+                            {o.dpForfeited ? "DP Hangus (Forfeit)" : o.status}
                           </span>
                         </td>
-                        <td className="p-4 text-center">
-                          {o.status !== "Cancelled" && !o.dpForfeited ? (
-                            <TableActionsMenu
-                              items={[
-                                ...(o.dpAmount === 0
-                                  ? [
-                                      {
-                                        label: "Input Nominal DP",
-                                        icon: "lock",
-                                        onClick: () => {
-                                          setActionOrder(o);
-                                          setModalType("dp");
-                                          setDpInput(50000);
-                                        },
-                                      },
-                                    ]
-                                  : []),
-                                {
-                                  label: "Pelunasan Order",
-                                  icon: "task_alt",
-                                  onClick: () => {
-                                    setActionOrder(o);
-                                    setModalType("settle");
-                                  },
-                                },
-                                {
-                                  label: "Hanguskan (Forfeit) DP",
-                                  icon: "local_fire_department",
-                                  danger: true,
-                                  onClick: () => {
-                                    setActionOrder(o);
-                                    setModalType("forfeit");
-                                    setReasonInput("Batas waktu DP habis / Hit & Run");
-                                  },
-                                },
-                              ]}
-                            />
-                          ) : (
-                            <span className="text-slate-400 text-[11px]">-</span>
-                          )}
+                        <td className="p-4 text-center font-mono text-slate-600">
+                          Rp {capitalSum.toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-4 text-center font-mono font-bold text-slate-900">
+                          Rp {sellingSum.toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-4 text-center font-mono font-extrabold text-emerald-600">
+                          +Rp {netMargin.toLocaleString("id-ID")}
                         </td>
                       </tr>
                     );
@@ -315,119 +452,6 @@ export default function PembekuanPage() {
         </div>
 
       </div>
-
-      {/* Modal Actions */}
-      {actionOrder && modalType === "settle" && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">
-              Konfirmasi Pelunasan Order
-            </h3>
-            <p className="text-xs text-slate-600">
-              Pelanggan <strong>{actionOrder.customer?.name}</strong> melunasi sisa tagihan sebesar:
-            </p>
-            <p className="text-2xl font-bold text-emerald-600 font-mono">
-              Rp {(actionOrder.totalPrice - actionOrder.dpAmount).toLocaleString("id-ID")}
-            </p>
-
-            <div className="flex gap-3 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setActionOrder(null)}
-                className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleSettle}
-                disabled={processing}
-                className="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all"
-              >
-                {processing ? "Memproses..." : "Konfirmasi Pelunasan"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {actionOrder && modalType === "forfeit" && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-rose-600 border-b border-slate-100 pb-2">
-              🔥 Hanguskan (Forfeit) DP
-            </h3>
-            <p className="text-xs text-slate-600">
-              Hanguskan DP <strong>Rp {actionOrder.dpAmount.toLocaleString("id-ID")}</strong> untuk <strong>{actionOrder.customer?.name}</strong>?
-            </p>
-
-            <div>
-              <label className="block text-[11px] text-slate-500 font-semibold mb-1">Alasan</label>
-              <input
-                type="text"
-                value={reasonInput}
-                onChange={(e) => setReasonInput(e.target.value)}
-                className="w-full bg-slate-50 text-slate-900 text-xs p-2 rounded-lg border border-slate-300"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setActionOrder(null)}
-                className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs hover:bg-slate-200"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleForfeit}
-                disabled={processing}
-                className="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-all"
-              >
-                {processing ? "Memproses..." : "Hanguskan DP"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {actionOrder && modalType === "dp" && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2">
-              Catat Pembekuan DP
-            </h3>
-            <div className="text-xs space-y-2">
-              <label className="block text-slate-600 font-semibold">Nominal DP (Rp)</label>
-              <input
-                type="number"
-                value={dpInput}
-                onChange={(e) => setDpInput(Number(e.target.value))}
-                className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setActionOrder(null)}
-                className="w-1/2 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDp}
-                disabled={processing}
-                className="w-1/2 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-all"
-              >
-                {processing ? "Simpan..." : "Simpan DP"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
