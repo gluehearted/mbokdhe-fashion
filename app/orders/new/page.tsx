@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/components/ToastProvider";
 
 interface Customer {
   id: string;
@@ -37,19 +38,21 @@ const AVAILABLE_COURIERS = [
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  // Initial values set to empty ("") / null by default
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
-  const [orderStatus, setOrderStatus] = useState("Menunggu");
+  const [orderStatus, setOrderStatus] = useState("");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
-  const [selectedCourier, setSelectedCourier] = useState("JNE");
-  const [manualShippingCost, setManualShippingCost] = useState<string>("15000");
+  const [selectedCourier, setSelectedCourier] = useState("");
+  const [manualShippingCost, setManualShippingCost] = useState<string>("");
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -83,7 +86,9 @@ export default function NewOrderPage() {
     const target = customers.find((c) => c.id === cId);
     if (target) {
       if (target.courier) setSelectedCourier(target.courier);
-      setManualShippingCost(String(target.shippingCost || 15000));
+      if (target.shippingCost !== undefined && target.shippingCost !== null) {
+        setManualShippingCost(String(target.shippingCost));
+      }
     }
   };
 
@@ -124,11 +129,13 @@ export default function NewOrderPage() {
     e.preventDefault();
     if (!selectedCustomerId) {
       setErrorMessage("Pilih pelanggan terlebih dahulu.");
+      showToast("Pilih pelanggan terlebih dahulu.", "error");
       return;
     }
 
     if (selectedProductIds.length === 0) {
       setErrorMessage("Pilih minimal 1 produk tas.");
+      showToast("Pilih minimal 1 produk tas.", "error");
       return;
     }
 
@@ -147,6 +154,8 @@ export default function NewOrderPage() {
     setErrorMessage(null);
 
     try {
+      const finalStatus = parsedDp > 0 ? "DP" : (orderStatus || "Menunggu");
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,8 +163,8 @@ export default function NewOrderPage() {
           customerId: selectedCustomerId,
           productIds: selectedProductIds,
           customPrices: formattedCustomPrices,
-          status: parsedDp > 0 ? "DP" : orderStatus,
-          shippingCourier: selectedCourier,
+          status: finalStatus,
+          shippingCourier: selectedCourier || "JNE",
           shippingService: "Reguler",
           shippingCost: parsedCost,
           totalWeightGram: 1000,
@@ -167,11 +176,14 @@ export default function NewOrderPage() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal menyimpan pesanan.");
+        showToast(data.error || "Gagal menyimpan pesanan.", "error");
       } else {
+        showToast(`Pesanan baru berhasil dibuat! ID: #${data.data.id.slice(0, 8)}`, "success");
         router.push("/orders");
       }
     } catch {
       setErrorMessage("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -341,8 +353,9 @@ export default function NewOrderPage() {
                     <select
                       value={selectedCourier}
                       onChange={(e) => setSelectedCourier(e.target.value)}
-                      className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-bold focus:border-blue-600 focus:outline-none"
+                      className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-medium focus:border-blue-600 focus:outline-none"
                     >
+                      <option value="">-- Pilih Ekspedisi --</option>
                       {AVAILABLE_COURIERS.map((c) => (
                         <option key={c.code} value={c.code}>
                           {c.label}
@@ -357,7 +370,7 @@ export default function NewOrderPage() {
                       type="number"
                       value={manualShippingCost}
                       onChange={(e) => setManualShippingCost(e.target.value)}
-                      placeholder="15000"
+                      placeholder="Contoh: 15000"
                       required
                       className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm font-bold focus:border-blue-600 focus:outline-none"
                     />
@@ -383,6 +396,7 @@ export default function NewOrderPage() {
                     onChange={(e) => setOrderStatus(e.target.value)}
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-semibold"
                   >
+                    <option value="">-- Pilih Status Awal Pesanan --</option>
                     <option value="Menunggu">Menunggu Pembayaran</option>
                     <option value="DP">DP (Pembekuan Dana)</option>
                     <option value="Siap Packing">Siap Packing (Lunas)</option>
@@ -395,7 +409,7 @@ export default function NewOrderPage() {
                     type="number"
                     value={dpAmountInput}
                     onChange={(e) => setDpAmountInput(e.target.value)}
-                    placeholder="Misal: 50000"
+                    placeholder="Contoh: 50000"
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm"
                   />
                 </div>
@@ -416,7 +430,7 @@ export default function NewOrderPage() {
                   </div>
 
                   <div className="flex justify-between items-center text-slate-600">
-                    <span>Ongkos Kirim ({selectedCourier}):</span>
+                    <span>Ongkos Kirim ({selectedCourier || "Ekspedisi"}):</span>
                     <span className="font-mono text-blue-700 font-bold text-sm">
                       Rp {parsedCostNum.toLocaleString("id-ID")}
                     </span>

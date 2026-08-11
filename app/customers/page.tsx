@@ -69,15 +69,16 @@ function CustomersPageContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
+  // Initial values set to empty ("") / null by default
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [domisili, setDomisili] = useState("");
   const [shippingCostInput, setShippingCostInput] = useState<string>("");
-  const [courier, setCourier] = useState("JNE");
+  const [courier, setCourier] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
-  const [behavioral, setBehavioral] = useState("Pelanggan Setia");
-  const [consumerType, setConsumerType] = useState("Value Seeker");
-  const [relationshipStatus, setRelationshipStatus] = useState("New Customer");
+  const [behavioral, setBehavioral] = useState("");
+  const [consumerType, setConsumerType] = useState("");
+  const [relationshipStatus, setRelationshipStatus] = useState("");
   const [crisisStatus, setCrisisStatus] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -107,13 +108,13 @@ function CustomersPageContent() {
     setEditingCustomer(null);
     setName("");
     setWhatsapp("");
-    setDomisili("Kabupaten Bogor, Jawa Barat");
-    setShippingCostInput("15000");
-    setCourier("JNE");
+    setDomisili("");
+    setShippingCostInput("");
+    setCourier("");
     setAddressDetail("");
-    setBehavioral("Pelanggan Setia");
-    setConsumerType("Value Seeker");
-    setRelationshipStatus("New Customer");
+    setBehavioral("");
+    setConsumerType("");
+    setRelationshipStatus("");
     setCrisisStatus("");
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -136,12 +137,12 @@ function CustomersPageContent() {
     setName(c.name);
     setWhatsapp(c.whatsapp);
     setDomisili(c.domisili || "");
-    setShippingCostInput(c.shippingCost ? String(c.shippingCost) : "0");
-    setCourier(c.courier || "JNE");
+    setShippingCostInput(c.shippingCost !== undefined && c.shippingCost !== null ? String(c.shippingCost) : "");
+    setCourier(c.courier || "");
     setAddressDetail(c.addressDetail);
-    setBehavioral(c.behavioral || "Pelanggan Setia");
-    setConsumerType(c.consumerType || "Value Seeker");
-    setRelationshipStatus(c.relationshipStatus || "New Customer");
+    setBehavioral(c.behavioral || "");
+    setConsumerType(c.consumerType || "");
+    setRelationshipStatus(c.relationshipStatus || "");
     setCrisisStatus(c.crisisStatus || "");
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -158,11 +159,11 @@ function CustomersPageContent() {
         whatsapp: whatsapp.trim(),
         domisili: domisili.trim(),
         shippingCost: parseInt(shippingCostInput, 10) || 0,
-        courier,
+        courier: courier.trim(),
         addressDetail: addressDetail.trim(),
-        behavioral,
-        consumerType,
-        relationshipStatus,
+        behavioral: behavioral.trim(),
+        consumerType: consumerType.trim(),
+        relationshipStatus: relationshipStatus.trim(),
         crisisStatus: crisisStatus.trim(),
       };
 
@@ -358,9 +359,6 @@ function CustomersPageContent() {
               <h3 className="text-base font-bold text-slate-900">
                 {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan Baru"}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">
-                Batal
-              </button>
             </div>
 
             {errorMessage && (
@@ -418,7 +416,7 @@ function CustomersPageContent() {
                     type="text"
                     value={domisili}
                     onChange={(e) => setDomisili(e.target.value)}
-                    placeholder="Kab. Bogor, Jawa Barat"
+                    placeholder="Contoh: Kab. Bogor, Jawa Barat"
                     required
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
                   />
@@ -430,7 +428,7 @@ function CustomersPageContent() {
                     type="number"
                     value={shippingCostInput}
                     onChange={(e) => setShippingCostInput(e.target.value)}
-                    placeholder="15000"
+                    placeholder="Contoh: 15000"
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
                   />
                 </div>
@@ -440,8 +438,9 @@ function CustomersPageContent() {
                   <select
                     value={courier}
                     onChange={(e) => setCourier(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-bold"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
                   >
+                    <option value="">-- Pilih Ekspedisi --</option>
                     {COURIER_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
@@ -458,7 +457,7 @@ function CustomersPageContent() {
                   rows={2}
                   value={addressDetail}
                   onChange={(e) => setAddressDetail(e.target.value)}
-                  placeholder="Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
+                  placeholder="Contoh: Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
                   required
                   className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
                 />
@@ -473,6 +472,7 @@ function CustomersPageContent() {
                     onChange={(e) => setBehavioral(e.target.value)}
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
                   >
+                    <option value="">-- Pilih Behavioral --</option>
                     {BEHAVIORAL_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
@@ -488,6 +488,7 @@ function CustomersPageContent() {
                     onChange={(e) => setConsumerType(e.target.value)}
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
                   >
+                    <option value="">-- Pilih Tipe Konsumen --</option>
                     {CONSUMER_TYPE_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
@@ -506,6 +507,7 @@ function CustomersPageContent() {
                     onChange={(e) => setRelationshipStatus(e.target.value)}
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
                   >
+                    <option value="">-- Pilih Status Hubungan --</option>
                     {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
@@ -520,7 +522,7 @@ function CustomersPageContent() {
                     type="text"
                     value={crisisStatus}
                     onChange={(e) => setCrisisStatus(e.target.value)}
-                    placeholder="Catatan status krisis opsional..."
+                    placeholder="Contoh: Sering komplain, Pernah cancel DP"
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
                   />
                 </div>

@@ -35,6 +35,7 @@ export default function ProductsPage() {
 
   const [viewingPhotoProduct, setViewingPhotoProduct] = useState<Product | null>(null);
 
+  // Initial values set to empty ("") / null by default
   const [id, setId] = useState("");
   const [shopOrigin, setShopOrigin] = useState("");
   const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
@@ -105,7 +106,7 @@ export default function ProductsPage() {
   const openCreateModal = () => {
     setEditingProduct(null);
     setId("");
-    setShopOrigin(shops.length > 0 ? shops[0].name : "Sukaraja Store");
+    setShopOrigin("");
     setCapitalPriceInput("");
     setPriceInput("");
     setFile(null);
@@ -136,6 +137,11 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!shopOrigin.trim()) {
+      setErrorMessage("Pilih atau isi Toko Asal / Supplier terlebih dahulu.");
+      return;
+    }
+
     setSaving(true);
     setErrorMessage(null);
 
@@ -455,6 +461,7 @@ export default function ProductsPage() {
                     required
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-bold"
                   >
+                    <option value="">-- Pilih Toko Asal / Supplier --</option>
                     {shops.map((s) => (
                       <option key={s.id} value={s.name}>
                         {s.name}
@@ -466,7 +473,7 @@ export default function ProductsPage() {
                     type="text"
                     value={shopOrigin}
                     onChange={(e) => setShopOrigin(e.target.value)}
-                    placeholder="Misal: Sukaraja Store"
+                    placeholder="Contoh: Sukaraja Store, Supplier Batam"
                     required
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-bold"
                   />
@@ -481,7 +488,7 @@ export default function ProductsPage() {
                     type="number"
                     value={capitalPriceInput}
                     onChange={(e) => setCapitalPriceInput(e.target.value)}
-                    placeholder="Misal: 70000"
+                    placeholder="Contoh: 70000"
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
                   />
                 </div>
@@ -492,7 +499,7 @@ export default function ProductsPage() {
                     type="number"
                     value={priceInput}
                     onChange={(e) => setPriceInput(e.target.value)}
-                    placeholder="Misal: 95000"
+                    placeholder="Contoh: 95000"
                     required
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono font-bold"
                   />

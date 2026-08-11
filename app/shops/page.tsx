@@ -237,7 +237,7 @@ export default function ShopsPage() {
                   type="text"
                   value={shopNameInput}
                   onChange={(e) => setShopNameInput(e.target.value)}
-                  placeholder="Misal: Sukaraja Store, Supplier Batam"
+                  placeholder="Contoh: Sukaraja Store, Supplier Batam"
                   required
                   autoFocus
                   className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
