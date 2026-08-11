@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { INDONESIA_LOCATIONS } from "@/lib/indonesia-locations";
 
 interface ApiLocationItem {
   id: number;
@@ -15,20 +14,18 @@ export default function AdminOriginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Form Fields
   const [shopName, setShopName] = useState("Mbokdhe Fashion");
   const [senderName, setSenderName] = useState("Admin Mbokdhe");
   const [senderPhone, setSenderPhone] = useState("081234567890");
 
-  // Live RajaOngkir Step-by-Step State
   const [provinces, setProvinces] = useState<ApiLocationItem[]>([]);
   const [cities, setCities] = useState<ApiLocationItem[]>([]);
   const [districts, setDistricts] = useState<ApiLocationItem[]>([]);
   const [subdistricts, setSubdistricts] = useState<ApiLocationItem[]>([]);
 
-  const [selectedProvinceId, setSelectedProvinceId] = useState<number | "">(6); // Default 6 = Jawa Barat
+  const [selectedProvinceId, setSelectedProvinceId] = useState<number | "">(6);
   const [selectedProvinceName, setSelectedProvinceName] = useState("JAWA BARAT");
-  const [selectedCityId, setSelectedCityId] = useState<number>(54); // Default 54 = Kab. Bogor
+  const [selectedCityId, setSelectedCityId] = useState<number>(54);
   const [selectedCityName, setSelectedCityName] = useState("KABUPATEN BOGOR");
   const [selectedDistrictId, setSelectedDistrictId] = useState<number | "">("");
   const [selectedDistrictName, setSelectedDistrictName] = useState("Sukaraja");
@@ -39,12 +36,10 @@ export default function AdminOriginPage() {
 
   const [loadingLoc, setLoadingLoc] = useState(false);
 
-  // Load existing config & Provinces on Mount
   useEffect(() => {
     async function initPage() {
       setLoading(true);
       try {
-        // API Call: GET /api/config (mengambil konfigurasi alamat toko)
         const resConfig = await fetch("/api/config");
         const dataCfg = await resConfig.json();
         if (dataCfg.success && dataCfg.data) {
@@ -73,7 +68,6 @@ export default function AdminOriginPage() {
   const loadProvinces = async () => {
     setLoadingLoc(true);
     try {
-      // API Call: GET /api/shipping/location/provinces (mengambil data provinsi)
       const res = await fetch("/api/shipping/location/provinces");
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -94,7 +88,6 @@ export default function AdminOriginPage() {
 
   const loadCities = async (provId: number) => {
     try {
-      // API Call: GET /api/shipping/location/cities (mengambil data kota)
       const res = await fetch(`/api/shipping/location/cities?provinceId=${provId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -112,7 +105,6 @@ export default function AdminOriginPage() {
 
   const loadDistricts = async (cId: number) => {
     try {
-      // API Call: GET /api/shipping/location/districts (mengambil data kecamatan)
       const res = await fetch(`/api/shipping/location/districts?cityId=${cId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -130,7 +122,6 @@ export default function AdminOriginPage() {
 
   const loadSubdistricts = async (dId: number) => {
     try {
-      // API Call: GET /api/shipping/location/subdistricts (mengambil data kelurahan)
       const res = await fetch(`/api/shipping/location/subdistricts?districtId=${dId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -146,8 +137,7 @@ export default function AdminOriginPage() {
   };
 
   const useLocalFallback = () => {
-    const provs = INDONESIA_LOCATIONS.map((l, i) => ({ id: i + 1, name: l.province }));
-    setProvinces(provs);
+    setProvinces([{ id: 6, name: "JAWA BARAT" }]);
   };
 
   const handleProvinceChange = (provId: number) => {
@@ -193,7 +183,6 @@ export default function AdminOriginPage() {
     setErrorMessage(null);
 
     try {
-      // API Call: POST /api/config (simpan konfigurasi alamat asal pengirim toko)
       const res = await fetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,7 +204,7 @@ export default function AdminOriginPage() {
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal menyimpan alamat asal toko.");
       } else {
-        setSuccessMessage("Alamat asal toko admin berhasil disimpan & tersinkronisasi ke RajaOngkir!");
+        setSuccessMessage("Alamat asal toko admin berhasil disimpan!");
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch {
@@ -226,7 +215,7 @@ export default function AdminOriginPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
@@ -235,18 +224,18 @@ export default function AdminOriginPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8">
         <div className="max-w-3xl mx-auto space-y-6">
           
           {successMessage && (
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold">
-              ✅ {successMessage}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
+              {successMessage}
             </div>
           )}
 
           {errorMessage && (
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
-              ⚠️ {errorMessage}
+            <div className="p-4 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold text-center">
+              {errorMessage}
             </div>
           )}
 
@@ -255,12 +244,11 @@ export default function AdminOriginPage() {
           ) : (
             <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-6 shadow-sm text-xs">
               <div>
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                  <span className="material-symbols-outlined text-blue-600">storefront</span>
-                  Pengaturan Alamat Pengirim Toko (RajaOngkir V2 Step-by-Step)
+                <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+                  Pengaturan Alamat Pengirim Toko
                 </h2>
                 <p className="text-slate-500 text-[11px] mt-1">
-                  Alamat ini digunakan sebagai lokasi awal pengiriman (*Origin ID*) saat menghitung tarif ongkir RajaOngkir ke pelanggan.
+                  Alamat ini digunakan sebagai lokasi awal pengiriman saat menghitung tarif ongkir ke pelanggan.
                 </p>
               </div>
 
@@ -300,11 +288,10 @@ export default function AdminOriginPage() {
                 </div>
               </div>
 
-              {/* Live Step-by-Step Location Selection */}
+              {/* Location Selection */}
               <div className="space-y-4 pt-2 border-t border-slate-100">
-                <h3 className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm text-blue-600">location_on</span>
-                  Lokasi Mengerucut (RajaOngkir V2 Live Step-by-Step)
+                <h3 className="font-bold text-slate-800">
+                  Lokasi Pengiriman Toko
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -327,7 +314,7 @@ export default function AdminOriginPage() {
 
                   {/* Step 2: City Dropdown */}
                   <div>
-                    <label className="block text-slate-600 font-semibold mb-1">2. Pilih Kota / Kabupaten (RajaOngkir) *</label>
+                    <label className="block text-slate-600 font-semibold mb-1">2. Pilih Kota / Kabupaten *</label>
                     <select
                       value={selectedCityId}
                       onChange={(e) => handleCityChange(Number(e.target.value))}
@@ -336,7 +323,7 @@ export default function AdminOriginPage() {
                     >
                       {cities.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} (City ID: {c.id})
+                          {c.name}
                         </option>
                       ))}
                     </select>
@@ -405,15 +392,12 @@ export default function AdminOriginPage() {
 
               {/* Summary Card */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1 text-slate-700">
-                <span className="font-bold text-blue-700 block">📌 Ringkasan Alamat Asal Pengiriman:</span>
+                <span className="font-bold text-blue-700 block">Ringkasan Alamat Asal Pengiriman:</span>
                 <p className="font-semibold text-slate-900">
                   {shopName} — {senderName} ({senderPhone})
                 </p>
                 <p className="text-slate-600">
                   {addressDetail}, Kel. {selectedSubdistrictName}, Kec. {selectedDistrictName}, {selectedCityName}, Prov. {selectedProvinceName} ({postalCode})
-                </p>
-                <p className="font-mono text-blue-700 font-bold pt-1">
-                  RajaOngkir Origin City ID: {selectedCityId}
                 </p>
               </div>
 
@@ -422,7 +406,7 @@ export default function AdminOriginPage() {
                 disabled={saving}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-all text-sm disabled:opacity-50"
               >
-                {saving ? "Menyimpan Alamat Asal..." : "💾 SIMPAN PENGATURAN ALAMAT ASAL"}
+                {saving ? "Menyimpan Alamat Asal..." : "SIMPAN PENGATURAN ALAMAT ASAL"}
               </button>
             </form>
           )}
