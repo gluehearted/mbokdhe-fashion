@@ -45,34 +45,77 @@ export async function GET(request: Request) {
   }
 }
 
+async function generateAutoProductId(shopOrigin: string): Promise<string> {
+  const cleanShop = shopOrigin.trim().replace(/[()]/g, "");
+  const words = cleanShop.split(/\s+/).filter(Boolean);
+  let prefix = "TAS";
+  if (words.length >= 2) {
+    prefix = words.map((w) => w[0].toUpperCase()).join("").slice(0, 4);
+  } else if (cleanShop.length >= 3) {
+    prefix = cleanShop.slice(0, 3).toUpperCase();
+  } else if (cleanShop.length > 0) {
+    prefix = cleanShop.toUpperCase();
+  }
+
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const dateCode = `${yy}${mm}${dd}`;
+
+  const datePrefix = `${prefix}-${dateCode}-`;
+  const existingCount = await prisma.product.count({
+    where: {
+      id: {
+        startsWith: datePrefix,
+      },
+    },
+  });
+
+  let seq = existingCount + 1;
+  let candidate = `${datePrefix}${String(seq).padStart(2, "0")}`;
+
+  while (await prisma.product.findUnique({ where: { id: candidate } })) {
+    seq++;
+    candidate = `${datePrefix}${String(seq).padStart(2, "0")}`;
+  }
+
+  return candidate;
+}
+
 // POST /api/products (multipart/form-data)
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
 
-    const id = formData.get("id") as string;
-    const shopOrigin = formData.get("shopOrigin") as string;
+    let id = (formData.get("id") as string || "").trim();
+    const shopOrigin = (formData.get("shopOrigin") as string || "").trim();
     const capitalPrice = parseInt((formData.get("capitalPrice") as string) || "0", 10);
     const price = parseInt((formData.get("price") as string) || "0", 10);
     const file = formData.get("file") as File | null;
 
-    if (!id || !shopOrigin || isNaN(price)) {
+    if (!shopOrigin || isNaN(price) || price <= 0) {
       return NextResponse.json(
-        { success: false, error: "ID, shopOrigin, dan price (harga jual) wajib diisi." },
+        { success: false, error: "shopOrigin (Toko Asal) dan price (harga jual) wajib diisi." },
         { status: 400 }
       );
     }
 
-    // Check if product ID already exists
-    const existing = await prisma.product.findUnique({
-      where: { id },
-    });
+    // Auto-generate ID if not provided
+    if (!id) {
+      id = await generateAutoProductId(shopOrigin);
+    } else {
+      // Check if manually provided product ID already exists
+      const existing = await prisma.product.findUnique({
+        where: { id },
+      });
 
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: `Produk dengan ID ${id} sudah ada dalam database.` },
-        { status: 400 }
-      );
+      if (existing) {
+        return NextResponse.json(
+          { success: false, error: `Produk dengan ID ${id} sudah ada dalam database.` },
+          { status: 400 }
+        );
+      }
     }
 
     let photoUrl = "/uploads/placeholder.jpg";

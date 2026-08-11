@@ -385,18 +385,16 @@ export default function ProductsPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">ID Tas (Custom ID) *</label>
-                <input
-                  type="text"
-                  value={id}
-                  onChange={(e) => setId(e.target.value)}
-                  disabled={!!editingProduct}
-                  placeholder="Misal: T01, H14, B42"
-                  required
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono uppercase"
-                />
-              </div>
+              {editingProduct ? (
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-700 flex justify-between items-center">
+                  <span>ID Tas:</span>
+                  <span>#{editingProduct.id}</span>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs font-medium text-blue-800 flex items-center gap-2">
+                  <span>ID Tas akan dibuat otomatis (Inisial Toko + Tanggal + Urutan)</span>
+                </div>
+              )}
 
               <div>
                 <div className="flex justify-between items-center mb-1">
