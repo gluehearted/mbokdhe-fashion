@@ -42,6 +42,21 @@ interface ShopConfig {
   district: string;
 }
 
+const AVAILABLE_COURIERS = [
+  { code: "jne", label: "JNE" },
+  { code: "sicepat", label: "SiCepat" },
+  { code: "jnt", label: "J&T Express" },
+  { code: "tiki", label: "TIKI" },
+  { code: "pos", label: "POS Indonesia" },
+  { code: "ide", label: "IDExpress" },
+  { code: "ninja", label: "Ninja Express" },
+  { code: "sap", label: "SAP Express" },
+  { code: "wahana", label: "Wahana" },
+  { code: "sentral", label: "Sentral Cargo" },
+  { code: "lion", label: "Lion Parcel" },
+  { code: "rex", label: "REX Asia" },
+];
+
 export default function NewOrderPage() {
   const router = useRouter();
 
@@ -211,6 +226,7 @@ export default function NewOrderPage() {
 
   const totalTagihan = totalBarangPrice + (selectedService?.cost || 0);
   const parsedWeightNum = parseInt(manualWeightGramInput, 10);
+  const currentCourierLabel = AVAILABLE_COURIERS.find((c) => c.code === selectedCourier)?.label || selectedCourier.toUpperCase();
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
@@ -348,10 +364,10 @@ export default function NewOrderPage() {
               {/* Step 3: Input Bobot Berat Paket (Gram) & Hitung Ongkir */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600">local_shipping</span> 3. Input Bobot Paket & Hitung Ongkir
+                  <span className="material-symbols-outlined text-blue-600">local_shipping</span> 3. Input Bobot Paket & Pilih Kurir (Komerce District V1)
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-4 text-xs">
                   <div>
                     <label className="block text-slate-600 font-semibold mb-1">Total Bobot Berat Paket (Gram) *</label>
                     <input
@@ -371,20 +387,20 @@ export default function NewOrderPage() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 font-semibold mb-1">Pilih Kurir Ekspedisi</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["jne", "pos", "tiki"].map((c) => (
+                    <label className="block text-slate-600 font-semibold mb-1.5">Pilih Kurir Ekspedisi Terdaftar (12 Kurir Domestic)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {AVAILABLE_COURIERS.map((c) => (
                         <button
-                          key={c}
+                          key={c.code}
                           type="button"
-                          onClick={() => setSelectedCourier(c)}
-                          className={`py-2 rounded-lg border font-bold uppercase ${
-                            selectedCourier === c
+                          onClick={() => setSelectedCourier(c.code)}
+                          className={`py-2 px-2.5 rounded-lg border text-xs font-bold transition-all text-center ${
+                            selectedCourier === c.code
                               ? "bg-blue-600 text-white border-blue-600 shadow-sm"
                               : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                           }`}
                         >
-                          {c}
+                          {c.label}
                         </button>
                       ))}
                     </div>
@@ -398,10 +414,10 @@ export default function NewOrderPage() {
                   className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-blue-700 font-bold border border-blue-200 rounded-lg transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2"
                 >
                   {isCalculating
-                    ? "Menghitung Ongkir..."
+                    ? "Menghitung Ongkir (District Domestic V1)..."
                     : !isNaN(parsedWeightNum) && parsedWeightNum > 0
-                    ? `⚡ Hitung Ongkir (${selectedCourier.toUpperCase()} - ${(parsedWeightNum / 1000).toFixed(1)} kg)`
-                    : `⚡ Hitung Ongkir (${selectedCourier.toUpperCase()})`}
+                    ? `⚡ Hitung Tarif Ongkir (${currentCourierLabel} - ${(parsedWeightNum / 1000).toFixed(1)} kg)`
+                    : `⚡ Hitung Tarif Ongkir (${currentCourierLabel})`}
                 </button>
 
                 {servicesList.length > 0 && (
@@ -427,7 +443,10 @@ export default function NewOrderPage() {
                           <span className="font-bold text-blue-700">{svc.service}</span>
                           <span className="text-slate-500">({svc.description})</span>
                         </div>
-                        <span className="font-bold text-slate-900">Rp {svc.cost.toLocaleString("id-ID")}</span>
+                        <div className="text-right">
+                          <span className="font-bold text-slate-900 block">Rp {svc.cost.toLocaleString("id-ID")}</span>
+                          <span className="text-[10px] text-slate-500 font-mono block">Estimasi: {svc.etd}</span>
+                        </div>
                       </label>
                     ))}
                   </div>
