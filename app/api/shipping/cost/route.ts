@@ -55,51 +55,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Try Komerce District Domestic Cost Calculation (V1 Endpoint: /api/v1/calculate/district/domestic-cost)
-    try {
-      const komerceBody = new URLSearchParams();
-      komerceBody.append("origin", String(origin));
-      komerceBody.append("destination", String(destination));
-      komerceBody.append("weight", String(weight));
-      komerceBody.append("courier", String(courier).toLowerCase());
-
-      const komerceRes = await fetch("https://rajaongkir.komerce.id/api/v1/calculate/district/domestic-cost", {
-        method: "POST",
-        headers: {
-          key: apiKey,
-          accept: "application/json",
-          "content-type": "application/x-www-form-urlencoded",
-        },
-        body: komerceBody.toString(),
-        cache: "no-store",
-      });
-
-      if (komerceRes.ok) {
-        const komerceData = await komerceRes.json();
-        const rawList = komerceData.data || komerceData.results || [];
-
-        if (Array.isArray(rawList) && rawList.length > 0) {
-          const services = rawList.map((item: any) => ({
-            service: item.service || item.code || item.service_name || "REG",
-            description: item.description || item.name || item.service_description || "Layanan Pengiriman",
-            cost: typeof item.cost === "number" ? item.cost : (item.cost?.[0]?.value || item.price || 0),
-            etd: item.etd ? String(item.etd) : (item.etd_day ? `${item.etd_day} Hari` : "1-3 Hari"),
-          }));
-
-          return NextResponse.json({
-            success: true,
-            source: "komerce-district",
-            origin: { city_name: "Sukaraja (Kab. Bogor)" },
-            destination: { city_name: "Tujuan" },
-            services,
-          });
-        }
-      }
-    } catch {
-      // Ignore and fallback
-    }
-
-    // 2. Try Komerce Domestic Cost Calculation (/api/v1/calculate/domestic-cost)
+    // 1. Komerce City-Level Domestic Cost Calculation (/api/v1/calculate/domestic-cost)
     try {
       const komerceBody = new URLSearchParams();
       komerceBody.append("origin", String(origin));
@@ -123,24 +79,95 @@ export async function POST(request: Request) {
         const rawList = komerceData.data || komerceData.results || [];
 
         if (Array.isArray(rawList) && rawList.length > 0) {
-          const services = rawList.map((item: any) => ({
-            service: item.service || item.code || "REG",
-            description: item.description || item.name || "Layanan Pengiriman",
-            cost: typeof item.cost === "number" ? item.cost : (item.cost?.[0]?.value || 0),
-            etd: item.etd ? String(item.etd) : "1-3 Hari",
-          }));
+          const mappedServices = rawList.map((item: any) => {
+            const svcCode = item.service || item.code || "REG";
+            const costVal = typeof item.cost === "number" ? item.cost : (item.cost?.[0]?.value || item.price || 0);
+            const isCargo = svcCode.toLowerCase().includes("jtr") || svcCode.toLowerCase().includes("cargo") || svcCode.toLowerCase().includes("trucking");
+
+            return {
+              service: svcCode,
+              description: isCargo ? `${item.description || item.name} (Min. Cargo)` : (item.description || item.name || "Layanan Reguler"),
+              cost: costVal,
+              etd: item.etd ? String(item.etd) : "1-3 Hari",
+              isCargo,
+            };
+          });
+
+          // Sort so regular services (REG/EZ) come FIRST, and expensive cargo/JTR comes last
+          mappedServices.sort((a: any, b: any) => {
+            if (a.isCargo && !b.isCargo) return 1;
+            if (!a.isCargo && b.isCargo) return -1;
+            return a.cost - b.cost;
+          });
 
           return NextResponse.json({
             success: true,
             source: "komerce",
             origin: { city_name: "Sukaraja (Kab. Bogor)" },
             destination: { city_name: "Tujuan" },
-            services,
+            services: mappedServices,
           });
         }
       }
     } catch {
       // Fallback
+    }
+
+    // 2. Try Komerce District Domestic Cost Calculation (/api/v1/calculate/district/domestic-cost)
+    try {
+      const komerceBody = new URLSearchParams();
+      komerceBody.append("origin", String(origin));
+      komerceBody.append("destination", String(destination));
+      komerceBody.append("weight", String(weight));
+      komerceBody.append("courier", String(courier).toLowerCase());
+
+      const komerceRes = await fetch("https://rajaongkir.komerce.id/api/v1/calculate/district/domestic-cost", {
+        method: "POST",
+        headers: {
+          key: apiKey,
+          accept: "application/json",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: komerceBody.toString(),
+        cache: "no-store",
+      });
+
+      if (komerceRes.ok) {
+        const komerceData = await komerceRes.json();
+        const rawList = komerceData.data || komerceData.results || [];
+
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          const mappedServices = rawList.map((item: any) => {
+            const svcCode = item.service || item.code || "REG";
+            const costVal = typeof item.cost === "number" ? item.cost : (item.cost?.[0]?.value || item.price || 0);
+            const isCargo = svcCode.toLowerCase().includes("jtr") || svcCode.toLowerCase().includes("cargo") || svcCode.toLowerCase().includes("trucking");
+
+            return {
+              service: svcCode,
+              description: isCargo ? `${item.description || item.name} (Min. Cargo)` : (item.description || item.name || "Layanan Reguler"),
+              cost: costVal,
+              etd: item.etd ? String(item.etd) : "1-3 Hari",
+              isCargo,
+            };
+          });
+
+          mappedServices.sort((a: any, b: any) => {
+            if (a.isCargo && !b.isCargo) return 1;
+            if (!a.isCargo && b.isCargo) return -1;
+            return a.cost - b.cost;
+          });
+
+          return NextResponse.json({
+            success: true,
+            source: "komerce-district",
+            origin: { city_name: "Sukaraja (Kab. Bogor)" },
+            destination: { city_name: "Tujuan" },
+            services: mappedServices,
+          });
+        }
+      }
+    } catch {
+      // Ignore
     }
 
     // 3. Fallback to Standard RajaOngkir Starter API
@@ -195,6 +222,8 @@ export async function POST(request: Request) {
       cost: item.cost?.[0]?.value || 0,
       etd: item.cost?.[0]?.etd || "1-3 Hari",
     }));
+
+    services.sort((a: any, b: any) => a.cost - b.cost);
 
     return NextResponse.json({
       success: true,
