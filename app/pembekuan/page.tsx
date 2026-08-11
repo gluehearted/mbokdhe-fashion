@@ -121,10 +121,11 @@ export default function ProfitReportPage() {
       });
 
       if (timeframe === "WEEKLY") {
-        const startOfYear = new Date(dateObj.getFullYear(), 0, 1);
-        const pastDaysOfYear = (dateObj.getTime() - startOfYear.getTime()) / 86400000;
-        const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
-        groupKey = `Minggu Ke-${weekNum} (${dateObj.toLocaleDateString("id-ID", { month: "short", year: "numeric" })})`;
+        const day = dateObj.getDate();
+        const firstDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1).getDay();
+        const weekOfMonth = Math.ceil((day + firstDay) / 7);
+        const monthYear = dateObj.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+        groupKey = `Minggu Ke-${weekOfMonth} (${monthYear})`;
       } else if (timeframe === "MONTHLY") {
         groupKey = dateObj.toLocaleDateString("id-ID", {
           month: "long",
