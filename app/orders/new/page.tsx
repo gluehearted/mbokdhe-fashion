@@ -55,10 +55,10 @@ export default function NewOrderPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [orderStatus, setOrderStatus] = useState("Keep");
-  const [dpAmountInput, setDpAmountInput] = useState(0);
+  const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
-  // Manual Package Weight Input (Gram) - Default 1000g / 1kg
-  const [manualWeightGram, setManualWeightGram] = useState<number>(1000);
+  // Manual Package Weight Input (Gram) - Default null / empty string
+  const [manualWeightGramInput, setManualWeightGramInput] = useState<string>("");
 
   // RajaOngkir State
   const [selectedCourier, setSelectedCourier] = useState("jne");
@@ -115,8 +115,10 @@ export default function NewOrderPage() {
       return;
     }
 
-    if (!manualWeightGram || manualWeightGram <= 0) {
-      setErrorMessage("Masukkan bobot berat paket (gram) yang valid.");
+    const weightVal = parseInt(manualWeightGramInput, 10);
+
+    if (isNaN(weightVal) || weightVal <= 0) {
+      setErrorMessage("Masukkan total bobot berat paket (gram) yang valid.");
       return;
     }
 
@@ -134,7 +136,7 @@ export default function NewOrderPage() {
         body: JSON.stringify({
           origin: originId,
           destination: selectedCustomer.cityId,
-          weight: manualWeightGram,
+          weight: weightVal,
           courier: selectedCourier,
         }),
       });
@@ -171,6 +173,9 @@ export default function NewOrderPage() {
       return;
     }
 
+    const weightVal = parseInt(manualWeightGramInput, 10) || 1000;
+    const parsedDp = parseInt(dpAmountInput, 10) || 0;
+
     setSubmitting(true);
     setErrorMessage(null);
 
@@ -181,12 +186,12 @@ export default function NewOrderPage() {
         body: JSON.stringify({
           customerId: selectedCustomerId,
           productIds: selectedProductIds,
-          status: dpAmountInput > 0 ? "DP" : orderStatus,
+          status: parsedDp > 0 ? "DP" : orderStatus,
           shippingCourier: selectedCourier.toUpperCase(),
           shippingService: selectedService.service,
           shippingCost: selectedService.cost,
-          totalWeightGram: manualWeightGram,
-          dpAmount: dpAmountInput,
+          totalWeightGram: weightVal,
+          dpAmount: parsedDp,
           totalPrice: totalBarangPrice + selectedService.cost,
         }),
       });
@@ -205,6 +210,7 @@ export default function NewOrderPage() {
   };
 
   const totalTagihan = totalBarangPrice + (selectedService?.cost || 0);
+  const parsedWeightNum = parseInt(manualWeightGramInput, 10);
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
@@ -350,16 +356,18 @@ export default function NewOrderPage() {
                     <label className="block text-slate-600 font-semibold mb-1">Total Bobot Berat Paket (Gram) *</label>
                     <input
                       type="number"
-                      value={manualWeightGram}
-                      onChange={(e) => setManualWeightGram(Number(e.target.value))}
-                      placeholder="Contoh: 1000, 2500"
+                      value={manualWeightGramInput}
+                      onChange={(e) => setManualWeightGramInput(e.target.value)}
+                      placeholder="Misal: 1000, 2500"
                       required
                       min={100}
                       className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono text-sm"
                     />
-                    <span className="text-[11px] text-slate-500 font-mono block mt-1">
-                      = {(manualWeightGram / 1000).toFixed(1)} kg
-                    </span>
+                    {!isNaN(parsedWeightNum) && parsedWeightNum > 0 && (
+                      <span className="text-[11px] text-slate-500 font-mono block mt-1">
+                        = {(parsedWeightNum / 1000).toFixed(1)} kg
+                      </span>
+                    )}
                   </div>
 
                   <div>
@@ -389,7 +397,11 @@ export default function NewOrderPage() {
                   disabled={isCalculating}
                   className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-blue-700 font-bold border border-blue-200 rounded-lg transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2"
                 >
-                  {isCalculating ? "Menghitung Ongkir..." : `⚡ Hitung Ongkir (${selectedCourier.toUpperCase()} - ${(manualWeightGram / 1000).toFixed(1)} kg)`}
+                  {isCalculating
+                    ? "Menghitung Ongkir..."
+                    : !isNaN(parsedWeightNum) && parsedWeightNum > 0
+                    ? `⚡ Hitung Ongkir (${selectedCourier.toUpperCase()} - ${(parsedWeightNum / 1000).toFixed(1)} kg)`
+                    : `⚡ Hitung Ongkir (${selectedCourier.toUpperCase()})`}
                 </button>
 
                 {servicesList.length > 0 && (
@@ -451,8 +463,8 @@ export default function NewOrderPage() {
                   <input
                     type="number"
                     value={dpAmountInput}
-                    onChange={(e) => setDpAmountInput(Number(e.target.value))}
-                    placeholder="0"
+                    onChange={(e) => setDpAmountInput(e.target.value)}
+                    placeholder="Misal: 50000"
                     className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm"
                   />
                 </div>
