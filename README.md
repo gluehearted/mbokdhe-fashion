@@ -8,16 +8,16 @@ Built with **Next.js 16**, **Prisma** (SQLite), **Tailwind CSS 4**, dan integras
 
 ## ✨ Fitur Utama
 
-| Modul | Halaman | Deskripsi |
-|---|---|---|
-| **Dashboard** | `/` | Ringkasan statistik bisnis (total produk, pesanan, pelanggan, omzet) |
-| **Katalog Produk** | `/products` | CRUD produk tas dengan foto, harga modal, harga jual, toko asal, dan estimasi profit margin |
-| **Kelola Toko** | `/shops` | Manajemen daftar supplier/toko asal produk |
-| **CRM Pelanggan** | `/customers` | Database pelanggan dengan alamat lengkap (provinsi, kota, kecamatan, kelurahan, kode pos) |
-| **Pipeline Pesanan** | `/orders` | Tabel pesanan dengan filter status, input resi pengiriman, dan perubahan status pipeline |
-| **Checkout Admin** | `/orders/new` | Buat pesanan baru — pilih pelanggan, pilih produk, hitung ongkir RajaOngkir, input DP |
-| **Pembekuan DP** | `/pembekuan` | Monitor dana DP yang dibekukan, aging warning >3 hari, pelunasan, dan hanguskan (forfeit) DP |
-| **Alamat Asal Toko** | `/origin` | Konfigurasi alamat pengirim toko untuk kalkulasi ongkir |
+| Modul                      | Halaman         | Deskripsi                                                                                    |
+| -------------------------- | --------------- | -------------------------------------------------------------------------------------------- |
+| **Dashboard**        | `/`           | Ringkasan statistik bisnis (total produk, pesanan, pelanggan, omzet)                         |
+| **Katalog Produk**   | `/products`   | CRUD produk tas dengan foto, harga modal, harga jual, toko asal, dan estimasi profit margin  |
+| **Kelola Toko**      | `/shops`      | Manajemen daftar supplier/toko asal produk                                                   |
+| **CRM Pelanggan**    | `/customers`  | Database pelanggan dengan alamat lengkap (provinsi, kota, kecamatan, kelurahan, kode pos)    |
+| **Pipeline Pesanan** | `/orders`     | Tabel pesanan dengan filter status, input resi pengiriman, dan perubahan status pipeline     |
+| **Checkout Admin**   | `/orders/new` | Buat pesanan baru — pilih pelanggan, pilih produk, hitung ongkir RajaOngkir, input DP       |
+| **Pembekuan DP**     | `/pembekuan`  | Monitor dana DP yang dibekukan, aging warning >3 hari, pelunasan, dan hanguskan (forfeit) DP |
+| **Alamat Asal Toko** | `/origin`     | Konfigurasi alamat pengirim toko untuk kalkulasi ongkir                                      |
 
 ### 🚚 Integrasi Pengiriman (12 Kurir Domestik)
 
@@ -97,9 +97,11 @@ npx prisma db push
 Perintah `db push` akan membuat file `prisma/dev.db` secara otomatis beserta semua tabel yang diperlukan.
 
 > **Opsional:** Jika ingin melihat/mengelola data secara visual:
+>
 > ```bash
 > npx prisma studio
 > ```
+>
 > Prisma Studio akan terbuka di `http://localhost:5555`.
 
 ### 5. Jalankan Development Server
@@ -158,13 +160,13 @@ mbokdhe-fashion/
 
 Aplikasi menggunakan **SQLite** dengan 5 model utama:
 
-| Model | Deskripsi | Field Kunci |
-|---|---|---|
-| **ShopConfig** | Konfigurasi alamat asal toko pengirim | `shopName`, `originCityId`, `province`, `cityName`, `district` |
-| **Shop** | Daftar toko/supplier asal produk | `name` (unique) |
-| **Customer** | Database pelanggan | `name`, `whatsapp` (unique), `cityId`, `province`, `district`, `addressDetail` |
-| **Order** | Pesanan / transaksi | `status`, `shippingCourier`, `shippingCost`, `totalWeightGram`, `dpAmount`, `trackingNo`, `totalPrice` |
-| **Product** | Katalog produk tas | `id` (manual), `shopOrigin`, `capitalPrice`, `price`, `status`, `photoUrl` |
+| Model                | Deskripsi                             | Field Kunci                                                                                                          |
+| -------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **ShopConfig** | Konfigurasi alamat asal toko pengirim | `shopName`, `originCityId`, `province`, `cityName`, `district`                                             |
+| **Shop**       | Daftar toko/supplier asal produk      | `name` (unique)                                                                                                    |
+| **Customer**   | Database pelanggan                    | `name`, `whatsapp` (unique), `cityId`, `province`, `district`, `addressDetail`                           |
+| **Order**      | Pesanan / transaksi                   | `status`, `shippingCourier`, `shippingCost`, `totalWeightGram`, `dpAmount`, `trackingNo`, `totalPrice` |
+| **Product**    | Katalog produk tas                    | `id` (manual), `shopOrigin`, `capitalPrice`, `price`, `status`, `photoUrl`                               |
 
 ### Status Flow Pesanan
 
@@ -185,53 +187,59 @@ Available → Booked (terikat order) → Sold (order shipped)
 ## 🔌 API Endpoints
 
 ### Products
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `GET` | `/api/products` | List semua produk (filter: `?status=Available`) |
-| `POST` | `/api/products` | Tambah produk baru (multipart/form-data + foto) |
-| `PATCH` | `/api/products/[id]` | Update produk |
-| `DELETE` | `/api/products/[id]` | Hapus produk |
+
+| Method     | Endpoint               | Deskripsi                                        |
+| ---------- | ---------------------- | ------------------------------------------------ |
+| `GET`    | `/api/products`      | List semua produk (filter:`?status=Available`) |
+| `POST`   | `/api/products`      | Tambah produk baru (multipart/form-data + foto)  |
+| `PATCH`  | `/api/products/[id]` | Update produk                                    |
+| `DELETE` | `/api/products/[id]` | Hapus produk                                     |
 
 ### Customers
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `GET` | `/api/customers` | List semua pelanggan |
-| `POST` | `/api/customers` | Tambah pelanggan baru |
-| `PATCH` | `/api/customers/[id]` | Update pelanggan |
-| `DELETE` | `/api/customers/[id]` | Hapus pelanggan |
+
+| Method     | Endpoint                | Deskripsi             |
+| ---------- | ----------------------- | --------------------- |
+| `GET`    | `/api/customers`      | List semua pelanggan  |
+| `POST`   | `/api/customers`      | Tambah pelanggan baru |
+| `PATCH`  | `/api/customers/[id]` | Update pelanggan      |
+| `DELETE` | `/api/customers/[id]` | Hapus pelanggan       |
 
 ### Orders
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `GET` | `/api/orders` | List semua pesanan (include customer & products) |
-| `POST` | `/api/orders` | Buat pesanan baru |
-| `PATCH` | `/api/orders/[id]` | Update status, resi, ongkir, DP |
-| `DELETE` | `/api/orders/[id]` | Hapus pesanan |
-| `POST` | `/api/orders/[id]/dp` | Catat pembayaran DP |
-| `POST` | `/api/orders/[id]/settle` | Pelunasan order |
-| `POST` | `/api/orders/[id]/forfeit` | Hanguskan DP |
+
+| Method     | Endpoint                     | Deskripsi                                        |
+| ---------- | ---------------------------- | ------------------------------------------------ |
+| `GET`    | `/api/orders`              | List semua pesanan (include customer & products) |
+| `POST`   | `/api/orders`              | Buat pesanan baru                                |
+| `PATCH`  | `/api/orders/[id]`         | Update status, resi, ongkir, DP                  |
+| `DELETE` | `/api/orders/[id]`         | Hapus pesanan                                    |
+| `POST`   | `/api/orders/[id]/dp`      | Catat pembayaran DP                              |
+| `POST`   | `/api/orders/[id]/settle`  | Pelunasan order                                  |
+| `POST`   | `/api/orders/[id]/forfeit` | Hanguskan DP                                     |
 
 ### Shops
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `GET` | `/api/shops` | List semua toko/supplier |
-| `POST` | `/api/shops` | Tambah toko baru |
-| `PATCH` | `/api/shops/[id]` | Update nama toko |
-| `DELETE` | `/api/shops/[id]` | Hapus toko |
+
+| Method     | Endpoint            | Deskripsi                |
+| ---------- | ------------------- | ------------------------ |
+| `GET`    | `/api/shops`      | List semua toko/supplier |
+| `POST`   | `/api/shops`      | Tambah toko baru         |
+| `PATCH`  | `/api/shops/[id]` | Update nama toko         |
+| `DELETE` | `/api/shops/[id]` | Hapus toko               |
 
 ### Shipping (RajaOngkir)
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `POST` | `/api/shipping/cost` | Hitung ongkos kirim domestik |
-| `GET` | `/api/shipping/location/provinces` | List provinsi |
-| `GET` | `/api/shipping/location/cities` | List kota/kabupaten |
-| `GET` | `/api/shipping/location/districts` | List kecamatan |
-| `GET` | `/api/shipping/location/subdistricts` | List kelurahan |
+
+| Method   | Endpoint                                | Deskripsi                    |
+| -------- | --------------------------------------- | ---------------------------- |
+| `POST` | `/api/shipping/cost`                  | Hitung ongkos kirim domestik |
+| `GET`  | `/api/shipping/location/provinces`    | List provinsi                |
+| `GET`  | `/api/shipping/location/cities`       | List kota/kabupaten          |
+| `GET`  | `/api/shipping/location/districts`    | List kecamatan               |
+| `GET`  | `/api/shipping/location/subdistricts` | List kelurahan               |
 
 ### Config
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `GET` | `/api/config` | Ambil konfigurasi toko |
+
+| Method    | Endpoint        | Deskripsi               |
+| --------- | --------------- | ----------------------- |
+| `GET`   | `/api/config` | Ambil konfigurasi toko  |
 | `PATCH` | `/api/config` | Update konfigurasi toko |
 
 ---
@@ -250,19 +258,25 @@ npm run lint         # Jalankan ESLint
 ## ⚠️ Troubleshooting
 
 ### Error: "The column X does not exist in the current database"
+
 Database schema belum sinkron. Jalankan:
+
 ```bash
 npx prisma db push
 ```
+
 Lalu restart dev server (`Ctrl+C` → `npm run dev`).
 
 ### Error: "API Key RajaOngkir belum diisi"
+
 Pastikan file `.env` sudah dibuat dan `RAJAONGKIR_API_KEY` terisi dengan key valid dari [rajaongkir.komerce.id](https://rajaongkir.komerce.id).
 
 ### Ongkir terlalu mahal / tidak sesuai
+
 Pastikan `originCityId` di halaman **Alamat Asal Toko** (`/origin`) sudah benar. Default: `54` (Kab. Bogor). Sistem memprioritaskan endpoint city-level (`/api/v1/calculate/domestic-cost`) yang lebih akurat untuk paket kecil.
 
 ### Foto produk tidak muncul
+
 Pastikan folder `public/uploads/` ada dan file gambar sudah ter-upload. Next.js menyajikan file statis dari folder `public/`.
 
 ---
