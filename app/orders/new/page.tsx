@@ -282,7 +282,7 @@ export default function NewOrderPage() {
                     <span className="material-symbols-outlined text-blue-600">person</span> 1. Pilih Pelanggan Tujuan
                   </h3>
                   <Link
-                    href="/customers"
+                    href="/customers?action=new"
                     className="text-xs text-blue-600 font-bold hover:underline"
                   >
                     + Tambah Pelanggan Baru

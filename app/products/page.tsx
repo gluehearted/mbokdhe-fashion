@@ -32,6 +32,9 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  // Detail Photo Lightbox Modal State
+  const [viewingPhotoProduct, setViewingPhotoProduct] = useState<Product | null>(null);
+
   // Form Fields (Initial state empty / null)
   const [id, setId] = useState("");
   const [shopOrigin, setShopOrigin] = useState("");
@@ -160,7 +163,9 @@ export default function ProductsPage() {
 
     try {
       const formData = new FormData();
-      formData.append("id", id);
+      if (editingProduct) {
+        formData.append("id", id);
+      }
       formData.append("shopOrigin", shopOrigin.trim());
       formData.append("capitalPrice", String(capitalVal));
       formData.append("price", String(priceVal));
@@ -303,15 +308,31 @@ export default function ProductsPage() {
                     return (
                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center">
-                          <div className="w-12 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center mx-auto">
+                          <button
+                            type="button"
+                            onClick={() => setViewingPhotoProduct(p)}
+                            className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center mx-auto hover:opacity-85 transition-all active:scale-95 group shadow-sm"
+                            title="Klik untuk lihat detail foto produk"
+                          >
                             {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
                               <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                             ) : (
                               <span className="material-symbols-outlined text-slate-400 text-base">local_mall</span>
                             )}
-                          </div>
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                              <span className="material-symbols-outlined text-sm">visibility</span>
+                            </div>
+                          </button>
                         </td>
-                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">#{p.id}</td>
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">
+                          <button
+                            type="button"
+                            onClick={() => setViewingPhotoProduct(p)}
+                            className="hover:underline"
+                          >
+                            #{p.id}
+                          </button>
+                        </td>
                         <td className="p-4 text-center font-bold text-slate-900">
                           <span className="inline-flex items-center gap-1.5 justify-center">
                             <span className="material-symbols-outlined text-blue-600 text-sm">storefront</span>
@@ -344,6 +365,11 @@ export default function ProductsPage() {
                           <TableActionsMenu
                             items={[
                               {
+                                label: "Lihat Detail Foto",
+                                icon: "visibility",
+                                onClick: () => setViewingPhotoProduct(p),
+                              },
+                              {
                                 label: "Edit Produk",
                                 icon: "edit",
                                 onClick: () => openEditModal(p),
@@ -370,6 +396,105 @@ export default function ProductsPage() {
 
       </div>
 
+      {/* Modal Detail Foto Produk (Lightbox) */}
+      {viewingPhotoProduct && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setViewingPhotoProduct(null)}
+        >
+          <div
+            className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span>Detail Foto Tas</span>
+                  <span className="font-mono text-blue-600 text-sm">#{viewingPhotoProduct.id}</span>
+                </h3>
+                <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <span className="material-symbols-outlined text-sm text-blue-600">storefront</span>
+                  <span>{viewingPhotoProduct.shopOrigin}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingPhotoProduct(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center font-bold text-sm transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Product Photo Lightbox Box */}
+            <div className="w-full h-72 sm:h-80 bg-slate-900 rounded-xl overflow-hidden relative border border-slate-200 flex items-center justify-center shadow-inner">
+              {viewingPhotoProduct.photoUrl && viewingPhotoProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
+                <Image
+                  src={viewingPhotoProduct.photoUrl}
+                  alt={viewingPhotoProduct.id}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 500px"
+                  className="object-contain"
+                  priority
+                />
+              ) : (
+                <div className="text-center space-y-2 text-slate-400">
+                  <span className="material-symbols-outlined text-5xl">hide_image</span>
+                  <p className="text-xs">Foto produk belum di-upload</p>
+                </div>
+              )}
+            </div>
+
+            {/* Financial & Status Summary Cards */}
+            <div className="grid grid-cols-3 gap-2.5 text-xs text-center">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                <span className="text-[10px] text-slate-500 uppercase font-semibold block mb-0.5">Harga Modal</span>
+                <span className="font-mono font-bold text-slate-700">
+                  Rp {(viewingPhotoProduct.capitalPrice || 0).toLocaleString("id-ID")}
+                </span>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+                <span className="text-[10px] text-slate-500 uppercase font-semibold block mb-0.5">Harga Jual</span>
+                <span className="font-mono font-bold text-slate-900">
+                  Rp {viewingPhotoProduct.price.toLocaleString("id-ID")}
+                </span>
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5">
+                <span className="text-[10px] text-emerald-700 uppercase font-semibold block mb-0.5">Profit Margin</span>
+                <span className="font-mono font-bold text-emerald-700">
+                  +Rp {(viewingPhotoProduct.price - (viewingPhotoProduct.capitalPrice || 0)).toLocaleString("id-ID")}
+                </span>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex gap-3 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setViewingPhotoProduct(null)}
+                className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 text-xs transition-colors"
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                disabled={viewingPhotoProduct.status === "Sold"}
+                onClick={() => {
+                  const p = viewingPhotoProduct;
+                  setViewingPhotoProduct(null);
+                  openEditModal(p);
+                }}
+                className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-40"
+              >
+                ✏️ Edit Produk Ini
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Tambah/Edit Produk Tas */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -392,6 +517,7 @@ export default function ProductsPage() {
                 </div>
               ) : (
                 <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs font-medium text-blue-800 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-blue-600">auto_awesome</span>
                   <span>ID Tas akan dibuat otomatis (Inisial Toko + Tanggal + Urutan)</span>
                 </div>
               )}

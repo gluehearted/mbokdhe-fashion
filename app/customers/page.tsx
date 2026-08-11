@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { INDONESIA_LOCATIONS } from "@/lib/indonesia-locations";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 
@@ -25,7 +26,8 @@ interface ApiLocationItem {
   zip_code?: string;
 }
 
-export default function CustomersPage() {
+function CustomersPageContent() {
+  const searchParams = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -166,6 +168,12 @@ export default function CustomersPage() {
     setIsModalOpen(true);
     loadProvinces();
   };
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new" || searchParams.get("new") === "true") {
+      openCreateModal();
+    }
+  }, [searchParams]);
 
   const openEditModal = (c: Customer) => {
     setEditingCustomer(c);
@@ -563,5 +571,13 @@ export default function CustomersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-slate-500 text-sm">Loading pelanggan...</div>}>
+      <CustomersPageContent />
+    </Suspense>
   );
 }
