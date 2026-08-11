@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       customerId,
       customerData, // { name, whatsapp, addressDetail, cityId } if new
       productIds, // string array e.g. ["T01", "B12"]
+      customPrices, // Record<string, number> custom selling prices
       status = "Keep", // "Keep", "DP", "Siap_Packing", "Shipped"
       shippingCourier,
       shippingService,
@@ -85,6 +86,21 @@ export async function POST(request: Request) {
 
       if (!finalCustomerId) {
         throw new Error("Pelanggan (Customer) wajib dipilih atau diisi datanya.");
+      }
+
+      // If custom prices are provided, update selling price of products before booking
+      if (customPrices && typeof customPrices === "object") {
+        for (const pId of productIds) {
+          if (customPrices[pId] !== undefined) {
+            const newPrice = parseInt(String(customPrices[pId]), 10);
+            if (!isNaN(newPrice) && newPrice >= 0) {
+              await tx.product.update({
+                where: { id: pId },
+                data: { price: newPrice },
+              });
+            }
+          }
+        }
       }
 
       // Check product availability and sum prices & weights

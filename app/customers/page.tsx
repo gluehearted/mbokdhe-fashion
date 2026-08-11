@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { INDONESIA_LOCATIONS } from "@/lib/indonesia-locations";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
@@ -159,7 +159,7 @@ function CustomersPageContent() {
     setProvinces(provs);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
     setEditingCustomer(null);
     setName("");
     setWhatsapp("");
@@ -167,13 +167,19 @@ function CustomersPageContent() {
     setErrorMessage(null);
     setIsModalOpen(true);
     loadProvinces();
-  };
+  }, []);
 
   useEffect(() => {
-    if (searchParams.get("action") === "new" || searchParams.get("new") === "true") {
+    if (
+      typeof window !== "undefined" &&
+      (window.location.search.includes("action=new") ||
+        window.location.search.includes("new=true") ||
+        searchParams.get("action") === "new" ||
+        searchParams.get("new") === "true")
+    ) {
       openCreateModal();
     }
-  }, [searchParams]);
+  }, [searchParams, openCreateModal]);
 
   const openEditModal = (c: Customer) => {
     setEditingCustomer(c);

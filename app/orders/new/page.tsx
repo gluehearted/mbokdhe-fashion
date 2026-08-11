@@ -69,6 +69,7 @@ export default function NewOrderPage() {
   // Form Selection
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
   const [orderStatus, setOrderStatus] = useState("Keep");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
@@ -111,12 +112,38 @@ export default function NewOrderPage() {
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
   const selectedProducts = availableProducts.filter((p) => selectedProductIds.includes(p.id));
-  const totalBarangPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
 
-  const toggleProductSelect = (id: string) => {
-    setSelectedProductIds((prev) =>
-      prev.includes(id) ? prev.filter((pId) => pId !== id) : [...prev, id]
-    );
+  // Compute total products selling price with custom overrides
+  const totalBarangPrice = selectedProducts.reduce((sum, p) => {
+    const customStr = customPrices[p.id];
+    const priceVal = customStr !== undefined && customStr !== "" ? (parseInt(customStr, 10) || 0) : p.price;
+    return sum + priceVal;
+  }, 0);
+
+  const toggleProductSelect = (p: Product) => {
+    const id = p.id;
+    setSelectedProductIds((prev) => {
+      const exists = prev.includes(id);
+      if (exists) {
+        return prev.filter((pId) => pId !== id);
+      } else {
+        // Initialize custom price with original price if not already set
+        if (customPrices[id] === undefined) {
+          setCustomPrices((prevPrices) => ({
+            ...prevPrices,
+            [id]: String(p.price),
+          }));
+        }
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handlePriceChange = (productId: string, val: string) => {
+    setCustomPrices((prev) => ({
+      ...prev,
+      [productId]: val,
+    }));
   };
 
   const handleCalculateShipping = async () => {
@@ -191,6 +218,15 @@ export default function NewOrderPage() {
     const weightVal = parseInt(manualWeightGramInput, 10) || 1000;
     const parsedDp = parseInt(dpAmountInput, 10) || 0;
 
+    // Prepare custom prices map for API
+    const formattedCustomPrices: Record<string, number> = {};
+    selectedProductIds.forEach((pId) => {
+      const priceStr = customPrices[pId];
+      if (priceStr !== undefined && priceStr !== "") {
+        formattedCustomPrices[pId] = parseInt(priceStr, 10) || 0;
+      }
+    });
+
     setSubmitting(true);
     setErrorMessage(null);
 
@@ -201,6 +237,7 @@ export default function NewOrderPage() {
         body: JSON.stringify({
           customerId: selectedCustomerId,
           productIds: selectedProductIds,
+          customPrices: formattedCustomPrices,
           status: parsedDp > 0 ? "DP" : orderStatus,
           shippingCourier: selectedCourier.toUpperCase(),
           shippingService: selectedService.service,
@@ -314,11 +351,11 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 2: Multi-Select Available Products */}
+              {/* Step 2: Multi-Select Available Products (with Editable Prices) */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex justify-between items-center">
                   <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600">local_mall</span> 2. Pilih Produk Tas (Bisa Pilih Banyak)
+                    <span className="material-symbols-outlined text-blue-600">local_mall</span> 2. Pilih Produk Tas & Edit Harga Jual
                   </span>
                   <span className="text-xs text-blue-600 font-mono font-bold">
                     {selectedProductIds.length} Tas Terpilih
@@ -330,30 +367,57 @@ export default function NewOrderPage() {
                     Tidak ada tas berstatus &apos;Available&apos; saat ini.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
                     {availableProducts.map((p) => {
                       const isSelected = selectedProductIds.includes(p.id);
+                      const currentPrice = customPrices[p.id] !== undefined ? customPrices[p.id] : String(p.price);
+
                       return (
                         <div
                           key={p.id}
-                          onClick={() => toggleProductSelect(p.id)}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between text-xs ${
+                          onClick={() => toggleProductSelect(p)}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between text-xs ${
                             isSelected
-                              ? "bg-blue-50 border-blue-600 text-blue-900 shadow-sm"
+                              ? "bg-blue-50/90 border-blue-600 text-blue-900 shadow-sm"
                               : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
                           }`}
                         >
-                          <div>
-                            <p className="font-extrabold text-blue-700 font-mono">#{p.id}</p>
-                            <p className="text-[11px] text-slate-500">Toko: {p.shopOrigin}</p>
-                            <p className="font-bold text-slate-900 mt-1">Rp {p.price.toLocaleString("id-ID")}</p>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-extrabold text-blue-700 font-mono text-sm">#{p.id}</p>
+                              <p className="text-[11px] text-slate-500">Toko: {p.shopOrigin}</p>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="accent-blue-600 w-4 h-4 mt-0.5"
+                            />
                           </div>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => {}}
-                            className="accent-blue-600 w-4 h-4"
-                          />
+
+                          {/* Editable Price Field */}
+                          {isSelected ? (
+                            <div
+                              className="mt-3 pt-2 border-t border-blue-200 flex items-center justify-between gap-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <label className="text-[11px] font-bold text-blue-800">Edit Harga (Rp):</label>
+                              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-blue-400 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20">
+                                <span className="font-mono text-[11px] font-bold text-slate-400">Rp</span>
+                                <input
+                                  type="number"
+                                  value={currentPrice}
+                                  onChange={(e) => handlePriceChange(p.id, e.target.value)}
+                                  className="w-24 text-right font-mono font-bold text-xs text-blue-900 focus:outline-none"
+                                  placeholder={String(p.price)}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="font-bold text-slate-900 mt-2 text-right">
+                              Rp {p.price.toLocaleString("id-ID")}
+                            </p>
+                          )}
                         </div>
                       );
                     })}
