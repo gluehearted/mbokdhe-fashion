@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/ToastProvider";
 
 interface ApiLocationItem {
   id: number;
@@ -9,9 +10,10 @@ interface ApiLocationItem {
 }
 
 export default function AdminOriginPage() {
+  const { showToast } = useToast();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [shopName, setShopName] = useState("Mbokdhe Fashion");
@@ -179,7 +181,6 @@ export default function AdminOriginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setSuccessMessage(null);
     setErrorMessage(null);
 
     try {
@@ -203,12 +204,13 @@ export default function AdminOriginPage() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal menyimpan alamat asal toko.");
+        showToast(data.error || "Gagal menyimpan alamat asal toko.", "error");
       } else {
-        setSuccessMessage("Alamat asal toko admin berhasil disimpan!");
-        setTimeout(() => setSuccessMessage(null), 5000);
+        showToast("Alamat asal toko admin berhasil disimpan!", "success");
       }
     } catch {
       setErrorMessage("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi.", "error");
     } finally {
       setSaving(false);
     }
@@ -226,12 +228,6 @@ export default function AdminOriginPage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8">
         <div className="max-w-3xl mx-auto space-y-6">
-          
-          {successMessage && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
-              {successMessage}
-            </div>
-          )}
 
           {errorMessage && (
             <div className="p-4 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold text-center">

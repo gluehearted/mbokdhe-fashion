@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
+import { useToast } from "@/components/ToastProvider";
 
 interface Customer {
   id: string;
@@ -39,6 +40,8 @@ interface Order {
 }
 
 export default function OrdersPage() {
+  const { showToast } = useToast();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -76,12 +79,13 @@ export default function OrdersPage() {
       });
       const data = await res.json();
       if (data.success) {
+        showToast(`Status pesanan #${orderId.slice(0, 8)} diubah ke '${newStatus}'.`, "success");
         fetchOrders();
       } else {
-        alert(data.error || "Gagal memperbarui status order.");
+        showToast(data.error || "Gagal memperbarui status order.", "error");
       }
     } catch {
-      alert("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi saat memperbarui status order.", "error");
     }
   };
 
@@ -92,12 +96,13 @@ export default function OrdersPage() {
       const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
+        showToast(`Pesanan #${orderId.slice(0, 8)} berhasil dihapus.`, "success");
         fetchOrders();
       } else {
-        alert(data.error || "Gagal menghapus order.");
+        showToast(data.error || "Gagal menghapus order.", "error");
       }
     } catch {
-      alert("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi saat menghapus order.", "error");
     }
   };
 
@@ -118,13 +123,14 @@ export default function OrdersPage() {
 
       const data = await res.json();
       if (data.success) {
+        showToast(`Nomor resi ${trackingNoInput} berhasil disimpan untuk pesanan #${editingResiOrder.id.slice(0, 8)}.`, "success");
         setEditingResiOrder(null);
         fetchOrders();
       } else {
-        alert(data.error || "Gagal menyimpan nomor resi.");
+        showToast(data.error || "Gagal menyimpan nomor resi.", "error");
       }
     } catch {
-      alert("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi saat menyimpan nomor resi.", "error");
     } finally {
       setSavingResi(false);
     }
@@ -192,7 +198,7 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* Orders Data Table (Centered) */}
+        {/* Orders Data Table */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan...</div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
+import { useToast } from "@/components/ToastProvider";
 
 interface Shop {
   id: string;
@@ -10,6 +11,8 @@ interface Shop {
 }
 
 export default function ShopsPage() {
+  const { showToast } = useToast();
+
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -20,7 +23,6 @@ export default function ShopsPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchShops = useCallback(async () => {
     setLoading(true);
@@ -87,16 +89,16 @@ export default function ShopsPage() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal menyimpan toko.");
+        showToast(data.error || "Gagal menyimpan toko.", "error");
       } else {
-        setSuccessMessage(
-          editingShop ? "Nama toko berhasil diperbarui." : "Toko baru berhasil ditambahkan."
-        );
+        const msg = editingShop ? "Nama toko berhasil diperbarui." : "Toko baru berhasil ditambahkan.";
+        showToast(msg, "success");
         setIsModalOpen(false);
         fetchShops();
-        setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch {
       setErrorMessage("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi.", "error");
     } finally {
       setSaving(false);
     }
@@ -109,14 +111,13 @@ export default function ShopsPage() {
       const res = await fetch(`/api/shops/${shop.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert(data.error || "Gagal menghapus toko.");
+        showToast(data.error || "Gagal menghapus toko.", "error");
       } else {
-        setSuccessMessage(`Toko ${shop.name} berhasil dihapus.`);
+        showToast(`Toko '${shop.name}' berhasil dihapus.`, "success");
         fetchShops();
-        setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch {
-      alert("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi saat menghapus toko.", "error");
     }
   };
 
@@ -141,11 +142,6 @@ export default function ShopsPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
-        {successMessage && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
-            {successMessage}
-          </div>
-        )}
 
         {/* Search Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -161,7 +157,7 @@ export default function ShopsPage() {
           />
         </div>
 
-        {/* Shops Table (Centered) */}
+        {/* Shops Table */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading toko...</div>

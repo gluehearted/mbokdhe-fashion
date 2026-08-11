@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
+import { useToast } from "@/components/ToastProvider";
 
 interface Customer {
   id: string;
@@ -34,40 +35,33 @@ const COURIER_OPTIONS = [
 ];
 
 const BEHAVIORAL_OPTIONS = [
-  "Pelanggan Setia",
-  "Pembeli Berulang",
   "Impulsif",
-  "Pemburu Diskon",
-  "Bernilai Tinggi",
   "Ragu-ragu",
+  "Pelanggan Setia",
+  "Pemburu Diskon",
 ];
 
 const CONSUMER_TYPE_OPTIONS = [
+  "Value Seeker",
+  "Price Sensitive",
+  "Design Oriented",
+  "Convenience Seeker",
   "Eceran",
   "Reseller",
-  "Dropshipper",
   "VIP",
-  "Grosir",
 ];
 
 const RELATIONSHIP_STATUS_OPTIONS = [
+  "New Customer",
+  "Repeat Buyer",
   "Aktif",
-  "Hangat",
-  "Dingin",
   "Prospek Baru",
-  "Berhenti",
-];
-
-const CRISIS_STATUS_OPTIONS = [
-  "Normal",
-  "Risiko Rendah",
-  "Risiko Sedang",
-  "Risiko Tinggi",
-  "Daftar Hitam",
 ];
 
 function CustomersPageContent() {
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -82,13 +76,12 @@ function CustomersPageContent() {
   const [courier, setCourier] = useState("JNE");
   const [addressDetail, setAddressDetail] = useState("");
   const [behavioral, setBehavioral] = useState("Pelanggan Setia");
-  const [consumerType, setConsumerType] = useState("Eceran");
-  const [relationshipStatus, setRelationshipStatus] = useState("Aktif");
-  const [crisisStatus, setCrisisStatus] = useState("Normal");
+  const [consumerType, setConsumerType] = useState("Value Seeker");
+  const [relationshipStatus, setRelationshipStatus] = useState("New Customer");
+  const [crisisStatus, setCrisisStatus] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchCustomers = useCallback(async (q = "") => {
     setLoading(true);
@@ -119,9 +112,9 @@ function CustomersPageContent() {
     setCourier("JNE");
     setAddressDetail("");
     setBehavioral("Pelanggan Setia");
-    setConsumerType("Eceran");
-    setRelationshipStatus("Aktif");
-    setCrisisStatus("Normal");
+    setConsumerType("Value Seeker");
+    setRelationshipStatus("New Customer");
+    setCrisisStatus("");
     setErrorMessage(null);
     setIsModalOpen(true);
   }, []);
@@ -147,9 +140,9 @@ function CustomersPageContent() {
     setCourier(c.courier || "JNE");
     setAddressDetail(c.addressDetail);
     setBehavioral(c.behavioral || "Pelanggan Setia");
-    setConsumerType(c.consumerType || "Eceran");
-    setRelationshipStatus(c.relationshipStatus || "Aktif");
-    setCrisisStatus(c.crisisStatus || "Normal");
+    setConsumerType(c.consumerType || "Value Seeker");
+    setRelationshipStatus(c.relationshipStatus || "New Customer");
+    setCrisisStatus(c.crisisStatus || "");
     setErrorMessage(null);
     setIsModalOpen(true);
   };
@@ -170,7 +163,7 @@ function CustomersPageContent() {
         behavioral,
         consumerType,
         relationshipStatus,
-        crisisStatus,
+        crisisStatus: crisisStatus.trim(),
       };
 
       const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : "/api/customers";
@@ -185,15 +178,17 @@ function CustomersPageContent() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal menyimpan data pelanggan.");
+        showToast(data.error || "Gagal menyimpan data pelanggan.", "error");
       } else {
-        setSuccessMessage(editingCustomer ? "Data pelanggan diperbarui." : "Pelanggan baru berhasil ditambahkan.");
+        const msg = editingCustomer ? `Data pelanggan ${name} berhasil diperbarui.` : `Pelanggan baru ${name} berhasil ditambahkan.`;
+        showToast(msg, "success");
         setIsModalOpen(false);
         fetchCustomers(search);
-        setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
       setErrorMessage(msg);
+      showToast(msg, "error");
     } finally {
       setSaving(false);
     }
@@ -206,14 +201,13 @@ function CustomersPageContent() {
       const res = await fetch(`/api/customers/${c.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert(data.error || "Gagal menghapus pelanggan.");
+        showToast(data.error || "Gagal menghapus pelanggan.", "error");
       } else {
-        setSuccessMessage(`Pelanggan '${c.name}' berhasil dihapus.`);
+        showToast(`Pelanggan '${c.name}' berhasil dihapus.`, "success");
         fetchCustomers(search);
-        setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch {
-      alert("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi saat menghapus pelanggan.", "error");
     }
   };
 
@@ -234,12 +228,6 @@ function CustomersPageContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
-
-        {successMessage && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
-            {successMessage}
-          </div>
-        )}
 
         {/* Search Bar */}
         <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -271,7 +259,7 @@ function CustomersPageContent() {
                     <th className="p-4 text-center">Domisili & Detail Alamat</th>
                     <th className="p-4 text-center">Ongkir & Ekspedisi</th>
                     <th className="p-4 text-center">Tipe & Behavioral</th>
-                    <th className="p-4 text-center">Status & Krisis</th>
+                    <th className="p-4 text-center">Status & Catatan Krisis</th>
                     <th className="p-4 text-center">Spending & Transaksi</th>
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
@@ -308,20 +296,24 @@ function CustomersPageContent() {
 
                       <td className="p-4 text-center">
                         <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-bold block mb-1">
-                          {c.consumerType || "Eceran"}
+                          {c.consumerType || "Value Seeker"}
                         </span>
                         <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 text-[10px] font-bold block">
                           {c.behavioral || "Pelanggan Setia"}
                         </span>
                       </td>
 
-                      <td className="p-4 text-center">
+                      <td className="p-4 text-center max-w-xs">
                         <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold block mb-1">
-                          {c.relationshipStatus || "Aktif"}
+                          {c.relationshipStatus || "New Customer"}
                         </span>
-                        <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-bold block">
-                          {c.crisisStatus || "Normal"}
-                        </span>
+                        {c.crisisStatus ? (
+                          <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200 text-[10px] font-medium block truncate" title={c.crisisStatus}>
+                            Catatan: {c.crisisStatus}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 block font-normal">-</span>
+                        )}
                       </td>
 
                       <td className="p-4 text-center font-mono">
@@ -505,7 +497,7 @@ function CustomersPageContent() {
                 </div>
               </div>
 
-              {/* Row 5: Status Hubungan & Status Krisis */}
+              {/* Row 5: Status Hubungan & Catatan Status Krisis (Optional) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Status Hubungan</label>
@@ -523,18 +515,14 @@ function CustomersPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Status Krisis</label>
-                  <select
+                  <label className="block text-slate-600 font-semibold mb-1">Status Krisis (Catatan Opsional)</label>
+                  <input
+                    type="text"
                     value={crisisStatus}
                     onChange={(e) => setCrisisStatus(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
-                  >
-                    {CRISIS_STATUS_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Catatan status krisis opsional..."
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
                 </div>
               </div>
 

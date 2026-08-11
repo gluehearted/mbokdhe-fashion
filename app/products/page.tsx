@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
+import { useToast } from "@/components/ToastProvider";
 
 interface Product {
   id: string;
@@ -21,6 +22,8 @@ interface Shop {
 }
 
 export default function ProductsPage() {
+  const { showToast } = useToast();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +46,6 @@ export default function ProductsPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -158,14 +160,16 @@ export default function ProductsPage() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal menyimpan produk.");
+        showToast(data.error || "Gagal menyimpan produk.", "error");
       } else {
-        setSuccessMessage(editingProduct ? "Produk berhasil diperbarui." : "Produk baru berhasil ditambahkan.");
+        const msg = editingProduct ? "Produk berhasil diperbarui." : "Produk baru berhasil ditambahkan.";
+        showToast(msg, "success");
         setIsModalOpen(false);
         fetchProducts();
-        setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch {
       setErrorMessage("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi.", "error");
     } finally {
       setSaving(false);
     }
@@ -178,14 +182,13 @@ export default function ProductsPage() {
       const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert(data.error || "Gagal menghapus produk.");
+        showToast(data.error || "Gagal menghapus produk.", "error");
       } else {
-        setSuccessMessage(`Produk ID #${p.id} berhasil dihapus.`);
+        showToast(`Produk ID #${p.id} berhasil dihapus.`, "success");
         fetchProducts();
-        setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch {
-      alert("Terjadi kesalahan koneksi.");
+      showToast("Terjadi kesalahan koneksi saat menghapus produk.", "error");
     }
   };
 
@@ -211,11 +214,6 @@ export default function ProductsPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
-        {successMessage && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
-            {successMessage}
-          </div>
-        )}
 
         {/* Filter Tabs & Search Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
