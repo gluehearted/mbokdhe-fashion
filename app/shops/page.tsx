@@ -199,10 +199,12 @@ export default function ShopsPage() {
                           items={[
                             {
                               label: "Edit Nama Toko",
+                              icon: "edit",
                               onClick: () => openEditModal(shop),
                             },
                             {
                               label: "Hapus Toko",
+                              icon: "delete",
                               danger: true,
                               onClick: () => handleDelete(shop),
                             },

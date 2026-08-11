@@ -336,10 +336,12 @@ function CustomersPageContent() {
                           items={[
                             {
                               label: "Edit Pelanggan",
+                              icon: "edit",
                               onClick: () => openEditModal(c),
                             },
                             {
                               label: "Hapus Pelanggan",
+                              icon: "delete",
                               danger: true,
                               onClick: () => handleDelete(c),
                             },

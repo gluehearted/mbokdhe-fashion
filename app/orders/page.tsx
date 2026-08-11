@@ -296,6 +296,7 @@ export default function OrdersPage() {
                             items={[
                               {
                                 label: o.trackingNo ? "Edit Resi" : "Input Resi",
+                                icon: "edit",
                                 onClick: () => {
                                   setEditingResiOrder(o);
                                   setTrackingNoInput(o.trackingNo || "");
@@ -303,11 +304,13 @@ export default function OrdersPage() {
                               },
                               {
                                 label: "Set Lunas (Siap Packing)",
+                                icon: "task_alt",
                                 onClick: () => updateOrderStatus(o.id, "Siap Packing"),
                                 disabled: o.status === "Siap Packing" || o.status === "Dikirim",
                               },
                               {
                                 label: "Hapus Order",
+                                icon: "delete",
                                 danger: true,
                                 onClick: () => handleDeleteOrder(o.id),
                               },

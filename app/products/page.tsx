@@ -329,14 +329,17 @@ export default function ProductsPage() {
                             items={[
                               {
                                 label: "Lihat Detail Foto",
+                                icon: "visibility",
                                 onClick: () => setViewingPhotoProduct(p),
                               },
                               {
                                 label: "Edit Produk",
+                                icon: "edit",
                                 onClick: () => openEditModal(p),
                               },
                               {
                                 label: "Hapus Produk",
+                                icon: "delete",
                                 danger: true,
                                 onClick: () => handleDelete(p),
                               },
