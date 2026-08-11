@@ -35,27 +35,22 @@ const COURIER_OPTIONS = [
 ];
 
 const BEHAVIORAL_OPTIONS = [
-  "Impulsif",
-  "Ragu-ragu",
-  "Pelanggan Setia",
-  "Pemburu Diskon",
-];
-
-const CONSUMER_TYPE_OPTIONS = [
   "Value Seeker",
   "Price Sensitive",
   "Design Oriented",
   "Convenience Seeker",
-  "Eceran",
-  "Reseller",
-  "VIP",
+];
+
+const CONSUMER_TYPE_OPTIONS = [
+  "Orang Tua",
+  "Orang Aring",
+  "GENZI",
+  "ANJING",
 ];
 
 const RELATIONSHIP_STATUS_OPTIONS = [
   "New Customer",
   "Repeat Buyer",
-  "Aktif",
-  "Prospek Baru",
 ];
 
 function CustomersPageContent() {
