@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { TableActionsMenu } from "@/components/TableActionsMenu";
 
 interface Product {
   id: string;
@@ -235,7 +236,7 @@ export default function ProductsPage() {
       <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
 
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold text-center">
             ✅ {successMessage}
           </div>
         )}
@@ -272,7 +273,7 @@ export default function ProductsPage() {
           />
         </div>
 
-        {/* Products Table View */}
+        {/* Products Table View (All Centered) */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading produk...</div>
@@ -282,17 +283,17 @@ export default function ProductsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
+              <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Foto</th>
-                    <th className="p-4">ID Tas</th>
-                    <th className="p-4">Toko Asal</th>
-                    <th className="p-4">Harga Modal</th>
-                    <th className="p-4">Harga Jual</th>
-                    <th className="p-4">Profit (Margin)</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Aksi</th>
+                    <th className="p-4 text-center">Foto</th>
+                    <th className="p-4 text-center">ID Tas</th>
+                    <th className="p-4 text-center">Toko Asal</th>
+                    <th className="p-4 text-center">Harga Modal</th>
+                    <th className="p-4 text-center">Harga Jual</th>
+                    <th className="p-4 text-center">Profit (Margin)</th>
+                    <th className="p-4 text-center">Status</th>
+                    <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -301,8 +302,8 @@ export default function ProductsPage() {
 
                     return (
                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4">
-                          <div className="w-12 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center">
+                        <td className="p-4 text-center">
+                          <div className="w-12 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center mx-auto">
                             {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
                               <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                             ) : (
@@ -310,23 +311,25 @@ export default function ProductsPage() {
                             )}
                           </div>
                         </td>
-                        <td className="p-4 font-mono font-extrabold text-blue-600">#{p.id}</td>
-                        <td className="p-4 font-bold text-slate-900 flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-blue-600 text-sm">storefront</span>
-                          <span>{p.shopOrigin}</span>
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">#{p.id}</td>
+                        <td className="p-4 text-center font-bold text-slate-900">
+                          <span className="inline-flex items-center gap-1.5 justify-center">
+                            <span className="material-symbols-outlined text-blue-600 text-sm">storefront</span>
+                            <span>{p.shopOrigin}</span>
+                          </span>
                         </td>
-                        <td className="p-4 font-mono text-slate-600">
+                        <td className="p-4 text-center font-mono text-slate-600">
                           Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 font-mono font-bold text-slate-900">
+                        <td className="p-4 text-center font-mono font-bold text-slate-900">
                           Rp {p.price.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 font-mono font-bold text-emerald-600">
+                        <td className="p-4 text-center font-mono font-bold text-emerald-600">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 text-center">
                           <span
-                            className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase shadow-sm ${
+                            className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase shadow-sm inline-block ${
                               p.status === "Available"
                                 ? "bg-blue-600 text-white"
                                 : p.status === "Booked"
@@ -337,21 +340,24 @@ export default function ProductsPage() {
                             {p.status}
                           </span>
                         </td>
-                        <td className="p-4 text-right space-x-2">
-                          <button
-                            onClick={() => openEditModal(p)}
-                            disabled={p.status === "Sold"}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-all disabled:opacity-40"
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(p)}
-                            disabled={p.status === "Sold"}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-all disabled:opacity-40"
-                          >
-                            🗑️ Hapus
-                          </button>
+                        <td className="p-4 text-center">
+                          <TableActionsMenu
+                            items={[
+                              {
+                                label: "Edit Produk",
+                                icon: "edit",
+                                onClick: () => openEditModal(p),
+                                disabled: p.status === "Sold",
+                              },
+                              {
+                                label: "Hapus Produk",
+                                icon: "delete",
+                                danger: true,
+                                onClick: () => handleDelete(p),
+                                disabled: p.status === "Sold",
+                              },
+                            ]}
+                          />
                         </td>
                       </tr>
                     );

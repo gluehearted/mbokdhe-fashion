@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { TableActionsMenu } from "@/components/TableActionsMenu";
 
 interface Customer {
   id: string;
@@ -79,6 +80,22 @@ export default function OrdersPage() {
         fetchOrders();
       } else {
         alert(data.error || "Gagal memperbarui status order.");
+      }
+    } catch {
+      alert("Terjadi kesalahan koneksi.");
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus order #${orderId.slice(0, 8)}?`)) return;
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        fetchOrders();
+      } else {
+        alert(data.error || "Gagal menghapus order.");
       }
     } catch {
       alert("Terjadi kesalahan koneksi.");
@@ -183,7 +200,7 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* Orders Data Table */}
+        {/* Orders Data Table (Centered) */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan...</div>
@@ -193,17 +210,17 @@ export default function OrdersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
+              <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Order ID</th>
-                    <th className="p-4">Pelanggan</th>
-                    <th className="p-4">Tas Dibeli</th>
-                    <th className="p-4">Kurir & Layanan</th>
-                    <th className="p-4">No. Resi Pengiriman</th>
-                    <th className="p-4">DP / Tagihan</th>
-                    <th className="p-4">Status Pesanan</th>
-                    <th className="p-4 text-right">Aksi</th>
+                    <th className="p-4 text-center">Order ID</th>
+                    <th className="p-4 text-center">Pelanggan</th>
+                    <th className="p-4 text-center">Tas Dibeli</th>
+                    <th className="p-4 text-center">Kurir & Layanan</th>
+                    <th className="p-4 text-center">No. Resi Pengiriman</th>
+                    <th className="p-4 text-center">DP / Tagihan</th>
+                    <th className="p-4 text-center">Status Pesanan</th>
+                    <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -213,32 +230,32 @@ export default function OrdersPage() {
 
                     return (
                       <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 font-mono font-extrabold text-blue-600">
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">
                           #{o.id.slice(0, 8)}
                         </td>
 
-                        <td className="p-4">
+                        <td className="p-4 text-center">
                           <span className="font-bold text-slate-900 block">{o.customer?.name}</span>
                           <a
                             href={`https://wa.me/${o.customer?.whatsapp}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[11px] text-blue-600 font-mono hover:underline"
+                            className="text-[11px] text-blue-600 font-mono hover:underline inline-flex items-center gap-1 justify-center"
                           >
                             💬 {o.customer?.whatsapp}
                           </a>
                         </td>
 
-                        <td className="p-4 font-mono font-bold text-slate-800">
+                        <td className="p-4 text-center font-mono font-bold text-slate-800">
                           {o.products.map((p) => p.id).join(", ")}
                         </td>
 
-                        <td className="p-4 text-slate-600">
+                        <td className="p-4 text-center text-slate-600">
                           <span className="font-bold text-slate-900">{o.shippingCourier}</span>
                           <span className="text-[11px] text-slate-500 block">{o.shippingService}</span>
                         </td>
 
-                        <td className="p-4 font-mono">
+                        <td className="p-4 text-center font-mono">
                           {o.trackingNo ? (
                             <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 text-[11px]">
                               {o.trackingNo}
@@ -248,7 +265,7 @@ export default function OrdersPage() {
                           )}
                         </td>
 
-                        <td className="p-4">
+                        <td className="p-4 text-center">
                           <span className="font-mono font-bold text-slate-900 block">
                             Rp {o.totalPrice.toLocaleString("id-ID")}
                           </span>
@@ -259,8 +276,8 @@ export default function OrdersPage() {
                           )}
                         </td>
 
-                        <td className="p-4">
-                          <div className="flex items-center gap-1.5">
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <select
                               value={o.status}
                               onChange={(e) => updateOrderStatus(o.id, e.target.value)}
@@ -281,16 +298,31 @@ export default function OrdersPage() {
                           </div>
                         </td>
 
-                        <td className="p-4 text-right">
-                          <button
-                            onClick={() => {
-                              setEditingResiOrder(o);
-                              setTrackingNoInput(o.trackingNo || "");
-                            }}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-colors border border-slate-200"
-                          >
-                            ✏️ {o.trackingNo ? "Edit Resi" : "+ Input Resi"}
-                          </button>
+                        <td className="p-4 text-center">
+                          <TableActionsMenu
+                            items={[
+                              {
+                                label: o.trackingNo ? "Edit Resi" : "Input Resi",
+                                icon: "local_shipping",
+                                onClick: () => {
+                                  setEditingResiOrder(o);
+                                  setTrackingNoInput(o.trackingNo || "");
+                                },
+                              },
+                              {
+                                label: "Set Lunas (Siap Packing)",
+                                icon: "task_alt",
+                                onClick: () => updateOrderStatus(o.id, "Siap_Packing"),
+                                disabled: o.status === "Siap_Packing" || o.status === "Shipped",
+                              },
+                              {
+                                label: "Hapus Order",
+                                icon: "delete",
+                                danger: true,
+                                onClick: () => handleDeleteOrder(o.id),
+                              },
+                            ]}
+                          />
                         </td>
                       </tr>
                     );

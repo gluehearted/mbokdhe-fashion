@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { TableActionsMenu } from "@/components/TableActionsMenu";
 
 interface Shop {
   id: string;
@@ -143,7 +144,7 @@ export default function ShopsPage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold text-center">
             ✅ {successMessage}
           </div>
         )}
@@ -162,7 +163,7 @@ export default function ShopsPage() {
           />
         </div>
 
-        {/* Shops Table */}
+        {/* Shops Table (Centered) */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading toko...</div>
@@ -172,43 +173,48 @@ export default function ShopsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
+              <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-4">No</th>
-                    <th className="p-4">Nama Toko / Supplier</th>
-                    <th className="p-4">Tanggal Didaftarkan</th>
-                    <th className="p-4 text-right">Aksi</th>
+                    <th className="p-4 text-center">No</th>
+                    <th className="p-4 text-center">Nama Toko / Supplier</th>
+                    <th className="p-4 text-center">Tanggal Didaftarkan</th>
+                    <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredShops.map((shop, idx) => (
                     <tr key={shop.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-mono font-bold text-slate-500">{idx + 1}</td>
-                      <td className="p-4 font-bold text-slate-900 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-600 text-base">storefront</span>
-                        <span>{shop.name}</span>
+                      <td className="p-4 text-center font-mono font-bold text-slate-500">{idx + 1}</td>
+                      <td className="p-4 text-center font-bold text-slate-900">
+                        <span className="inline-flex items-center gap-1.5 justify-center">
+                          <span className="material-symbols-outlined text-blue-600 text-base">storefront</span>
+                          <span>{shop.name}</span>
+                        </span>
                       </td>
-                      <td className="p-4 text-slate-500 font-mono">
+                      <td className="p-4 text-center text-slate-500 font-mono">
                         {new Date(shop.createdAt).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
                         })}
                       </td>
-                      <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => openEditModal(shop)}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-all"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(shop)}
-                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-all"
-                        >
-                          🗑️ Hapus
-                        </button>
+                      <td className="p-4 text-center">
+                        <TableActionsMenu
+                          items={[
+                            {
+                              label: "Edit Nama Toko",
+                              icon: "edit",
+                              onClick: () => openEditModal(shop),
+                            },
+                            {
+                              label: "Hapus Toko",
+                              icon: "delete",
+                              danger: true,
+                              onClick: () => handleDelete(shop),
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}

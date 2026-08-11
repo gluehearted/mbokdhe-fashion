@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { INDONESIA_LOCATIONS } from "@/lib/indonesia-locations";
+import { TableActionsMenu } from "@/components/TableActionsMenu";
 
 interface Customer {
   id: string;
@@ -43,7 +44,7 @@ export default function CustomersPage() {
   const [districts, setDistricts] = useState<ApiLocationItem[]>([]);
   const [subdistricts, setSubdistricts] = useState<ApiLocationItem[]>([]);
 
-  const [selectedProvinceId, setSelectedProvinceId] = useState<number | "">(11); // Default DKI Jakarta or 26 RIAU
+  const [selectedProvinceId, setSelectedProvinceId] = useState<number | "">(11);
   const [selectedProvinceName, setSelectedProvinceName] = useState("RIAU");
   const [selectedCityId, setSelectedCityId] = useState<number>(338);
   const [selectedCityName, setSelectedCityName] = useState("Kota Pekanbaru");
@@ -92,7 +93,6 @@ export default function CustomersPage() {
         setSelectedProvinceName(first.name);
         loadCities(first.id);
       } else {
-        // Fallback local dataset
         useLocalFallback();
       }
     } catch {
@@ -301,7 +301,7 @@ export default function CustomersPage() {
       <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
 
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold text-center">
             ✅ {successMessage}
           </div>
         )}
@@ -318,7 +318,7 @@ export default function CustomersPage() {
           />
         </div>
 
-        {/* Customers Table */}
+        {/* Customers Table (Centered) */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading pelanggan...</div>
@@ -328,63 +328,66 @@ export default function CustomersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
+              <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Nama Pelanggan</th>
-                    <th className="p-4">No. WhatsApp</th>
-                    <th className="p-4">Alamat Jalan & Patokan</th>
-                    <th className="p-4">Kecamatan / Kelurahan</th>
-                    <th className="p-4">Kota / Provinsi</th>
-                    <th className="p-4">Kode Pos & City ID</th>
-                    <th className="p-4">Total Order</th>
-                    <th className="p-4 text-right">Aksi</th>
+                    <th className="p-4 text-center">Nama Pelanggan</th>
+                    <th className="p-4 text-center">No. WhatsApp</th>
+                    <th className="p-4 text-center">Alamat Jalan</th>
+                    <th className="p-4 text-center">Kecamatan / Kelurahan</th>
+                    <th className="p-4 text-center">Kota / Provinsi</th>
+                    <th className="p-4 text-center">Kode Pos & City ID</th>
+                    <th className="p-4 text-center">Total Order</th>
+                    <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {customers.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-bold text-slate-900 text-sm">{c.name}</td>
-                      <td className="p-4 font-mono text-blue-600">
+                      <td className="p-4 text-center font-bold text-slate-900 text-sm">{c.name}</td>
+                      <td className="p-4 text-center font-mono text-blue-600">
                         <a
                           href={`https://wa.me/${c.whatsapp}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="hover:underline flex items-center gap-1 font-bold"
+                          className="hover:underline inline-flex items-center gap-1 font-bold justify-center"
                         >
                           <span className="material-symbols-outlined text-sm text-emerald-600">chat</span>
                           {c.whatsapp}
                         </a>
                       </td>
-                      <td className="p-4 max-w-xs text-slate-700 font-medium truncate">{c.addressDetail}</td>
-                      <td className="p-4 text-slate-600">
+                      <td className="p-4 text-center max-w-xs text-slate-700 font-medium truncate">{c.addressDetail}</td>
+                      <td className="p-4 text-center text-slate-600">
                         {c.subdistrict || "-"} / {c.district || "-"}
                       </td>
-                      <td className="p-4 text-slate-800 font-semibold">
+                      <td className="p-4 text-center text-slate-800 font-semibold">
                         {c.cityName || "-"}, {c.province || "-"}
                       </td>
-                      <td className="p-4 font-mono">
-                        <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px] font-bold text-slate-700 block">
+                      <td className="p-4 text-center font-mono">
+                        <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px] font-bold text-slate-700 inline-block">
                           Pos: {c.postalCode || "-"}
                         </span>
                         <span className="text-[10px] text-blue-700 font-bold block mt-0.5">
                           City ID: {c.cityId}
                         </span>
                       </td>
-                      <td className="p-4 font-bold text-slate-900">{c._count?.orders || 0} Order</td>
-                      <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => openEditModal(c)}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-all"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(c)}
-                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-all"
-                        >
-                          🗑️ Hapus
-                        </button>
+                      <td className="p-4 text-center font-bold text-slate-900">{c._count?.orders || 0} Order</td>
+                      <td className="p-4 text-center">
+                        <TableActionsMenu
+                          items={[
+                            {
+                              label: "Edit Pelanggan",
+                              icon: "edit",
+                              onClick: () => openEditModal(c),
+                            },
+                            {
+                              label: "Hapus Pelanggan",
+                              icon: "delete",
+                              danger: true,
+                              onClick: () => handleDelete(c),
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}

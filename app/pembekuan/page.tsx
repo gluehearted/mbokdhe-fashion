@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { TableActionsMenu } from "@/components/TableActionsMenu";
 
 interface Customer {
   id: string;
@@ -187,7 +188,7 @@ export default function PembekuanPage() {
           </div>
         </div>
 
-        {/* Orders Table */}
+        {/* Orders Table (Centered) */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading data pembekuan dana...</div>
@@ -197,18 +198,18 @@ export default function PembekuanPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
+              <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Order ID</th>
-                    <th className="p-4">Pelanggan</th>
-                    <th className="p-4">Barang</th>
-                    <th className="p-4">Total Tagihan</th>
-                    <th className="p-4">DP Dibayar</th>
-                    <th className="p-4">Sisa Tagihan</th>
-                    <th className="p-4">Usia DP</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Aksi</th>
+                    <th className="p-4 text-center">Order ID</th>
+                    <th className="p-4 text-center">Pelanggan</th>
+                    <th className="p-4 text-center">Barang</th>
+                    <th className="p-4 text-center">Total Tagihan</th>
+                    <th className="p-4 text-center">DP Dibayar</th>
+                    <th className="p-4 text-center">Sisa Tagihan</th>
+                    <th className="p-4 text-center">Usia DP</th>
+                    <th className="p-4 text-center">Status</th>
+                    <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -219,25 +220,25 @@ export default function PembekuanPage() {
 
                     return (
                       <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 font-mono font-bold text-blue-600">#{o.id.slice(0, 8)}</td>
-                        <td className="p-4 font-bold text-slate-900">
+                        <td className="p-4 text-center font-mono font-bold text-blue-600">#{o.id.slice(0, 8)}</td>
+                        <td className="p-4 text-center font-bold text-slate-900">
                           {o.customer?.name}
                           <br />
                           <span className="text-[11px] text-slate-500 font-mono">{o.customer?.whatsapp}</span>
                         </td>
-                        <td className="p-4">{o.products.map((p) => p.id).join(", ")}</td>
-                        <td className="p-4 font-mono font-bold text-slate-900">
+                        <td className="p-4 text-center font-mono">{o.products.map((p) => p.id).join(", ")}</td>
+                        <td className="p-4 text-center font-mono font-bold text-slate-900">
                           Rp {o.totalPrice.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 font-mono font-bold text-blue-600">
+                        <td className="p-4 text-center font-mono font-bold text-blue-600">
                           Rp {o.dpAmount.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 font-mono font-bold text-amber-600">
+                        <td className="p-4 text-center font-mono font-bold text-amber-600">
                           Rp {sisa.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] ${
+                            className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] inline-block ${
                               isOld
                                 ? "bg-rose-100 text-rose-700 border border-rose-200 animate-pulse"
                                 : "bg-slate-100 text-slate-700"
@@ -246,9 +247,9 @@ export default function PembekuanPage() {
                             ⏱️ {days} Hari
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 text-center">
                           <span
-                            className={`px-2.5 py-1 rounded font-bold uppercase text-[10px] ${
+                            className={`px-2.5 py-1 rounded font-bold uppercase text-[10px] inline-block ${
                               o.dpForfeited
                                 ? "bg-rose-100 text-rose-700 border border-rose-200"
                                 : o.status === "DP"
@@ -259,43 +260,45 @@ export default function PembekuanPage() {
                             {o.dpForfeited ? "DP Hangus" : o.status}
                           </span>
                         </td>
-                        <td className="p-4 text-right space-x-2">
-                          {o.status !== "Cancelled" && !o.dpForfeited && (
-                            <>
-                              {o.dpAmount === 0 && (
-                                <button
-                                  onClick={() => {
+                        <td className="p-4 text-center">
+                          {o.status !== "Cancelled" && !o.dpForfeited ? (
+                            <TableActionsMenu
+                              items={[
+                                ...(o.dpAmount === 0
+                                  ? [
+                                      {
+                                        label: "Input Nominal DP",
+                                        icon: "lock",
+                                        onClick: () => {
+                                          setActionOrder(o);
+                                          setModalType("dp");
+                                          setDpInput(50000);
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                                {
+                                  label: "Pelunasan Order",
+                                  icon: "task_alt",
+                                  onClick: () => {
                                     setActionOrder(o);
-                                    setModalType("dp");
-                                    setDpInput(50000);
-                                  }}
-                                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-all"
-                                >
-                                  🔒 Input DP
-                                </button>
-                              )}
-
-                              <button
-                                onClick={() => {
-                                  setActionOrder(o);
-                                  setModalType("settle");
-                                }}
-                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-all"
-                              >
-                                ✅ Pelunasan
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  setActionOrder(o);
-                                  setModalType("forfeit");
-                                  setReasonInput("Batas waktu DP habis / Hit & Run");
-                                }}
-                                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-xs transition-all"
-                              >
-                                🔥 Hanguskan DP
-                              </button>
-                            </>
+                                    setModalType("settle");
+                                  },
+                                },
+                                {
+                                  label: "Hanguskan (Forfeit) DP",
+                                  icon: "local_fire_department",
+                                  danger: true,
+                                  onClick: () => {
+                                    setActionOrder(o);
+                                    setModalType("forfeit");
+                                    setReasonInput("Batas waktu DP habis / Hit & Run");
+                                  },
+                                },
+                              ]}
+                            />
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">-</span>
                           )}
                         </td>
                       </tr>
