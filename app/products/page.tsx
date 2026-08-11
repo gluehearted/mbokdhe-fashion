@@ -423,9 +423,6 @@ export default function ProductsPage() {
               <h3 className="text-base font-bold text-slate-900">
                 {editingProduct ? `Edit Produk [${editingProduct.id}]` : "Tambah Produk Tas Baru"}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">
-                Batal
-              </button>
             </div>
 
             {errorMessage && (
