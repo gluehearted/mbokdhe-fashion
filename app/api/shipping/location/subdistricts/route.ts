@@ -26,6 +26,7 @@ export async function GET(request: Request) {
       );
     }
 
+    // API Call: GET https://rajaongkir.komerce.id/api/v1/destination/sub-district/[districtId]
     const res = await fetch(`https://rajaongkir.komerce.id/api/v1/destination/sub-district/${districtId}`, {
       method: "GET",
       headers: {

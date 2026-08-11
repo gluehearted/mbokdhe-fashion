@@ -54,6 +54,7 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const url = statusFilter !== "ALL" ? `/api/products?status=${statusFilter}` : "/api/products";
+      // API Call: GET /api/products (mengambil daftar produk tas)
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -68,6 +69,7 @@ export default function ProductsPage() {
 
   const fetchShops = useCallback(async () => {
     try {
+      // API Call: GET /api/shops (mengambil daftar toko terdaftar)
       const res = await fetch("/api/shops");
       const data = await res.json();
       if (data.success) {
@@ -176,6 +178,7 @@ export default function ProductsPage() {
       const url = editingProduct ? `/api/products/${editingProduct.id}` : "/api/products";
       const method = editingProduct ? "PATCH" : "POST";
 
+      // API Call: POST /api/products atau PATCH /api/products/[id] (simpan/update data produk)
       const res = await fetch(url, {
         method,
         body: formData,
@@ -202,6 +205,7 @@ export default function ProductsPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus produk '${p.id}' secara permanen?`)) return;
 
     try {
+      // API Call: DELETE /api/products/[id] (hapus produk dari database)
       const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {

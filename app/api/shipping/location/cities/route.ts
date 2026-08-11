@@ -23,6 +23,7 @@ export async function GET(request: Request) {
       ? `https://rajaongkir.komerce.id/api/v1/destination/city/${provinceId}`
       : "https://rajaongkir.komerce.id/api/v1/destination/city";
 
+    // API Call: GET https://rajaongkir.komerce.id/api/v1/destination/city
     const res = await fetch(endpoint, {
       method: "GET",
       headers: {

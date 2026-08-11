@@ -26,6 +26,7 @@ export default function ShopsPage() {
   const fetchShops = useCallback(async () => {
     setLoading(true);
     try {
+      // API Call: GET /api/shops (mengambil daftar kelola toko)
       const res = await fetch("/api/shops");
       const data = await res.json();
       if (data.success) {
@@ -79,6 +80,7 @@ export default function ShopsPage() {
       const url = editingShop ? `/api/shops/${editingShop.id}` : "/api/shops";
       const method = editingShop ? "PATCH" : "POST";
 
+      // API Call: POST /api/shops atau PATCH /api/shops/[id] (simpan/update toko)
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -107,6 +109,7 @@ export default function ShopsPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus toko '${shop.name}'?`)) return;
 
     try {
+      // API Call: DELETE /api/shops/[id] (hapus toko dari database)
       const res = await fetch(`/api/shops/${shop.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {

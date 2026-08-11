@@ -50,6 +50,7 @@ export default function PembekuanPage() {
   const fetchDpOrders = async () => {
     setLoading(true);
     try {
+      // API Call: GET /api/orders (mengambil transaksi DP/Keep)
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
@@ -73,6 +74,7 @@ export default function PembekuanPage() {
     if (!actionOrder) return;
     setProcessing(true);
     try {
+      // API Call: POST /api/orders/[id]/settle (proses pelunasan pesanan)
       const res = await fetch(`/api/orders/${actionOrder.id}/settle`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
@@ -94,6 +96,7 @@ export default function PembekuanPage() {
     if (!actionOrder) return;
     setProcessing(true);
     try {
+      // API Call: POST /api/orders/[id]/forfeit (hanguskan dana DP)
       const res = await fetch(`/api/orders/${actionOrder.id}/forfeit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,6 +122,7 @@ export default function PembekuanPage() {
     if (!actionOrder) return;
     setProcessing(true);
     try {
+      // API Call: POST /api/orders/[id]/dp (catat nominal DP baru)
       const res = await fetch(`/api/orders/${actionOrder.id}/dp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -44,6 +44,7 @@ export default function AdminOriginPage() {
     async function initPage() {
       setLoading(true);
       try {
+        // API Call: GET /api/config (mengambil konfigurasi alamat toko)
         const resConfig = await fetch("/api/config");
         const dataCfg = await resConfig.json();
         if (dataCfg.success && dataCfg.data) {
@@ -72,6 +73,7 @@ export default function AdminOriginPage() {
   const loadProvinces = async () => {
     setLoadingLoc(true);
     try {
+      // API Call: GET /api/shipping/location/provinces (mengambil data provinsi)
       const res = await fetch("/api/shipping/location/provinces");
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -85,13 +87,14 @@ export default function AdminOriginPage() {
       }
     } catch {
       useLocalFallback();
-    } fontally: {
+    } finally {
       setLoadingLoc(false);
     }
   };
 
   const loadCities = async (provId: number) => {
     try {
+      // API Call: GET /api/shipping/location/cities (mengambil data kota)
       const res = await fetch(`/api/shipping/location/cities?provinceId=${provId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -109,6 +112,7 @@ export default function AdminOriginPage() {
 
   const loadDistricts = async (cId: number) => {
     try {
+      // API Call: GET /api/shipping/location/districts (mengambil data kecamatan)
       const res = await fetch(`/api/shipping/location/districts?cityId=${cId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -126,6 +130,7 @@ export default function AdminOriginPage() {
 
   const loadSubdistricts = async (dId: number) => {
     try {
+      // API Call: GET /api/shipping/location/subdistricts (mengambil data kelurahan)
       const res = await fetch(`/api/shipping/location/subdistricts?districtId=${dId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -188,6 +193,7 @@ export default function AdminOriginPage() {
     setErrorMessage(null);
 
     try {
+      // API Call: POST /api/config (simpan konfigurasi alamat asal pengirim toko)
       const res = await fetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

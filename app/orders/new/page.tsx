@@ -89,6 +89,7 @@ export default function NewOrderPage() {
     async function loadData() {
       setLoadingData(true);
       try {
+        // API Call: GET /api/customers, GET /api/products, GET /api/config (load data checkout)
         const [resCust, resProd, resCfg] = await Promise.all([
           fetch("/api/customers"),
           fetch("/api/products?status=Available"),
@@ -172,6 +173,7 @@ export default function NewOrderPage() {
     const originId = shopConfig?.originCityId || 54;
 
     try {
+      // API Call: POST /api/shipping/cost (hitung ongkos kirim RajaOngkir)
       const res = await fetch("/api/shipping/cost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -231,6 +233,7 @@ export default function NewOrderPage() {
     setErrorMessage(null);
 
     try {
+      // API Call: POST /api/orders (simpan transaksi pesanan baru)
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

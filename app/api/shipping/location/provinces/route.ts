@@ -16,6 +16,7 @@ export async function GET() {
       );
     }
 
+    // API Call: GET https://rajaongkir.komerce.id/api/v1/destination/province
     const res = await fetch("https://rajaongkir.komerce.id/api/v1/destination/province", {
       method: "GET",
       headers: {

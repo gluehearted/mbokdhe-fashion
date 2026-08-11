@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       komerceBody.append("weight", String(weight));
       komerceBody.append("courier", String(courier).toLowerCase());
 
+      // API Call: POST https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost
       const komerceRes = await fetch("https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost", {
         method: "POST",
         headers: {
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
       komerceBody.append("weight", String(weight));
       komerceBody.append("courier", String(courier).toLowerCase());
 
+      // API Call: POST https://rajaongkir.komerce.id/api/v1/calculate/district/domestic-cost
       const komerceRes = await fetch("https://rajaongkir.komerce.id/api/v1/calculate/district/domestic-cost", {
         method: "POST",
         headers: {
@@ -177,6 +179,7 @@ export async function POST(request: Request) {
     formData.append("weight", String(weight));
     formData.append("courier", String(courier).toLowerCase());
 
+    // API Call: POST https://api.rajaongkir.com/starter/cost
     const response = await fetch("https://api.rajaongkir.com/starter/cost", {
       method: "POST",
       headers: {

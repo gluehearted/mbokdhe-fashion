@@ -66,6 +66,7 @@ function CustomersPageContent() {
     setLoading(true);
     try {
       const url = q ? `/api/customers?search=${encodeURIComponent(q)}` : "/api/customers";
+      // API Call: GET /api/customers (mengambil daftar pelanggan)
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -86,6 +87,7 @@ function CustomersPageContent() {
   const loadProvinces = async () => {
     setLoadingLoc(true);
     try {
+      // API Call: GET /api/shipping/location/provinces (mengambil data provinsi)
       const res = await fetch("/api/shipping/location/provinces");
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -106,6 +108,7 @@ function CustomersPageContent() {
 
   const loadCities = async (provId: number) => {
     try {
+      // API Call: GET /api/shipping/location/cities (mengambil data kota berdasarkan provinsi)
       const res = await fetch(`/api/shipping/location/cities?provinceId=${provId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -123,6 +126,7 @@ function CustomersPageContent() {
 
   const loadDistricts = async (cId: number) => {
     try {
+      // API Call: GET /api/shipping/location/districts (mengambil data kecamatan berdasarkan kota)
       const res = await fetch(`/api/shipping/location/districts?cityId=${cId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -140,6 +144,7 @@ function CustomersPageContent() {
 
   const loadSubdistricts = async (dId: number) => {
     try {
+      // API Call: GET /api/shipping/location/subdistricts (mengambil data kelurahan berdasarkan kecamatan)
       const res = await fetch(`/api/shipping/location/subdistricts?districtId=${dId}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
@@ -254,6 +259,7 @@ function CustomersPageContent() {
       const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : "/api/customers";
       const method = editingCustomer ? "PATCH" : "POST";
 
+      // API Call: POST /api/customers atau PATCH /api/customers/[id] (simpan/update data pelanggan)
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -281,6 +287,7 @@ function CustomersPageContent() {
     if (!confirm(`Apakah Anda yakin ingin menghapus pelanggan '${c.name}'?`)) return;
 
     try {
+      // API Call: DELETE /api/customers/[id] (hapus pelanggan dari database)
       const res = await fetch(`/api/customers/${c.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {

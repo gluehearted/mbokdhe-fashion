@@ -52,6 +52,7 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
+      // API Call: GET /api/orders (mengambil daftar seluruh pesanan)
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
@@ -70,6 +71,7 @@ export default function OrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      // API Call: PATCH /api/orders/[id] (memperbarui status pipeline pesanan)
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -90,6 +92,7 @@ export default function OrdersPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus order #${orderId.slice(0, 8)}?`)) return;
 
     try {
+      // API Call: DELETE /api/orders/[id] (menghapus pesanan)
       const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
@@ -108,6 +111,7 @@ export default function OrdersPage() {
     setSavingResi(true);
 
     try {
+      // API Call: PATCH /api/orders/[id] (menyimpan nomor resi pengiriman & update status ke Shipped)
       const res = await fetch(`/api/orders/${editingResiOrder.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
