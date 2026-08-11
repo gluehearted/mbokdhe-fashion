@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { FlatLocation, searchLocations } from "@/lib/indonesia-locations";
 
 interface LocationSearchComboboxProps {
@@ -28,25 +28,26 @@ export function LocationSearchCombobox({
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<FlatLocation[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevValueRef = useRef(value);
 
-  // Sync internal input query when value prop changes externally
+  // Sync internal query when value prop changes
   useEffect(() => {
-    if (value) {
+    if (value && value !== prevValueRef.current) {
+      prevValueRef.current = value;
       setQuery(value.label);
     }
   }, [value]);
 
-  // Debounce logic
+  // Debounce logic for query
   useEffect(() => {
-    setIsSearching(true);
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
       setIsSearching(false);
+      setSelectedIndex(-1);
     }, debounceMs);
 
     return () => {
@@ -54,11 +55,9 @@ export function LocationSearchCombobox({
     };
   }, [query, debounceMs]);
 
-  // Perform search when debouncedQuery changes
-  useEffect(() => {
-    const res = searchLocations(debouncedQuery, 25);
-    setResults(res);
-    setSelectedIndex(-1);
+  // Search results derived via useMemo (No state effect cascade)
+  const results = useMemo(() => {
+    return searchLocations(debouncedQuery, 25);
   }, [debouncedQuery]);
 
   // Close dropdown on click outside
@@ -76,6 +75,7 @@ export function LocationSearchCombobox({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
+    setIsSearching(true);
     setIsOpen(true);
   };
 
