@@ -8,12 +8,9 @@ interface Customer {
   id: string;
   name: string;
   whatsapp: string;
-  province?: string | null;
-  cityName?: string | null;
-  cityId: number;
-  district?: string | null;
-  subdistrict?: string | null;
-  postalCode?: string | null;
+  domisili?: string | null;
+  shippingCost: number;
+  courier?: string | null;
   addressDetail: string;
 }
 
@@ -26,35 +23,16 @@ interface Product {
   photoUrl: string;
 }
 
-interface ServiceOption {
-  service: string;
-  description: string;
-  cost: number;
-  etd: string;
-}
-
-interface ShopConfig {
-  shopName: string;
-  senderName: string;
-  originCityId: number;
-  cityName: string;
-  province: string;
-  district: string;
-}
-
 const AVAILABLE_COURIERS = [
-  { code: "jne", label: "JNE" },
-  { code: "sicepat", label: "SiCepat" },
-  { code: "jnt", label: "J&T Express" },
-  { code: "tiki", label: "TIKI" },
-  { code: "pos", label: "POS Indonesia" },
-  { code: "ide", label: "IDExpress" },
-  { code: "ninja", label: "Ninja Express" },
-  { code: "sap", label: "SAP Express" },
-  { code: "wahana", label: "Wahana" },
-  { code: "sentral", label: "Sentral Cargo" },
-  { code: "lion", label: "Lion Parcel" },
-  { code: "rex", label: "REX Asia" },
+  { code: "JNE", label: "JNE" },
+  { code: "SiCepat", label: "SiCepat" },
+  { code: "J&T", label: "J&T Express" },
+  { code: "TIKI", label: "TIKI" },
+  { code: "POS", label: "POS Indonesia" },
+  { code: "IDExpress", label: "IDExpress" },
+  { code: "Ninja", label: "Ninja Express" },
+  { code: "Wahana", label: "Wahana" },
+  { code: "Lion", label: "Lion Parcel" },
 ];
 
 export default function NewOrderPage() {
@@ -63,7 +41,6 @@ export default function NewOrderPage() {
   // Database Data
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
-  const [shopConfig, setShopConfig] = useState<ShopConfig | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   // Form Selection
@@ -73,14 +50,9 @@ export default function NewOrderPage() {
   const [orderStatus, setOrderStatus] = useState("Keep");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
-  // Manual Package Weight Input (Gram) - Default null / empty string
-  const [manualWeightGramInput, setManualWeightGramInput] = useState<string>("");
-
-  // RajaOngkir State
-  const [selectedCourier, setSelectedCourier] = useState("jne");
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [servicesList, setServicesList] = useState<ServiceOption[]>([]);
-  const [selectedService, setSelectedService] = useState<ServiceOption | null>(null);
+  // Shipping & Courier (Manual Direct Entry, No RajaOngkir)
+  const [selectedCourier, setSelectedCourier] = useState("JNE");
+  const [manualShippingCost, setManualShippingCost] = useState<string>("15000");
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -89,19 +61,16 @@ export default function NewOrderPage() {
     async function loadData() {
       setLoadingData(true);
       try {
-        // API Call: GET /api/customers, GET /api/products, GET /api/config (load data checkout)
-        const [resCust, resProd, resCfg] = await Promise.all([
+        // API Call: GET /api/customers & GET /api/products
+        const [resCust, resProd] = await Promise.all([
           fetch("/api/customers"),
           fetch("/api/products?status=Available"),
-          fetch("/api/config"),
         ]);
         const dataCust = await resCust.json();
         const dataProd = await resProd.json();
-        const dataCfg = await resCfg.json();
 
         if (dataCust.success) setCustomers(dataCust.data);
         if (dataProd.success) setAvailableProducts(dataProd.data);
-        if (dataCfg.success) setShopConfig(dataCfg.data);
       } catch {
         // Ignore
       } finally {
@@ -112,6 +81,17 @@ export default function NewOrderPage() {
   }, []);
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
+
+  // Auto populate customer preferred courier & shipping cost when selected
+  const handleCustomerChange = (cId: string) => {
+    setSelectedCustomerId(cId);
+    const target = customers.find((c) => c.id === cId);
+    if (target) {
+      if (target.courier) setSelectedCourier(target.courier);
+      setManualShippingCost(String(target.shippingCost || 15000));
+    }
+  };
+
   const selectedProducts = availableProducts.filter((p) => selectedProductIds.includes(p.id));
 
   // Compute total products selling price with custom overrides
@@ -128,7 +108,6 @@ export default function NewOrderPage() {
       if (exists) {
         return prev.filter((pId) => pId !== id);
       } else {
-        // Initialize custom price with original price if not already set
         if (customPrices[id] === undefined) {
           setCustomPrices((prevPrices) => ({
             ...prevPrices,
@@ -147,59 +126,6 @@ export default function NewOrderPage() {
     }));
   };
 
-  const handleCalculateShipping = async () => {
-    if (!selectedCustomer) {
-      setErrorMessage("Silakan pilih Pelanggan terlebih dahulu.");
-      return;
-    }
-
-    if (selectedProductIds.length === 0) {
-      setErrorMessage("Pilih minimal 1 produk tas untuk dikirim.");
-      return;
-    }
-
-    const weightVal = parseInt(manualWeightGramInput, 10);
-
-    if (isNaN(weightVal) || weightVal <= 0) {
-      setErrorMessage("Masukkan total bobot berat paket (gram) yang valid.");
-      return;
-    }
-
-    setIsCalculating(true);
-    setErrorMessage(null);
-    setSelectedService(null);
-    setServicesList([]);
-
-    const originId = shopConfig?.originCityId || 54;
-
-    try {
-      // API Call: POST /api/shipping/cost (hitung ongkos kirim RajaOngkir)
-      const res = await fetch("/api/shipping/cost", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          origin: originId,
-          destination: selectedCustomer.cityId,
-          weight: weightVal,
-          courier: selectedCourier,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Gagal menghitung tarif RajaOngkir.");
-      } else {
-        const list: ServiceOption[] = data.services || [];
-        setServicesList(list);
-        if (list.length > 0) setSelectedService(list[0]);
-      }
-    } catch {
-      setErrorMessage("Gagal menghubungi server RajaOngkir.");
-    } finally {
-      setIsCalculating(false);
-    }
-  };
-
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomerId) {
@@ -212,12 +138,7 @@ export default function NewOrderPage() {
       return;
     }
 
-    if (!selectedService) {
-      setErrorMessage("Hitung & pilih tarif ongkir terlebih dahulu.");
-      return;
-    }
-
-    const weightVal = parseInt(manualWeightGramInput, 10) || 1000;
+    const parsedCost = parseInt(manualShippingCost, 10) || 0;
     const parsedDp = parseInt(dpAmountInput, 10) || 0;
 
     // Prepare custom prices map for API
@@ -233,7 +154,7 @@ export default function NewOrderPage() {
     setErrorMessage(null);
 
     try {
-      // API Call: POST /api/orders (simpan transaksi pesanan baru)
+      // API Call: POST /api/orders (simpan pesanan baru)
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -242,12 +163,12 @@ export default function NewOrderPage() {
           productIds: selectedProductIds,
           customPrices: formattedCustomPrices,
           status: parsedDp > 0 ? "DP" : orderStatus,
-          shippingCourier: selectedCourier.toUpperCase(),
-          shippingService: selectedService.service,
-          shippingCost: selectedService.cost,
-          totalWeightGram: weightVal,
+          shippingCourier: selectedCourier,
+          shippingService: "Reguler",
+          shippingCost: parsedCost,
+          totalWeightGram: 1000,
           dpAmount: parsedDp,
-          totalPrice: totalBarangPrice + selectedService.cost,
+          totalPrice: totalBarangPrice + parsedCost,
         }),
       });
 
@@ -264,9 +185,8 @@ export default function NewOrderPage() {
     }
   };
 
-  const totalTagihan = totalBarangPrice + (selectedService?.cost || 0);
-  const parsedWeightNum = parseInt(manualWeightGramInput, 10);
-  const currentCourierLabel = AVAILABLE_COURIERS.find((c) => c.code === selectedCourier)?.label || selectedCourier.toUpperCase();
+  const parsedCostNum = parseInt(manualShippingCost, 10) || 0;
+  const totalTagihan = totalBarangPrice + parsedCostNum;
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
@@ -298,22 +218,6 @@ export default function NewOrderPage() {
             
             {/* LEFT COLUMN (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
-              
-              {/* Info Origin Toko Admin */}
-              <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600">storefront</span>
-                  <span className="text-slate-700">
-                    Alamat Asal Pengirim Toko: <strong>{shopConfig?.shopName || "Mbokdhe Fashion"} ({shopConfig?.cityName || "Kab. Bogor"}, {shopConfig?.province || "Jawa Barat"})</strong>
-                  </span>
-                </div>
-                <Link
-                  href="/origin"
-                  className="px-2.5 py-1 bg-white border border-blue-200 text-blue-700 font-bold rounded hover:bg-blue-50 text-[11px]"
-                >
-                  Ubah Alamat Toko
-                </Link>
-              </div>
 
               {/* Step 1: Select Customer */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
@@ -332,24 +236,32 @@ export default function NewOrderPage() {
                 <div>
                   <select
                     value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    onChange={(e) => handleCustomerChange(e.target.value)}
                     required
                     className="w-full bg-slate-50 text-slate-900 text-xs p-3 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium uppercase"
                   >
                     <option value="">-- Pilih Pelanggan Terdaftar --</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name} ({c.whatsapp}) - {c.cityName || "Kota"}, {c.province || ""} (City ID: {c.cityId})
+                        #{c.id} - {c.name} ({c.whatsapp}) - {c.domisili || "Domisili"}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 {selectedCustomer && (
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
-                    <span className="font-bold text-blue-700 block">📍 Detail Alamat Tujuan Pelanggan:</span>
-                    <p>{selectedCustomer.addressDetail}, Kel. {selectedCustomer.subdistrict || "-"}, Kec. {selectedCustomer.district || "-"}</p>
-                    <p className="text-slate-500">{selectedCustomer.cityName || "-"}, {selectedCustomer.province || "-"} (Kode Pos: {selectedCustomer.postalCode || "-"})</p>
+                  <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-blue-700">📍 Detail Pelanggan:</span>
+                      <span className="font-mono text-xs font-bold text-blue-600">#{selectedCustomer.id}</span>
+                    </div>
+                    <p className="font-semibold text-slate-900">{selectedCustomer.name} (WA: {selectedCustomer.whatsapp})</p>
+                    <p className="text-slate-600">{selectedCustomer.addressDetail}, {selectedCustomer.domisili || "-"}</p>
+                    <div className="pt-1 flex items-center gap-2 font-mono text-[11px] text-slate-500">
+                      <span>Ekspedisi Default: <strong className="text-blue-700">{selectedCustomer.courier || "JNE"}</strong></span>
+                      <span>•</span>
+                      <span>Ongkir Default: <strong className="text-slate-900">Rp {(selectedCustomer.shippingCost || 0).toLocaleString("id-ID")}</strong></span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -428,96 +340,40 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 3: Input Bobot Berat Paket (Gram) & Hitung Ongkir */}
+              {/* Step 3: Input Ekspedisi & Ongkos Kirim (Manual Input, No RajaOngkir) */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600">local_shipping</span> 3. Input Bobot Paket & Pilih Kurir (Komerce District V1)
+                  <span className="material-symbols-outlined text-blue-600">local_shipping</span> 3. Ekspedisi & Nominal Ongkos Kirim
                 </h3>
 
-                <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="block text-slate-600 font-semibold mb-1">Total Bobot Berat Paket (Gram) *</label>
+                    <label className="block text-slate-600 font-semibold mb-1.5">Pilih Ekspedisi Pengiriman</label>
+                    <select
+                      value={selectedCourier}
+                      onChange={(e) => setSelectedCourier(e.target.value)}
+                      className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-bold focus:border-blue-600 focus:outline-none"
+                    >
+                      {AVAILABLE_COURIERS.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 font-semibold mb-1.5">Nominal Ongkos Kirim (Rp)</label>
                     <input
                       type="number"
-                      value={manualWeightGramInput}
-                      onChange={(e) => setManualWeightGramInput(e.target.value)}
-                      placeholder="Misal: 1000, 2500"
+                      value={manualShippingCost}
+                      onChange={(e) => setManualShippingCost(e.target.value)}
+                      placeholder="15000"
                       required
-                      min={100}
-                      className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono text-sm"
+                      className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm font-bold focus:border-blue-600 focus:outline-none"
                     />
-                    {!isNaN(parsedWeightNum) && parsedWeightNum > 0 && (
-                      <span className="text-[11px] text-slate-500 font-mono block mt-1">
-                        = {(parsedWeightNum / 1000).toFixed(1)} kg
-                      </span>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 font-semibold mb-1.5">Pilih Kurir Ekspedisi Terdaftar (12 Kurir Domestic)</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {AVAILABLE_COURIERS.map((c) => (
-                        <button
-                          key={c.code}
-                          type="button"
-                          onClick={() => setSelectedCourier(c.code)}
-                          className={`py-2 px-2.5 rounded-lg border text-xs font-bold transition-all text-center ${
-                            selectedCourier === c.code
-                              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                          }`}
-                        >
-                          {c.label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleCalculateShipping}
-                  disabled={isCalculating}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-blue-700 font-bold border border-blue-200 rounded-lg transition-all disabled:opacity-50 text-xs flex items-center justify-center gap-2"
-                >
-                  {isCalculating
-                    ? "Menghitung Ongkir (District Domestic V1)..."
-                    : !isNaN(parsedWeightNum) && parsedWeightNum > 0
-                    ? `⚡ Hitung Tarif Ongkir (${currentCourierLabel} - ${(parsedWeightNum / 1000).toFixed(1)} kg)`
-                    : `⚡ Hitung Tarif Ongkir (${currentCourierLabel})`}
-                </button>
-
-                {servicesList.length > 0 && (
-                  <div className="space-y-2 pt-2 text-xs">
-                    <span className="font-semibold text-slate-500">Pilih Layanan Pengiriman:</span>
-                    {servicesList.map((svc, idx) => (
-                      <label
-                        key={idx}
-                        className={`flex justify-between items-center p-3 rounded-lg border cursor-pointer ${
-                          selectedService?.service === svc.service
-                            ? "bg-blue-50 border-blue-600 text-blue-900 font-bold"
-                            : "bg-slate-50 border-slate-200 text-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="svc"
-                            checked={selectedService?.service === svc.service}
-                            onChange={() => setSelectedService(svc)}
-                            className="accent-blue-600"
-                          />
-                          <span className="font-bold text-blue-700">{svc.service}</span>
-                          <span className="text-slate-500">({svc.description})</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-slate-900 block">Rp {svc.cost.toLocaleString("id-ID")}</span>
-                          <span className="text-[10px] text-slate-500 font-mono block">Estimasi: {svc.etd}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
               </div>
 
             </div>
@@ -571,9 +427,9 @@ export default function NewOrderPage() {
                   </div>
 
                   <div className="flex justify-between items-center text-slate-600">
-                    <span>Ongkos Kirim ({selectedService?.service || "-"}):</span>
+                    <span>Ongkos Kirim ({selectedCourier}):</span>
                     <span className="font-mono text-blue-700 font-bold text-sm">
-                      {selectedService ? `Rp ${selectedService.cost.toLocaleString("id-ID")}` : "Rp 0"}
+                      Rp {parsedCostNum.toLocaleString("id-ID")}
                     </span>
                   </div>
 

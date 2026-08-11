@@ -2,29 +2,69 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { INDONESIA_LOCATIONS } from "@/lib/indonesia-locations";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 
 interface Customer {
   id: string;
   name: string;
   whatsapp: string;
-  province?: string | null;
-  cityName?: string | null;
-  cityId: number;
-  district?: string | null;
-  subdistrict?: string | null;
-  postalCode?: string | null;
+  domisili?: string | null;
+  shippingCost: number;
+  courier?: string | null;
   addressDetail: string;
+  behavioral?: string | null;
+  consumerType?: string | null;
+  relationshipStatus?: string | null;
+  totalSpending: number;
+  totalTransactions: number;
+  crisisStatus?: string | null;
   createdAt: string;
-  _count?: { orders: number };
 }
 
-interface ApiLocationItem {
-  id: number;
-  name: string;
-  zip_code?: string;
-}
+const COURIER_OPTIONS = [
+  "JNE",
+  "SiCepat",
+  "J&T Express",
+  "TIKI",
+  "POS Indonesia",
+  "IDExpress",
+  "Ninja Express",
+  "Wahana",
+  "Lion Parcel",
+];
+
+const BEHAVIORAL_OPTIONS = [
+  "Loyal",
+  "Repeat Buyer",
+  "Impulse Buyer",
+  "Bargain Hunter",
+  "High Value",
+  "Hesitant",
+];
+
+const CONSUMER_TYPE_OPTIONS = [
+  "Retail",
+  "Reseller",
+  "Dropshipper",
+  "VIP",
+  "Wholesale",
+];
+
+const RELATIONSHIP_STATUS_OPTIONS = [
+  "Active",
+  "Warm",
+  "Cold",
+  "New Lead",
+  "Churned",
+];
+
+const CRISIS_STATUS_OPTIONS = [
+  "Normal",
+  "Low Risk",
+  "Medium Risk",
+  "High Risk",
+  "Blacklisted",
+];
 
 function CustomersPageContent() {
   const searchParams = useSearchParams();
@@ -39,34 +79,24 @@ function CustomersPageContent() {
   // Form fields
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-
-  // Live RajaOngkir Step-by-Step State
-  const [provinces, setProvinces] = useState<ApiLocationItem[]>([]);
-  const [cities, setCities] = useState<ApiLocationItem[]>([]);
-  const [districts, setDistricts] = useState<ApiLocationItem[]>([]);
-  const [subdistricts, setSubdistricts] = useState<ApiLocationItem[]>([]);
-
-  const [selectedProvinceId, setSelectedProvinceId] = useState<number | "">(11);
-  const [selectedProvinceName, setSelectedProvinceName] = useState("RIAU");
-  const [selectedCityId, setSelectedCityId] = useState<number>(338);
-  const [selectedCityName, setSelectedCityName] = useState("Kota Pekanbaru");
-  const [selectedDistrictId, setSelectedDistrictId] = useState<number | "">("");
-  const [selectedDistrictName, setSelectedDistrictName] = useState("Tampan");
-  const [selectedSubdistrictId, setSelectedSubdistrictId] = useState<number | "">("");
-  const [selectedSubdistrictName, setSelectedSubdistrictName] = useState("Delima");
-  const [postalCode, setPostalCode] = useState("28289");
+  const [domisili, setDomisili] = useState("");
+  const [shippingCostInput, setShippingCostInput] = useState<string>("");
+  const [courier, setCourier] = useState("JNE");
   const [addressDetail, setAddressDetail] = useState("");
+  const [behavioral, setBehavioral] = useState("Loyal");
+  const [consumerType, setConsumerType] = useState("Retail");
+  const [relationshipStatus, setRelationshipStatus] = useState("Active");
+  const [crisisStatus, setCrisisStatus] = useState("Normal");
 
-  const [loadingLoc, setLoadingLoc] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const fetchCustomers = async (q = "") => {
+  const fetchCustomers = useCallback(async (q = "") => {
     setLoading(true);
     try {
       const url = q ? `/api/customers?search=${encodeURIComponent(q)}` : "/api/customers";
-      // API Call: GET /api/customers (mengambil daftar pelanggan)
+      // API Call: GET /api/customers (mengambil database pelanggan)
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -77,101 +107,26 @@ function CustomersPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCustomers(search);
-  }, [search]);
-
-  // Load Provinces on Modal Open
-  const loadProvinces = async () => {
-    setLoadingLoc(true);
-    try {
-      // API Call: GET /api/shipping/location/provinces (mengambil data provinsi)
-      const res = await fetch("/api/shipping/location/provinces");
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-        setProvinces(data.data);
-        const first = data.data[0];
-        setSelectedProvinceId(first.id);
-        setSelectedProvinceName(first.name);
-        loadCities(first.id);
-      } else {
-        useLocalFallback();
-      }
-    } catch {
-      useLocalFallback();
-    } finally {
-      setLoadingLoc(false);
-    }
-  };
-
-  const loadCities = async (provId: number) => {
-    try {
-      // API Call: GET /api/shipping/location/cities (mengambil data kota berdasarkan provinsi)
-      const res = await fetch(`/api/shipping/location/cities?provinceId=${provId}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-        setCities(data.data);
-        const first = data.data[0];
-        setSelectedCityId(first.id);
-        setSelectedCityName(first.name);
-        if (first.zip_code && first.zip_code !== "0") setPostalCode(first.zip_code);
-        loadDistricts(first.id);
-      }
-    } catch {
-      // Ignore
-    }
-  };
-
-  const loadDistricts = async (cId: number) => {
-    try {
-      // API Call: GET /api/shipping/location/districts (mengambil data kecamatan berdasarkan kota)
-      const res = await fetch(`/api/shipping/location/districts?cityId=${cId}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-        setDistricts(data.data);
-        const first = data.data[0];
-        setSelectedDistrictId(first.id);
-        setSelectedDistrictName(first.name);
-        if (first.zip_code && first.zip_code !== "0") setPostalCode(first.zip_code);
-        loadSubdistricts(first.id);
-      }
-    } catch {
-      // Ignore
-    }
-  };
-
-  const loadSubdistricts = async (dId: number) => {
-    try {
-      // API Call: GET /api/shipping/location/subdistricts (mengambil data kelurahan berdasarkan kecamatan)
-      const res = await fetch(`/api/shipping/location/subdistricts?districtId=${dId}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-        setSubdistricts(data.data);
-        const first = data.data[0];
-        setSelectedSubdistrictId(first.id);
-        setSelectedSubdistrictName(first.name);
-        if (first.zip_code && first.zip_code !== "0") setPostalCode(first.zip_code);
-      }
-    } catch {
-      // Ignore
-    }
-  };
-
-  const useLocalFallback = () => {
-    const provs = INDONESIA_LOCATIONS.map((l, i) => ({ id: i + 1, name: l.province }));
-    setProvinces(provs);
-  };
+  }, [search, fetchCustomers]);
 
   const openCreateModal = useCallback(() => {
     setEditingCustomer(null);
     setName("");
     setWhatsapp("");
+    setDomisili("Kabupaten Bogor, Jawa Barat");
+    setShippingCostInput("15000");
+    setCourier("JNE");
     setAddressDetail("");
+    setBehavioral("Loyal");
+    setConsumerType("Retail");
+    setRelationshipStatus("Active");
+    setCrisisStatus("Normal");
     setErrorMessage(null);
     setIsModalOpen(true);
-    loadProvinces();
   }, []);
 
   useEffect(() => {
@@ -190,52 +145,16 @@ function CustomersPageContent() {
     setEditingCustomer(c);
     setName(c.name);
     setWhatsapp(c.whatsapp);
-    setSelectedProvinceName(c.province || "RIAU");
-    setSelectedCityName(c.cityName || "Kota Pekanbaru");
-    setSelectedCityId(c.cityId);
-    setSelectedDistrictName(c.district || "Tampan");
-    setSelectedSubdistrictName(c.subdistrict || "Delima");
-    setPostalCode(c.postalCode || "28289");
+    setDomisili(c.domisili || "");
+    setShippingCostInput(c.shippingCost ? String(c.shippingCost) : "0");
+    setCourier(c.courier || "JNE");
     setAddressDetail(c.addressDetail);
+    setBehavioral(c.behavioral || "Loyal");
+    setConsumerType(c.consumerType || "Retail");
+    setRelationshipStatus(c.relationshipStatus || "Active");
+    setCrisisStatus(c.crisisStatus || "Normal");
     setErrorMessage(null);
     setIsModalOpen(true);
-    loadProvinces();
-  };
-
-  const handleProvinceChange = (provId: number) => {
-    setSelectedProvinceId(provId);
-    const pObj = provinces.find((p) => p.id === provId);
-    if (pObj) setSelectedProvinceName(pObj.name);
-    loadCities(provId);
-  };
-
-  const handleCityChange = (cId: number) => {
-    setSelectedCityId(cId);
-    const cObj = cities.find((c) => c.id === cId);
-    if (cObj) {
-      setSelectedCityName(cObj.name);
-      if (cObj.zip_code && cObj.zip_code !== "0") setPostalCode(cObj.zip_code);
-    }
-    loadDistricts(cId);
-  };
-
-  const handleDistrictChange = (dId: number) => {
-    setSelectedDistrictId(dId);
-    const dObj = districts.find((d) => d.id === dId);
-    if (dObj) {
-      setSelectedDistrictName(dObj.name);
-      if (dObj.zip_code && dObj.zip_code !== "0") setPostalCode(dObj.zip_code);
-    }
-    loadSubdistricts(dId);
-  };
-
-  const handleSubdistrictChange = (subId: number) => {
-    setSelectedSubdistrictId(subId);
-    const subObj = subdistricts.find((s) => s.id === subId);
-    if (subObj) {
-      setSelectedSubdistrictName(subObj.name);
-      if (subObj.zip_code && subObj.zip_code !== "0") setPostalCode(subObj.zip_code);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -245,21 +164,22 @@ function CustomersPageContent() {
 
     try {
       const payload = {
-        name,
-        whatsapp,
-        province: selectedProvinceName,
-        cityName: selectedCityName,
-        cityId: selectedCityId,
-        district: selectedDistrictName,
-        subdistrict: selectedSubdistrictName,
-        postalCode,
-        addressDetail,
+        name: name.trim(),
+        whatsapp: whatsapp.trim(),
+        domisili: domisili.trim(),
+        shippingCost: parseInt(shippingCostInput, 10) || 0,
+        courier,
+        addressDetail: addressDetail.trim(),
+        behavioral,
+        consumerType,
+        relationshipStatus,
+        crisisStatus,
       };
 
       const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : "/api/customers";
       const method = editingCustomer ? "PATCH" : "POST";
 
-      // API Call: POST /api/customers atau PATCH /api/customers/[id] (simpan/update data pelanggan)
+      // API Call: POST /api/customers atau PATCH /api/customers/[id]
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -272,7 +192,7 @@ function CustomersPageContent() {
       } else {
         setSuccessMessage(editingCustomer ? "Data pelanggan diperbarui." : "Pelanggan baru berhasil ditambahkan.");
         setIsModalOpen(false);
-        fetchCustomers();
+        fetchCustomers(search);
         setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch (err: unknown) {
@@ -287,14 +207,14 @@ function CustomersPageContent() {
     if (!confirm(`Apakah Anda yakin ingin menghapus pelanggan '${c.name}'?`)) return;
 
     try {
-      // API Call: DELETE /api/customers/[id] (hapus pelanggan dari database)
+      // API Call: DELETE /api/customers/[id]
       const res = await fetch(`/api/customers/${c.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
         alert(data.error || "Gagal menghapus pelanggan.");
       } else {
         setSuccessMessage(`Pelanggan '${c.name}' berhasil dihapus.`);
-        fetchCustomers();
+        fetchCustomers(search);
         setTimeout(() => setSuccessMessage(null), 4000);
       }
     } catch {
@@ -307,7 +227,7 @@ function CustomersPageContent() {
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">CRM Pelanggan</h1>
+          <h1 className="text-xl font-bold text-blue-700 tracking-tight">CRM Database Pelanggan</h1>
         </div>
         <button
           onClick={openCreateModal}
@@ -332,17 +252,17 @@ function CustomersPageContent() {
           <span className="material-symbols-outlined text-slate-400">search</span>
           <input
             type="text"
-            placeholder="Cari nomor WhatsApp, nama, kota, atau kecamatan pelanggan..."
+            placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-slate-50 text-slate-800 text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
           />
         </div>
 
-        {/* Customers Table (Centered) */}
+        {/* Customers Data Table */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">Loading pelanggan...</div>
+            <div className="text-center py-12 text-slate-500 text-sm">Loading database pelanggan...</div>
           ) : customers.length === 0 ? (
             <div className="p-12 text-center text-slate-500 text-sm">
               Tidak ada data pelanggan yang ditemukan.
@@ -352,20 +272,24 @@ function CustomersPageContent() {
               <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
+                    <th className="p-4 text-center">CUST ID</th>
                     <th className="p-4 text-center">Nama Pelanggan</th>
-                    <th className="p-4 text-center">No. WhatsApp</th>
-                    <th className="p-4 text-center">Alamat Jalan</th>
-                    <th className="p-4 text-center">Kecamatan / Kelurahan</th>
-                    <th className="p-4 text-center">Kota / Provinsi</th>
-                    <th className="p-4 text-center">Kode Pos & City ID</th>
-                    <th className="p-4 text-center">Total Order</th>
+                    <th className="p-4 text-center">No. WA</th>
+                    <th className="p-4 text-center">Domisili & Detail Alamat</th>
+                    <th className="p-4 text-center">Ongkir & Ekspedisi</th>
+                    <th className="p-4 text-center">Tipe & Behavioral</th>
+                    <th className="p-4 text-center">Status & Krisis</th>
+                    <th className="p-4 text-center">Spending & Transaksi</th>
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {customers.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-center font-mono font-extrabold text-blue-600">#{c.id}</td>
+                      
                       <td className="p-4 text-center font-bold text-slate-900 text-sm">{c.name}</td>
+                      
                       <td className="p-4 text-center font-mono text-blue-600">
                         <a
                           href={`https://wa.me/${c.whatsapp}`}
@@ -373,26 +297,61 @@ function CustomersPageContent() {
                           rel="noreferrer"
                           className="hover:underline inline-flex items-center gap-1 font-bold justify-center"
                         >
-                          <span className="material-symbols-outlined text-sm text-emerald-600">chat</span>
-                          {c.whatsapp}
+                          💬 {c.whatsapp}
                         </a>
                       </td>
-                      <td className="p-4 text-center max-w-xs text-slate-700 font-medium truncate">{c.addressDetail}</td>
-                      <td className="p-4 text-center text-slate-600">
-                        {c.subdistrict || "-"} / {c.district || "-"}
+
+                      <td className="p-4 text-center max-w-xs">
+                        <span className="font-bold text-slate-800 block truncate">{c.domisili || "-"}</span>
+                        <span className="text-[11px] text-slate-500 block truncate mt-0.5">{c.addressDetail}</span>
                       </td>
-                      <td className="p-4 text-center text-slate-800 font-semibold">
-                        {c.cityName || "-"}, {c.province || "-"}
-                      </td>
+
                       <td className="p-4 text-center font-mono">
-                        <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[11px] font-bold text-slate-700 inline-block">
-                          Pos: {c.postalCode || "-"}
-                        </span>
-                        <span className="text-[10px] text-blue-700 font-bold block mt-0.5">
-                          City ID: {c.cityId}
+                        <span className="font-bold text-slate-900 block">Rp {(c.shippingCost || 0).toLocaleString("id-ID")}</span>
+                        <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold inline-block mt-0.5">
+                          🚚 {c.courier || "JNE"}
                         </span>
                       </td>
-                      <td className="p-4 text-center font-bold text-slate-900">{c._count?.orders || 0} Order</td>
+
+                      <td className="p-4 text-center">
+                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[10px] font-bold block mb-1">
+                          {c.consumerType || "Retail"}
+                        </span>
+                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold block">
+                          {c.behavioral || "Loyal"}
+                        </span>
+                      </td>
+
+                      <td className="p-4 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold block mb-1 ${
+                            c.relationshipStatus === "Active"
+                              ? "bg-blue-600 text-white"
+                              : c.relationshipStatus === "Warm"
+                              ? "bg-amber-500 text-white"
+                              : "bg-slate-600 text-white"
+                          }`}
+                        >
+                          {c.relationshipStatus || "Active"}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold block ${
+                            c.crisisStatus === "High Risk" || c.crisisStatus === "Blacklisted"
+                              ? "bg-rose-600 text-white"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          {c.crisisStatus || "Normal"}
+                        </span>
+                      </td>
+
+                      <td className="p-4 text-center font-mono">
+                        <span className="font-bold text-slate-900 block">Rp {(c.totalSpending || 0).toLocaleString("id-ID")}</span>
+                        <span className="text-[10px] text-slate-500 font-bold block mt-0.5">
+                          {c.totalTransactions || 0} Transaksi
+                        </span>
+                      </td>
+
                       <td className="p-4 text-center">
                         <TableActionsMenu
                           items={[
@@ -420,14 +379,14 @@ function CustomersPageContent() {
 
       </div>
 
-      {/* Modal Live RajaOngkir Step-by-Step Form */}
+      {/* Modal Form Tambah/Edit Pelanggan */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-600 text-lg">travel_explore</span>
-                {editingCustomer ? `Edit Pelanggan [${editingCustomer.name}]` : "Form Pelanggan (RajaOngkir V2 Live Step-by-Step)"}
+                <span className="material-symbols-outlined text-blue-600 text-lg">person</span>
+                {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan Baru"}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 ✕
@@ -440,12 +399,25 @@ function CustomersPageContent() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               
-              {/* Row 1: Nama & WA */}
+              {/* CUST ID Badge */}
+              {editingCustomer ? (
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-700 flex justify-between items-center">
+                  <span>CUST ID:</span>
+                  <span>#{editingCustomer.id}</span>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs font-medium text-blue-800 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-blue-600">auto_awesome</span>
+                  <span>CUST ID akan dibuat otomatis (Format: CST-YYMMDD-XX)</span>
+                </div>
+              )}
+
+              {/* Row 1: Nama & WhatsApp */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Nama Lengkap *</label>
+                  <label className="block text-slate-600 font-semibold mb-1">Nama Pelanggan *</label>
                   <input
                     type="text"
                     value={name}
@@ -457,7 +429,7 @@ function CustomersPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Nomor WhatsApp *</label>
+                  <label className="block text-slate-600 font-semibold mb-1">No. WhatsApp *</label>
                   <input
                     type="text"
                     value={whatsapp}
@@ -469,98 +441,124 @@ function CustomersPageContent() {
                 </div>
               </div>
 
-              {/* Step 1: Province */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Row 2: Domisili, Ongkir, Ekspedisi */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">1. Pilih Provinsi (RajaOngkir V2) *</label>
-                  <select
-                    value={selectedProvinceId}
-                    onChange={(e) => handleProvinceChange(Number(e.target.value))}
-                    disabled={loadingLoc}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium uppercase"
-                  >
-                    {provinces.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Step 2: City */}
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">2. Pilih Kota / Kabupaten *</label>
-                  <select
-                    value={selectedCityId}
-                    onChange={(e) => handleCityChange(Number(e.target.value))}
-                    disabled={cities.length === 0}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium uppercase"
-                  >
-                    {cities.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} (ID: {c.id})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Step 3 & 4: District & Subdistrict */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">3. Pilih Kecamatan *</label>
-                  <select
-                    value={selectedDistrictId}
-                    onChange={(e) => handleDistrictChange(Number(e.target.value))}
-                    disabled={districts.length === 0}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium uppercase"
-                  >
-                    {districts.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-slate-600 font-semibold mb-1">Domisili *</label>
+                  <input
+                    type="text"
+                    value={domisili}
+                    onChange={(e) => setDomisili(e.target.value)}
+                    placeholder="Kab. Bogor, Jawa Barat"
+                    required
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">4. Pilih Kelurahan / Desa *</label>
+                  <label className="block text-slate-600 font-semibold mb-1">Ongkir Default (Rp)</label>
+                  <input
+                    type="number"
+                    value={shippingCostInput}
+                    onChange={(e) => setShippingCostInput(e.target.value)}
+                    placeholder="15000"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Ekspedisi Preferred</label>
                   <select
-                    value={selectedSubdistrictId}
-                    onChange={(e) => handleSubdistrictChange(Number(e.target.value))}
-                    disabled={subdistricts.length === 0}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium uppercase"
+                    value={courier}
+                    onChange={(e) => setCourier(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-bold"
                   >
-                    {subdistricts.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} {s.zip_code ? `(${s.zip_code})` : ""}
+                    {COURIER_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* Row 4: Kode Pos & Detail Jalan */}
+              {/* Row 3: Detail Alamat */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Kode Pos</label>
-                <input
-                  type="text"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Detail Alamat Jalan, RT/RW, & Patokan Rumah *</label>
+                <label className="block text-slate-600 font-semibold mb-1">Detail Alamat Jalan & Patokan *</label>
                 <textarea
                   rows={2}
                   value={addressDetail}
                   onChange={(e) => setAddressDetail(e.target.value)}
-                  placeholder="Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
+                  placeholder="Jl. Jendral Sudirman No. 45, RT 02/RW 05, Patokan Pagar Biru..."
                   required
                   className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
                 />
+              </div>
+
+              {/* Row 4: Behavioral & Tipe Konsumen */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Behavioral</label>
+                  <select
+                    value={behavioral}
+                    onChange={(e) => setBehavioral(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                  >
+                    {BEHAVIORAL_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Tipe Konsumen</label>
+                  <select
+                    value={consumerType}
+                    onChange={(e) => setConsumerType(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                  >
+                    {CONSUMER_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 5: Status Hubungan & Status Krisis */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Status Hubungan</label>
+                  <select
+                    value={relationshipStatus}
+                    onChange={(e) => setRelationshipStatus(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                  >
+                    {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Status Krisis</label>
+                  <select
+                    value={crisisStatus}
+                    onChange={(e) => setCrisisStatus(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                  >
+                    {CRISIS_STATUS_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-3 border-t border-slate-100">
@@ -576,7 +574,7 @@ function CustomersPageContent() {
                   disabled={saving}
                   className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
                 >
-                  {saving ? "Menyimpan..." : "Simpan Pelanggan Live V2"}
+                  {saving ? "Menyimpan..." : "Simpan Data Pelanggan"}
                 </button>
               </div>
             </form>

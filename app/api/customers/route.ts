@@ -1,6 +1,29 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+async function generateAutoCustomerId(): Promise<string> {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const dateCode = `${yy}${mm}${dd}`;
+  const prefix = `CST-${dateCode}-`;
+
+  const count = await prisma.customer.count({
+    where: { id: { startsWith: prefix } },
+  });
+
+  let seq = count + 1;
+  let candidate = `${prefix}${String(seq).padStart(2, "0")}`;
+
+  while (await prisma.customer.findUnique({ where: { id: candidate } })) {
+    seq++;
+    candidate = `${prefix}${String(seq).padStart(2, "0")}`;
+  }
+
+  return candidate;
+}
+
 // GET /api/customers?search=...
 export async function GET(request: Request) {
   try {
@@ -11,11 +34,13 @@ export async function GET(request: Request) {
       where: search
         ? {
             OR: [
+              { id: { contains: search } },
               { name: { contains: search } },
               { whatsapp: { contains: search } },
-              { province: { contains: search } },
-              { cityName: { contains: search } },
-              { district: { contains: search } },
+              { domisili: { contains: search } },
+              { courier: { contains: search } },
+              { behavioral: { contains: search } },
+              { consumerType: { contains: search } },
             ],
           }
         : undefined,
@@ -24,8 +49,6 @@ export async function GET(request: Request) {
           select: { orders: true },
         },
         orders: {
-          take: 5,
-          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             status: true,
@@ -34,15 +57,26 @@ export async function GET(request: Request) {
           },
         },
       },
-      take: 50,
+      take: 100,
       orderBy: {
         createdAt: "desc",
       },
     });
 
+    // Compute live totalSpending & totalTransactions if needed
+    const mapped = customers.map((c) => {
+      const ordersCount = c._count?.orders || 0;
+      const calculatedSpending = c.orders.reduce((sum, o) => sum + (o.status !== "Cancelled" ? o.totalPrice : 0), 0);
+      return {
+        ...c,
+        totalTransactions: c.totalTransactions || ordersCount,
+        totalSpending: c.totalSpending || calculatedSpending,
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data: customers,
+      data: mapped,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";
@@ -53,20 +87,21 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/customers (Create new customer with full address detail)
+// POST /api/customers (Create new customer with auto CUST ID)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
       name,
       whatsapp,
-      province,
-      cityName,
-      cityId,
-      district,
-      subdistrict,
-      postalCode,
+      domisili,
+      shippingCost = 0,
+      courier,
       addressDetail,
+      behavioral,
+      consumerType,
+      relationshipStatus,
+      crisisStatus,
     } = body;
 
     if (!name || !whatsapp || !addressDetail) {
@@ -89,17 +124,21 @@ export async function POST(request: Request) {
       );
     }
 
+    const customId = await generateAutoCustomerId();
+
     const newCustomer = await prisma.customer.create({
       data: {
-        name,
+        id: customId,
+        name: name.trim(),
         whatsapp: cleanWhatsapp,
-        province: province || "",
-        cityName: cityName || "",
-        cityId: cityId ? parseInt(String(cityId), 10) : 338,
-        district: district || "",
-        subdistrict: subdistrict || "",
-        postalCode: postalCode || "",
-        addressDetail,
+        domisili: domisili ? domisili.trim() : null,
+        shippingCost: parseInt(String(shippingCost), 10) || 0,
+        courier: courier ? courier.trim() : "JNE",
+        addressDetail: addressDetail.trim(),
+        behavioral: behavioral ? behavioral.trim() : "Loyal",
+        consumerType: consumerType ? consumerType.trim() : "Retail",
+        relationshipStatus: relationshipStatus ? relationshipStatus.trim() : "Active",
+        crisisStatus: crisisStatus ? crisisStatus.trim() : "Normal",
       },
     });
 

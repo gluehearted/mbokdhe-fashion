@@ -9,7 +9,7 @@ interface Customer {
   name: string;
   whatsapp: string;
   addressDetail: string;
-  cityId: number;
+  domisili?: string | null;
 }
 
 interface Product {

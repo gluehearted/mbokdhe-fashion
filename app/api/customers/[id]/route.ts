@@ -48,7 +48,20 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { name, whatsapp, addressDetail, cityId } = body;
+    const {
+      name,
+      whatsapp,
+      domisili,
+      shippingCost,
+      courier,
+      addressDetail,
+      behavioral,
+      consumerType,
+      relationshipStatus,
+      crisisStatus,
+      totalSpending,
+      totalTransactions,
+    } = body;
 
     const existing = await prisma.customer.findUnique({
       where: { id },
@@ -80,10 +93,18 @@ export async function PATCH(
     const updated = await prisma.customer.update({
       where: { id },
       data: {
-        ...(name && { name }),
+        ...(name && { name: name.trim() }),
         ...(cleanWhatsapp && { whatsapp: cleanWhatsapp }),
-        ...(addressDetail && { addressDetail }),
-        ...(cityId !== undefined && { cityId: parseInt(String(cityId), 10) }),
+        ...(domisili !== undefined && { domisili: domisili ? domisili.trim() : null }),
+        ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
+        ...(courier !== undefined && { courier: courier ? courier.trim() : null }),
+        ...(addressDetail && { addressDetail: addressDetail.trim() }),
+        ...(behavioral !== undefined && { behavioral: behavioral ? behavioral.trim() : null }),
+        ...(consumerType !== undefined && { consumerType: consumerType ? consumerType.trim() : null }),
+        ...(relationshipStatus !== undefined && { relationshipStatus: relationshipStatus ? relationshipStatus.trim() : null }),
+        ...(crisisStatus !== undefined && { crisisStatus: crisisStatus ? crisisStatus.trim() : null }),
+        ...(totalSpending !== undefined && { totalSpending: parseInt(String(totalSpending), 10) }),
+        ...(totalTransactions !== undefined && { totalTransactions: parseInt(String(totalTransactions), 10) }),
       },
     });
 
@@ -127,7 +148,6 @@ export async function DELETE(
       );
     }
 
-    // Guard: Prevent deletion if active ongoing orders exist
     if (customer.orders.length > 0) {
       return NextResponse.json(
         {

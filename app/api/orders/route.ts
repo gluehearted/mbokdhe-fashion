@@ -72,13 +72,14 @@ export async function POST(request: Request) {
           update: {
             name: customerData.name,
             addressDetail: customerData.addressDetail,
-            cityId: parseInt(String(customerData.cityId), 10),
+            domisili: customerData.domisili || null,
           },
           create: {
+            id: customerData.id || `CST-${Date.now()}`,
             name: customerData.name,
             whatsapp: cleanWa,
             addressDetail: customerData.addressDetail,
-            cityId: parseInt(String(customerData.cityId), 10),
+            domisili: customerData.domisili || null,
           },
         });
         finalCustomerId = customer.id;

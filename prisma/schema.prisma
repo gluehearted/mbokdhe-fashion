@@ -7,21 +7,6 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model ShopConfig {
-  id            String   @id @default("default")
-  shopName      String   @default("Mbokdhe Fashion")
-  senderName    String   @default("Admin Mbokdhe")
-  senderPhone   String   @default("081234567890")
-  province      String   @default("Jawa Barat")
-  cityName      String   @default("Kabupaten Bogor")
-  originCityId  Int      @default(54)
-  district      String   @default("Sukaraja")
-  subdistrict   String   @default("Cijujung")
-  postalCode    String   @default("16710")
-  addressDetail String   @default("Perum Kostrad Cijujung Permai Blok D.1")
-  updatedAt     DateTime @updatedAt
-}
-
 model Shop {
   id        String   @id @default(uuid())
   name      String   @unique
@@ -29,18 +14,21 @@ model Shop {
 }
 
 model Customer {
-  id            String   @id @default(uuid())
-  name          String
-  whatsapp      String   @unique
-  province      String?  // Provinsi (Misal: Riau)
-  cityName      String?  // Kota/Kabupaten (Misal: Kota Pekanbaru)
-  cityId        Int      // ID Kota dari RajaOngkir (Misal: 338)
-  district      String?  // Kecamatan (Misal: Tampan)
-  subdistrict   String?  // Kelurahan / Desa (Misal: Delima)
-  postalCode    String?  // Kode Pos (Misal: 28289)
-  addressDetail String   // Detail Jalan, RT/RW, No. Rumah
-  createdAt     DateTime @default(now())
-  orders        Order[]
+  id                 String   @id // CUST ID generate otomatis (e.g. CST-260811-01)
+  name               String   // NAMA PELANGGAN
+  whatsapp           String   @unique // NO. WA
+  domisili           String?  // DOMISILI
+  shippingCost       Int      @default(0) // Ongkir
+  courier            String?  // Ekspedisi
+  addressDetail      String   // Detail Alamat
+  behavioral         String?  // BEHAVIORAL
+  consumerType       String?  // TIPE KONSUMEN
+  relationshipStatus String?  // STATUS HUBUNGAN
+  totalSpending      Int      @default(0) // TOTAL SPENDING
+  totalTransactions  Int      @default(0) // TOTAL TRANSAKSI
+  crisisStatus       String?  // STATUS KRISIS
+  createdAt          DateTime @default(now())
+  orders             Order[]
 }
 
 model Order {
@@ -48,29 +36,29 @@ model Order {
   customerId      String
   customer        Customer  @relation(fields: [customerId], references: [id])
   status          String    // "Keep", "DP", "Siap_Packing", "Shipped", "Cancelled"
-  shippingCourier String?   // "jne", "pos", "tiki"
-  shippingService String?   // "REG", "OKE"
-  shippingCost    Int       @default(0)
-  totalWeightGram Int       @default(1000) // Total berat gramasi 1 orderan
+  shippingCourier String?   // Ekspedisi
+  shippingService String?   // Layanan
+  shippingCost    Int       @default(0) // Ongkir
+  totalWeightGram Int       @default(1000)
   dpAmount        Int       @default(0)
   dpForfeited     Boolean   @default(false)
   dpDate          DateTime?
   totalPrice      Int       @default(0)
   trackingNo      String?   // Nomor Resi Pengiriman
-  notes           String?   // Catatan tambahan / DP forfeit info
+  notes           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   products        Product[]
 }
 
 model Product {
-  id           String   @id // Dynamic ID Manual (Misal: T01, B12)
+  id           String   @id
   orderId      String?
   order        Order?   @relation(fields: [orderId], references: [id])
   shopOrigin   String
-  capitalPrice Int      @default(0) // Harga Modal
-  price        Int      // Harga Jual
+  capitalPrice Int      @default(0)
+  price        Int
   status       String   @default("Available") // "Available", "Booked", "Sold"
-  photoUrl     String   // Path lokal (Misal: /uploads/T01.jpg)
+  photoUrl     String
   createdAt    DateTime @default(now())
 }
