@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 
 export interface ActionMenuItem {
   label: string;
-  icon?: string;
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;
@@ -36,7 +35,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
       const rect = buttonRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       const spaceBelow = windowHeight - rect.bottom;
-      const openUp = spaceBelow < 160; // If less than 160px below, open upwards
+      const openUp = spaceBelow < 160;
 
       setMenuCoords({
         top: openUp ? rect.top - 8 : rect.bottom + 6,
@@ -87,7 +86,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
         bottom: menuCoords.openUp ? `${window.innerHeight - menuCoords.top}px` : undefined,
         right: `${menuCoords.right}px`,
       }}
-      className="w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-[9999] py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100 text-left"
+      className="w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-[9999] py-1.5 overflow-hidden text-left"
     >
       {items.map((item, idx) => (
         <button
@@ -98,17 +97,12 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
             setIsOpen(false);
             item.onClick();
           }}
-          className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
             item.danger
-              ? "text-rose-700 hover:bg-rose-50"
+              ? "text-blue-900 hover:bg-slate-100 font-bold"
               : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"
           }`}
         >
-          {item.icon && (
-            <span className="material-symbols-outlined text-base">
-              {item.icon}
-            </span>
-          )}
           <span>{item.label}</span>
         </button>
       ))}
@@ -117,18 +111,15 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
 
   return (
     <div className="relative inline-block text-center">
-      {/* Trigger Button (Hamburger / More Vert Icon) */}
       <button
         ref={buttonRef}
         type="button"
         onClick={toggleMenu}
-        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors active:scale-95 border border-slate-200 mx-auto"
-        title="Menu Aksi"
+        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200 mx-auto"
       >
-        <span className="material-symbols-outlined text-lg">more_vert</span>
+        Aksi
       </button>
 
-      {/* Render via Portal to avoid overflow clipping */}
       {mounted && typeof document !== "undefined" && menuContent && createPortal(menuContent, document.body)}
     </div>
   );

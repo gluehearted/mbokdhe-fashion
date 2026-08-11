@@ -44,7 +44,6 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
 
-  // Edit Resi state
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
   const [savingResi, setSavingResi] = useState(false);
@@ -52,7 +51,6 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // API Call: GET /api/orders (mengambil daftar seluruh pesanan)
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
@@ -71,7 +69,6 @@ export default function OrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      // API Call: PATCH /api/orders/[id] (memperbarui status pipeline pesanan)
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -92,7 +89,6 @@ export default function OrdersPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus order #${orderId.slice(0, 8)}?`)) return;
 
     try {
-      // API Call: DELETE /api/orders/[id] (menghapus pesanan)
       const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
@@ -111,7 +107,6 @@ export default function OrdersPage() {
     setSavingResi(true);
 
     try {
-      // API Call: PATCH /api/orders/[id] (menyimpan nomor resi pengiriman & update status ke Dikirim)
       const res = await fetch(`/api/orders/${editingResiOrder.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -145,7 +140,7 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
@@ -154,15 +149,14 @@ export default function OrdersPage() {
 
         <Link
           href="/orders/new"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
         >
-          <span className="material-symbols-outlined text-sm font-bold">add</span>
-          <span>Buat Pesanan Baru</span>
+          Buat Pesanan Baru
         </Link>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
 
         {/* Filter Tabs & Search Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
@@ -223,11 +217,6 @@ export default function OrdersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredOrders.map((o) => {
-                    const isDpAging =
-                      o.status === "DP" &&
-                      o.dpDate &&
-                      Date.now() - new Date(o.dpDate).getTime() > 24 * 60 * 60 * 1000;
-
                     return (
                       <tr key={o.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-mono font-extrabold text-blue-600">
@@ -241,7 +230,7 @@ export default function OrdersPage() {
                               <p className="text-[11px] font-mono text-slate-500">{o.customer.whatsapp}</p>
                             </div>
                           ) : (
-                            <span className="text-slate-400 font-italic">Pelanggan terhapus</span>
+                            <span className="text-slate-400">Pelanggan terhapus</span>
                           )}
                         </td>
 
@@ -269,7 +258,7 @@ export default function OrdersPage() {
 
                         <td className="p-4 text-center font-mono">
                           {o.trackingNo ? (
-                            <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 text-[11px]">
+                            <span className="text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded border border-blue-200 text-[11px]">
                               {o.trackingNo}
                             </span>
                           ) : (
@@ -282,32 +271,24 @@ export default function OrdersPage() {
                             Rp {o.totalPrice.toLocaleString("id-ID")}
                           </span>
                           {o.dpAmount > 0 && (
-                            <span className="text-[11px] text-amber-700 font-mono font-bold block">
+                            <span className="text-[11px] text-blue-700 font-mono font-bold block">
                               DP: Rp {o.dpAmount.toLocaleString("id-ID")}
                             </span>
                           )}
                         </td>
 
                         <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <select
-                              value={o.status === "Keep" ? "Menunggu" : o.status === "Shipped" ? "Dikirim" : o.status}
-                              onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                              className="bg-slate-50 text-slate-800 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-blue-600"
-                            >
-                              <option value="Menunggu">Menunggu</option>
-                              <option value="DP">DP</option>
-                              <option value="Siap Packing">Siap Packing</option>
-                              <option value="Dikirim">Dikirim</option>
-                              <option value="Dibatalkan">Dibatalkan</option>
-                            </select>
-
-                            {isDpAging && (
-                              <span className="bg-rose-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                                ⏱️ &gt;24h
-                              </span>
-                            )}
-                          </div>
+                          <select
+                            value={o.status === "Keep" ? "Menunggu" : o.status === "Shipped" ? "Dikirim" : o.status}
+                            onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                            className="bg-slate-50 text-slate-800 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-blue-600"
+                          >
+                            <option value="Menunggu">Menunggu</option>
+                            <option value="DP">DP</option>
+                            <option value="Siap Packing">Siap Packing</option>
+                            <option value="Dikirim">Dikirim</option>
+                            <option value="Dibatalkan">Dibatalkan</option>
+                          </select>
                         </td>
 
                         <td className="p-4 text-center">
@@ -315,7 +296,6 @@ export default function OrdersPage() {
                             items={[
                               {
                                 label: o.trackingNo ? "Edit Resi" : "Input Resi",
-                                icon: "local_shipping",
                                 onClick: () => {
                                   setEditingResiOrder(o);
                                   setTrackingNoInput(o.trackingNo || "");
@@ -323,13 +303,11 @@ export default function OrdersPage() {
                               },
                               {
                                 label: "Set Lunas (Siap Packing)",
-                                icon: "task_alt",
                                 onClick: () => updateOrderStatus(o.id, "Siap Packing"),
                                 disabled: o.status === "Siap Packing" || o.status === "Dikirim",
                               },
                               {
                                 label: "Hapus Order",
-                                icon: "delete",
                                 danger: true,
                                 onClick: () => handleDeleteOrder(o.id),
                               },
@@ -344,29 +322,35 @@ export default function OrdersPage() {
             </div>
           )}
         </div>
+
       </div>
 
-      {/* Modal Input Nomor Resi */}
+      {/* Modal Edit Resi */}
       {editingResiOrder && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
-              Input / Update Nomor Resi
-            </h3>
-            <p className="text-xs text-slate-500">
-              Order ID: <code className="text-blue-600 font-mono font-bold">#{editingResiOrder.id.slice(0, 8)}</code>
-            </p>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900">
+                Input Nomor Resi [#{editingResiOrder.id.slice(0, 8)}]
+              </h3>
+              <button
+                onClick={() => setEditingResiOrder(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                Batal
+              </button>
+            </div>
 
             <form onSubmit={handleSaveResi} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Nomor Resi Pengiriman</label>
+                <label className="block text-slate-600 font-semibold mb-1">Nomor Resi Pengiriman *</label>
                 <input
                   type="text"
                   value={trackingNoInput}
                   onChange={(e) => setTrackingNoInput(e.target.value)}
-                  placeholder="Misal: JNE1234567890"
+                  placeholder="Contoh: JNE8829102391"
                   required
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono uppercase"
+                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono focus:border-blue-600 focus:outline-none uppercase"
                 />
               </div>
 
@@ -374,14 +358,14 @@ export default function OrdersPage() {
                 <button
                   type="button"
                   onClick={() => setEditingResiOrder(null)}
-                  className="w-1/2 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200"
+                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingResi}
-                  className="w-1/2 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all"
+                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
                 >
                   {savingResi ? "Simpan..." : "Simpan Resi"}
                 </button>

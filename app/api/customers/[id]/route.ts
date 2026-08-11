@@ -130,15 +130,6 @@ export async function DELETE(
     const { id } = await context.params;
     const customer = await prisma.customer.findUnique({
       where: { id },
-      include: {
-        orders: {
-          where: {
-            status: {
-              in: ["Keep", "DP", "Siap_Packing"],
-            },
-          },
-        },
-      },
     });
 
     if (!customer) {
@@ -148,23 +139,40 @@ export async function DELETE(
       );
     }
 
-    if (customer.orders.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Pelanggan '${customer.name}' tidak dapat dihapus karena masih memiliki ${customer.orders.length} transaksi berjalan.`,
-        },
-        { status: 400 }
-      );
-    }
+    // Cascade deletion: Delete customer and their orders, but retain products (unlinked & set to Tersedia)
+    await prisma.$transaction(async (tx) => {
+      const orders = await tx.order.findMany({
+        where: { customerId: id },
+        select: { id: true },
+      });
 
-    await prisma.customer.delete({
-      where: { id },
+      const orderIds = orders.map((o) => o.id);
+
+      if (orderIds.length > 0) {
+        // Unlink products, set status back to "Tersedia"
+        await tx.product.updateMany({
+          where: { orderId: { in: orderIds } },
+          data: {
+            orderId: null,
+            status: "Tersedia",
+          },
+        });
+
+        // Delete all orders for this customer
+        await tx.order.deleteMany({
+          where: { customerId: id },
+        });
+      }
+
+      // Delete customer record
+      await tx.customer.delete({
+        where: { id },
+      });
     });
 
     return NextResponse.json({
       success: true,
-      message: `Pelanggan '${customer.name}' berhasil dihapus.`,
+      message: `Pelanggan '${customer.name}' beserta seluruh riwayat pesanan berhasil dihapus (produk dikembalikan ke etalase Tersedia).`,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";

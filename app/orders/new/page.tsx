@@ -38,19 +38,16 @@ const AVAILABLE_COURIERS = [
 export default function NewOrderPage() {
   const router = useRouter();
 
-  // Database Data
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Form Selection
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
   const [orderStatus, setOrderStatus] = useState("Menunggu");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
-  // Shipping & Courier (Manual Direct Entry, No RajaOngkir)
   const [selectedCourier, setSelectedCourier] = useState("JNE");
   const [manualShippingCost, setManualShippingCost] = useState<string>("15000");
 
@@ -61,7 +58,6 @@ export default function NewOrderPage() {
     async function loadData() {
       setLoadingData(true);
       try {
-        // API Call: GET /api/customers & GET /api/products
         const [resCust, resProd] = await Promise.all([
           fetch("/api/customers"),
           fetch("/api/products?status=Tersedia"),
@@ -82,7 +78,6 @@ export default function NewOrderPage() {
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
 
-  // Auto populate customer preferred courier & shipping cost when selected
   const handleCustomerChange = (cId: string) => {
     setSelectedCustomerId(cId);
     const target = customers.find((c) => c.id === cId);
@@ -94,7 +89,6 @@ export default function NewOrderPage() {
 
   const selectedProducts = availableProducts.filter((p) => selectedProductIds.includes(p.id));
 
-  // Compute total products selling price with custom overrides
   const totalBarangPrice = selectedProducts.reduce((sum, p) => {
     const customStr = customPrices[p.id];
     const priceVal = customStr !== undefined && customStr !== "" ? (parseInt(customStr, 10) || 0) : p.price;
@@ -141,7 +135,6 @@ export default function NewOrderPage() {
     const parsedCost = parseInt(manualShippingCost, 10) || 0;
     const parsedDp = parseInt(dpAmountInput, 10) || 0;
 
-    // Prepare custom prices map for API
     const formattedCustomPrices: Record<string, number> = {};
     selectedProductIds.forEach((pId) => {
       const priceStr = customPrices[pId];
@@ -154,7 +147,6 @@ export default function NewOrderPage() {
     setErrorMessage(null);
 
     try {
-      // API Call: POST /api/orders (simpan pesanan baru)
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -189,7 +181,7 @@ export default function NewOrderPage() {
   const totalTagihan = totalBarangPrice + parsedCostNum;
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
@@ -197,17 +189,17 @@ export default function NewOrderPage() {
         </div>
         <Link
           href="/orders"
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors"
+          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors border border-slate-200"
         >
           ← Kembali ke Tabel Orders
         </Link>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
-            ⚠️ {errorMessage}
+          <div className="mb-4 p-4 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-semibold">
+            {errorMessage}
           </div>
         )}
 
@@ -222,8 +214,8 @@ export default function NewOrderPage() {
               {/* Step 1: Select Customer */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600">person</span> 1. Pilih Pelanggan Tujuan
+                  <h3 className="text-sm font-bold text-slate-900">
+                    1. Pilih Pelanggan Tujuan
                   </h3>
                   <Link
                     href="/customers?action=new"
@@ -252,7 +244,7 @@ export default function NewOrderPage() {
                 {selectedCustomer && (
                   <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-blue-700">📍 Detail Pelanggan:</span>
+                      <span className="font-bold text-blue-700">Detail Pelanggan:</span>
                       <span className="font-mono text-xs font-bold text-blue-600">#{selectedCustomer.id}</span>
                     </div>
                     <p className="font-semibold text-slate-900">{selectedCustomer.name} (WA: {selectedCustomer.whatsapp})</p>
@@ -266,12 +258,10 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 2: Multi-Select Available Products (with Editable Prices) */}
+              {/* Step 2: Multi-Select Available Products */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex justify-between items-center">
-                  <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600">local_mall</span> 2. Pilih Produk Tas & Edit Harga Jual
-                  </span>
+                  <span>2. Pilih Produk Tas & Edit Harga Jual</span>
                   <span className="text-xs text-blue-600 font-mono font-bold">
                     {selectedProductIds.length} Tas Terpilih
                   </span>
@@ -279,7 +269,7 @@ export default function NewOrderPage() {
 
                 {availableProducts.length === 0 ? (
                   <p className="text-slate-500 text-xs py-4 text-center">
-                    Tidak ada tas berstatus &apos;Available&apos; saat ini.
+                    Tidak ada tas berstatus &apos;Tersedia&apos; saat ini.
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
@@ -293,7 +283,7 @@ export default function NewOrderPage() {
                           onClick={() => toggleProductSelect(p)}
                           className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between text-xs ${
                             isSelected
-                              ? "bg-blue-50/90 border-blue-600 text-blue-900 shadow-sm"
+                              ? "bg-blue-50 border-blue-600 text-blue-900 shadow-sm"
                               : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
                           }`}
                         >
@@ -310,7 +300,6 @@ export default function NewOrderPage() {
                             />
                           </div>
 
-                          {/* Editable Price Field */}
                           {isSelected ? (
                             <div
                               className="mt-3 pt-2 border-t border-blue-200 flex items-center justify-between gap-2"
@@ -340,10 +329,10 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 3: Input Ekspedisi & Ongkos Kirim (Manual Input, No RajaOngkir) */}
+              {/* Step 3: Input Ekspedisi & Ongkos Kirim */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
-                <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600">local_shipping</span> 3. Ekspedisi & Nominal Ongkos Kirim
+                <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
+                  3. Ekspedisi & Nominal Ongkos Kirim
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -384,7 +373,7 @@ export default function NewOrderPage() {
               {/* Status & DP */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm text-xs">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                  ⚙️ Status Pesanan & DP
+                  Status Pesanan & DP
                 </h3>
 
                 <div>
@@ -412,10 +401,10 @@ export default function NewOrderPage() {
                 </div>
               </div>
 
-              {/* Summary Tagihan Simpel */}
+              {/* Summary Tagihan */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm text-xs">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                  💳 Ringkasan Tagihan Order
+                  Ringkasan Tagihan Order
                 </h3>
 
                 <div className="space-y-3">
@@ -446,7 +435,7 @@ export default function NewOrderPage() {
                   disabled={submitting}
                   className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-all text-sm disabled:opacity-50"
                 >
-                  {submitting ? "Memproses Pesanan..." : "🛍️ SIMPAN PESANAN"}
+                  {submitting ? "Memproses Pesanan..." : "SIMPAN PESANAN"}
                 </button>
               </div>
 

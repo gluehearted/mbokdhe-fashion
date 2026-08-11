@@ -37,11 +37,11 @@ interface Order {
 interface DailySummary {
   date: string;
   orderCount: number;
-  grossRevenue: number; // Total Penjualan
-  capitalCost: number;  // Total Modal
+  grossRevenue: number;
+  capitalCost: number;
   shippingCostSum: number;
-  dpForfeitedSum: number; // Keuntungan dari DP Hangus
-  netProfit: number;     // Gross Revenue - Capital Cost - Shipping (atau Margin + DP Hangus)
+  dpForfeitedSum: number;
+  netProfit: number;
 }
 
 export default function ProfitReportPage() {
@@ -53,7 +53,6 @@ export default function ProfitReportPage() {
   const fetchFinancialOrders = useCallback(async () => {
     setLoading(true);
     try {
-      // API Call: GET /api/orders (mengambil seluruh transaksi untuk rekapitulasi keuangan)
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
@@ -70,16 +69,14 @@ export default function ProfitReportPage() {
     fetchFinancialOrders();
   }, [fetchFinancialOrders]);
 
-  // Compute Overall Metrics across completed/paid orders
   const metrics = useMemo(() => {
-    let totalGrossRevenue = 0; // Total Price of completed/paid orders
-    let totalCapitalCost = 0;  // Total Capital Price of products sold
+    let totalGrossRevenue = 0;
+    let totalCapitalCost = 0;
     let totalShippingCost = 0;
-    let totalDpForfeited = 0;  // Profit from forfeited DPs
+    let totalDpForfeited = 0;
     let completedOrderCount = 0;
 
     orders.forEach((o) => {
-      // Include completed/settled/shipped orders
       if (o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped") {
         completedOrderCount++;
         totalGrossRevenue += o.totalPrice;
@@ -89,7 +86,6 @@ export default function ProfitReportPage() {
         totalCapitalCost += prodCapital;
       }
 
-      // Add forfeited DP earnings
       if (o.dpForfeited && o.dpAmount > 0) {
         totalDpForfeited += o.dpAmount;
       }
@@ -108,7 +104,6 @@ export default function ProfitReportPage() {
     };
   }, [orders]);
 
-  // Group orders into daily/weekly summaries
   const summaries = useMemo(() => {
     const map: Record<string, DailySummary> = {};
 
@@ -126,7 +121,6 @@ export default function ProfitReportPage() {
       });
 
       if (timeframe === "WEEKLY") {
-        // Group by Year & Week Number
         const startOfYear = new Date(dateObj.getFullYear(), 0, 1);
         const pastDaysOfYear = (dateObj.getTime() - startOfYear.getTime()) / 86400000;
         const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
@@ -166,7 +160,6 @@ export default function ProfitReportPage() {
       }
     });
 
-    // Calculate net profit for each summary group
     const list = Object.values(map).map((s) => {
       const prodRevenue = s.grossRevenue - s.shippingCostSum;
       const profit = (prodRevenue - s.capitalCost) + s.dpForfeitedSum;
@@ -179,7 +172,6 @@ export default function ProfitReportPage() {
     return list;
   }, [orders, timeframe]);
 
-  // Filter individual detailed transactions for profit history
   const filteredCompletedOrders = useMemo(() => {
     return orders.filter((o) => {
       const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped" || o.dpForfeited;
@@ -192,49 +184,47 @@ export default function ProfitReportPage() {
   }, [orders, search]);
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold text-blue-700 tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-blue-600">payments</span>
             Rekapitulasi Keuangan & Laporan Keuntungan
           </h1>
         </div>
         <button
           onClick={fetchFinancialOrders}
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5"
+          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors border border-slate-200"
         >
-          <span className="material-symbols-outlined text-sm">refresh</span>
-          <span>Refresh Rekap</span>
+          Refresh Rekap
         </button>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
 
-        {/* Financial KPI Summary Cards (4 Metric Cards) */}
+        {/* Financial KPI Summary Cards (4 Metric Cards - Clean Blue & White) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* Card 1: Total Profit Bersih */}
-          <div className="bg-white rounded-xl p-5 border border-emerald-200 shadow-sm flex flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-white to-emerald-50/40">
-            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
-              💰 Total Profit Bersih
+          <div className="bg-white rounded-xl p-5 border border-blue-200 shadow-sm flex flex-col gap-2 bg-gradient-to-br from-white to-blue-50/40">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+              Total Profit Bersih
             </span>
             <div className="flex items-end justify-between">
-              <span className="text-2xl font-extrabold text-emerald-700 font-mono">
+              <span className="text-2xl font-extrabold text-blue-900 font-mono">
                 Rp {metrics.totalNetProfit.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-emerald-800 font-medium">
-              Keuntungan bersih (Omset Barang - Modal + DP Hangus)
+            <span className="text-[10px] text-slate-500 font-medium">
+              Keuntungan bersih (Omset - Modal + DP Hangus)
             </span>
           </div>
 
           {/* Card 2: Total Omset Penjualan */}
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              📈 Omset Penjualan (Gross)
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Omset Penjualan (Gross)
             </span>
             <div className="flex items-end justify-between">
               <span className="text-2xl font-bold text-slate-900 font-mono">
@@ -242,14 +232,14 @@ export default function ProfitReportPage() {
               </span>
             </div>
             <span className="text-[10px] text-slate-500 font-medium">
-              Akumulasi {metrics.completedOrderCount} pesanan selesai/lunas
+              Akumulasi {metrics.completedOrderCount} pesanan selesai
             </span>
           </div>
 
           {/* Card 3: Total Modal Pembelian */}
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              📦 Total Modal Tas
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              Total Modal Tas
             </span>
             <div className="flex items-end justify-between">
               <span className="text-2xl font-bold text-slate-900 font-mono">
@@ -257,22 +247,22 @@ export default function ProfitReportPage() {
               </span>
             </div>
             <span className="text-[10px] text-slate-500 font-medium">
-              Total harga beli modal dari supplier toko
+              Total modal beli dari supplier
             </span>
           </div>
 
-          {/* Card 4: DP Hangus / Forfeit Earnings */}
-          <div className="bg-white rounded-xl p-5 border border-amber-200 shadow-sm flex flex-col gap-2 bg-gradient-to-br from-white to-amber-50/40">
-            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
-              🔥 Keuntungan DP Hangus
+          {/* Card 4: DP Hangus */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
+            <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+              Keuntungan DP Hangus
             </span>
             <div className="flex items-end justify-between">
-              <span className="text-2xl font-extrabold text-amber-700 font-mono">
+              <span className="text-2xl font-extrabold text-blue-900 font-mono">
                 Rp {metrics.totalDpForfeited.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-amber-800 font-medium">
-              Dana DP terbekukan yang hangus akibat pembatalan
+            <span className="text-[10px] text-slate-500 font-medium">
+              Dana DP terbekukan yang hangus
             </span>
           </div>
 
@@ -282,8 +272,7 @@ export default function ProfitReportPage() {
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm space-y-4 p-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-600">assessment</span>
+              <h2 className="text-base font-bold text-slate-900">
                 Tabel Rekapitulasi Laporan Keuangan
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -330,7 +319,7 @@ export default function ProfitReportPage() {
                     <th className="p-4 text-center">Omset Penjualan</th>
                     <th className="p-4 text-center">Total Modal Tas</th>
                     <th className="p-4 text-center">Total Ongkir</th>
-                    <th className="p-4 text-center">DP Hangus (Forfeit)</th>
+                    <th className="p-4 text-center">DP Hangus</th>
                     <th className="p-4 text-center">Profit Bersih</th>
                   </tr>
                 </thead>
@@ -348,10 +337,10 @@ export default function ProfitReportPage() {
                       <td className="p-4 text-center font-mono text-slate-500">
                         Rp {s.shippingCostSum.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-mono font-bold text-amber-700">
+                      <td className="p-4 text-center font-mono font-bold text-blue-700">
                         +Rp {s.dpForfeitedSum.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-mono font-extrabold text-emerald-600 bg-emerald-50/50">
+                      <td className="p-4 text-center font-mono font-extrabold text-blue-700 bg-blue-50">
                         +Rp {s.netProfit.toLocaleString("id-ID")}
                       </td>
                     </tr>
@@ -366,8 +355,7 @@ export default function ProfitReportPage() {
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm p-5 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-600">receipt_long</span>
+              <h2 className="text-base font-bold text-slate-900">
                 Rincian Margin Profit Transaksi Lunas / Selesai
               </h2>
             </div>
@@ -423,14 +411,8 @@ export default function ProfitReportPage() {
                           </div>
                         </td>
                         <td className="p-4 text-center">
-                          <span
-                            className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${
-                              o.dpForfeited
-                                ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                            }`}
-                          >
-                            {o.dpForfeited ? "DP Hangus (Forfeit)" : o.status}
+                          <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                            {o.dpForfeited ? "DP Hangus" : o.status}
                           </span>
                         </td>
                         <td className="p-4 text-center font-mono text-slate-600">
@@ -439,7 +421,7 @@ export default function ProfitReportPage() {
                         <td className="p-4 text-center font-mono font-bold text-slate-900">
                           Rp {sellingSum.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-center font-mono font-extrabold text-emerald-600">
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-700">
                           +Rp {netMargin.toLocaleString("id-ID")}
                         </td>
                       </tr>

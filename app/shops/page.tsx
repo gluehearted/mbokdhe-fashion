@@ -14,7 +14,6 @@ export default function ShopsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [shopNameInput, setShopNameInput] = useState("");
@@ -26,7 +25,6 @@ export default function ShopsPage() {
   const fetchShops = useCallback(async () => {
     setLoading(true);
     try {
-      // API Call: GET /api/shops (mengambil daftar kelola toko)
       const res = await fetch("/api/shops");
       const data = await res.json();
       if (data.success) {
@@ -80,7 +78,6 @@ export default function ShopsPage() {
       const url = editingShop ? `/api/shops/${editingShop.id}` : "/api/shops";
       const method = editingShop ? "PATCH" : "POST";
 
-      // API Call: POST /api/shops atau PATCH /api/shops/[id] (simpan/update toko)
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -109,7 +106,6 @@ export default function ShopsPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus toko '${shop.name}'?`)) return;
 
     try {
-      // API Call: DELETE /api/shops/[id] (hapus toko dari database)
       const res = await fetch(`/api/shops/${shop.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -129,7 +125,7 @@ export default function ShopsPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
@@ -137,18 +133,17 @@ export default function ShopsPage() {
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
         >
-          <span className="material-symbols-outlined text-sm font-bold">add</span>
-          <span>Tambah Toko Baru</span>
+          Tambah Toko Baru
         </button>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold text-center">
-            ✅ {successMessage}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
+            {successMessage}
           </div>
         )}
 
@@ -190,10 +185,7 @@ export default function ShopsPage() {
                     <tr key={shop.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4 text-center font-mono font-bold text-slate-500">{idx + 1}</td>
                       <td className="p-4 text-center font-bold text-slate-900">
-                        <span className="inline-flex items-center gap-1.5 justify-center">
-                          <span className="material-symbols-outlined text-blue-600 text-base">storefront</span>
-                          <span>{shop.name}</span>
-                        </span>
+                        {shop.name}
                       </td>
                       <td className="p-4 text-center text-slate-500 font-mono">
                         {new Date(shop.createdAt).toLocaleDateString("id-ID", {
@@ -207,12 +199,10 @@ export default function ShopsPage() {
                           items={[
                             {
                               label: "Edit Nama Toko",
-                              icon: "edit",
                               onClick: () => openEditModal(shop),
                             },
                             {
                               label: "Hapus Toko",
-                              icon: "delete",
                               danger: true,
                               onClick: () => handleDelete(shop),
                             },
@@ -237,8 +227,8 @@ export default function ShopsPage() {
             </h3>
 
             {errorMessage && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
-                ⚠️ {errorMessage}
+              <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold">
+                {errorMessage}
               </div>
             )}
 
@@ -260,7 +250,7 @@ export default function ShopsPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
                 >
                   Batal
                 </button>

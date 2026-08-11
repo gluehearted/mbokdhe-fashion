@@ -72,11 +72,9 @@ function CustomersPageContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-  // Form fields
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [domisili, setDomisili] = useState("");
@@ -96,7 +94,6 @@ function CustomersPageContent() {
     setLoading(true);
     try {
       const url = q ? `/api/customers?search=${encodeURIComponent(q)}` : "/api/customers";
-      // API Call: GET /api/customers (mengambil database pelanggan)
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -149,9 +146,9 @@ function CustomersPageContent() {
     setShippingCostInput(c.shippingCost ? String(c.shippingCost) : "0");
     setCourier(c.courier || "JNE");
     setAddressDetail(c.addressDetail);
-    setBehavioral(c.behavioral || "Loyal");
-    setConsumerType(c.consumerType || "Retail");
-    setRelationshipStatus(c.relationshipStatus || "Active");
+    setBehavioral(c.behavioral || "Pelanggan Setia");
+    setConsumerType(c.consumerType || "Eceran");
+    setRelationshipStatus(c.relationshipStatus || "Aktif");
     setCrisisStatus(c.crisisStatus || "Normal");
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -179,7 +176,6 @@ function CustomersPageContent() {
       const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : "/api/customers";
       const method = editingCustomer ? "PATCH" : "POST";
 
-      // API Call: POST /api/customers atau PATCH /api/customers/[id]
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -204,10 +200,9 @@ function CustomersPageContent() {
   };
 
   const handleDelete = async (c: Customer) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus pelanggan '${c.name}'?`)) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus pelanggan '${c.name}'? Seluruh pesanan terkait akan ikut terhapus, tetapi produk akan kembali ke etalase Tersedia.`)) return;
 
     try {
-      // API Call: DELETE /api/customers/[id]
       const res = await fetch(`/api/customers/${c.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -223,7 +218,7 @@ function CustomersPageContent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
@@ -231,25 +226,23 @@ function CustomersPageContent() {
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
         >
-          <span className="material-symbols-outlined text-sm font-bold">add</span>
-          <span>Tambah Pelanggan Baru</span>
+          Tambah Pelanggan Baru
         </button>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
 
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold text-center">
-            ✅ {successMessage}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-semibold text-center">
+            {successMessage}
           </div>
         )}
 
         {/* Search Bar */}
-        <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center gap-3">
-          <span className="material-symbols-outlined text-slate-400">search</span>
+        <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
           <input
             type="text"
             placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
@@ -295,9 +288,9 @@ function CustomersPageContent() {
                           href={`https://wa.me/${c.whatsapp}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="hover:underline inline-flex items-center gap-1 font-bold justify-center"
+                          className="hover:underline font-bold"
                         >
-                          💬 {c.whatsapp}
+                          {c.whatsapp}
                         </a>
                       </td>
 
@@ -309,38 +302,24 @@ function CustomersPageContent() {
                       <td className="p-4 text-center font-mono">
                         <span className="font-bold text-slate-900 block">Rp {(c.shippingCost || 0).toLocaleString("id-ID")}</span>
                         <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold inline-block mt-0.5">
-                          🚚 {c.courier || "JNE"}
+                          {c.courier || "JNE"}
                         </span>
                       </td>
 
                       <td className="p-4 text-center">
-                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[10px] font-bold block mb-1">
-                          {c.consumerType || "Retail"}
+                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-bold block mb-1">
+                          {c.consumerType || "Eceran"}
                         </span>
-                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold block">
-                          {c.behavioral || "Loyal"}
+                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 text-[10px] font-bold block">
+                          {c.behavioral || "Pelanggan Setia"}
                         </span>
                       </td>
 
                       <td className="p-4 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold block mb-1 ${
-                            c.relationshipStatus === "Active"
-                              ? "bg-blue-600 text-white"
-                              : c.relationshipStatus === "Warm"
-                              ? "bg-amber-500 text-white"
-                              : "bg-slate-600 text-white"
-                          }`}
-                        >
-                          {c.relationshipStatus || "Active"}
+                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold block mb-1">
+                          {c.relationshipStatus || "Aktif"}
                         </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold block ${
-                            c.crisisStatus === "High Risk" || c.crisisStatus === "Blacklisted"
-                              ? "bg-rose-600 text-white"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
-                        >
+                        <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-bold block">
                           {c.crisisStatus || "Normal"}
                         </span>
                       </td>
@@ -357,12 +336,10 @@ function CustomersPageContent() {
                           items={[
                             {
                               label: "Edit Pelanggan",
-                              icon: "edit",
                               onClick: () => openEditModal(c),
                             },
                             {
                               label: "Hapus Pelanggan",
-                              icon: "delete",
                               danger: true,
                               onClick: () => handleDelete(c),
                             },
@@ -384,18 +361,17 @@ function CustomersPageContent() {
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-600 text-lg">person</span>
+              <h3 className="text-base font-bold text-slate-900">
                 {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan Baru"}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                ✕
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">
+                Batal
               </button>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
-                ⚠️ {errorMessage}
+              <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold">
+                {errorMessage}
               </div>
             )}
 
@@ -408,9 +384,8 @@ function CustomersPageContent() {
                   <span>#{editingCustomer.id}</span>
                 </div>
               ) : (
-                <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs font-medium text-blue-800 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-base text-blue-600">auto_awesome</span>
-                  <span>CUST ID akan dibuat otomatis (Format: CST-YYMMDD-XX)</span>
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-800">
+                  CUST ID akan dibuat otomatis (Format: CST-YYMMDD-XX)
                 </div>
               )}
 
@@ -489,7 +464,7 @@ function CustomersPageContent() {
                   rows={2}
                   value={addressDetail}
                   onChange={(e) => setAddressDetail(e.target.value)}
-                  placeholder="Jl. Jendral Sudirman No. 45, RT 02/RW 05, Patokan Pagar Biru..."
+                  placeholder="Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
                   required
                   className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
                 />
@@ -565,7 +540,7 @@ function CustomersPageContent() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
                 >
                   Batal
                 </button>
