@@ -1,0 +1,442 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+
+interface Product {
+  id: string;
+  shopOrigin: string;
+  capitalPrice: number;
+  price: number;
+  status: string;
+  photoUrl: string;
+  orderId?: string | null;
+  createdAt: string;
+}
+
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Form Fields (Initial state empty / null)
+  const [id, setId] = useState("");
+  const [shopOrigin, setShopOrigin] = useState("Sukaraja (Kab. Bogor)");
+  const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
+  const [priceInput, setPriceInput] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Debounced Profit State
+  const [debouncedProfit, setDebouncedProfit] = useState<number | null>(null);
+
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const url = statusFilter !== "ALL" ? `/api/products?status=${statusFilter}` : "/api/products";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setProducts(data.data);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [statusFilter]);
+
+  // Debounce Profit Calculation Effect (Calculates after typing stops)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const capital = parseInt(capitalPriceInput, 10);
+      const sell = parseInt(priceInput, 10);
+      if (!isNaN(capital) && !isNaN(sell)) {
+        setDebouncedProfit(sell - capital);
+      } else {
+        setDebouncedProfit(null);
+      }
+    }, 400); // 400ms debounce delay
+
+    return () => clearTimeout(handler);
+  }, [capitalPriceInput, priceInput]);
+
+  const openCreateModal = () => {
+    setEditingProduct(null);
+    setId("");
+    setShopOrigin("Sukaraja (Kab. Bogor)");
+    setCapitalPriceInput("");
+    setPriceInput("");
+    setDebouncedProfit(null);
+    setFile(null);
+    setPreviewUrl(null);
+    setErrorMessage(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (p: Product) => {
+    setEditingProduct(p);
+    setId(p.id);
+    setShopOrigin(p.shopOrigin);
+    setCapitalPriceInput(p.capitalPrice ? String(p.capitalPrice) : "");
+    setPriceInput(p.price ? String(p.price) : "");
+    setDebouncedProfit(p.price - (p.capitalPrice || 0));
+    setFile(null);
+    setPreviewUrl(p.photoUrl);
+    setErrorMessage(null);
+    setIsModalOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selected = e.target.files[0];
+      setFile(selected);
+      setPreviewUrl(URL.createObjectURL(selected));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setErrorMessage(null);
+
+    const capitalVal = parseInt(capitalPriceInput, 10) || 0;
+    const priceVal = parseInt(priceInput, 10);
+
+    if (isNaN(priceVal) || priceVal <= 0) {
+      setErrorMessage("Harga Jual wajib diisi dengan nominal angka valid.");
+      setSaving(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("id", id);
+      formData.append("shopOrigin", shopOrigin);
+      formData.append("capitalPrice", String(capitalVal));
+      formData.append("price", String(priceVal));
+      if (file) {
+        formData.append("file", file);
+      }
+
+      const url = editingProduct ? `/api/products/${editingProduct.id}` : "/api/products";
+      const method = editingProduct ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Gagal menyimpan produk.");
+      } else {
+        setSuccessMessage(editingProduct ? "Produk berhasil diperbarui." : "Produk baru berhasil ditambahkan.");
+        setIsModalOpen(false);
+        fetchProducts();
+        setTimeout(() => setSuccessMessage(null), 4000);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
+      setErrorMessage(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (p: Product) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus produk '${p.id}' secara permanen?`)) return;
+
+    try {
+      const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data.error || "Gagal menghapus produk.");
+      } else {
+        setSuccessMessage(`Produk ${p.id} berhasil dihapus.`);
+        fetchProducts();
+        setTimeout(() => setSuccessMessage(null), 4000);
+      }
+    } catch {
+      alert("Terjadi kesalahan koneksi.");
+    }
+  };
+
+  const filteredProducts = products.filter((p) =>
+    p.id.toLowerCase().includes(search.toLowerCase()) ||
+    p.shopOrigin.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f7f9fb]">
+      {/* Top Header Bar */}
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-blue-700 tracking-tight">Katalog Produk Tas</h1>
+        </div>
+        <button
+          onClick={openCreateModal}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors active:scale-95 shadow-sm"
+        >
+          <span className="material-symbols-outlined text-sm font-bold">add</span>
+          <span>Tambah Produk Tas</span>
+        </button>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto p-6 bg-[#f7f9fb] w-full pb-8 space-y-6">
+
+        {successMessage && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold">
+            ✅ {successMessage}
+          </div>
+        )}
+
+        {/* Filter Tabs & Search */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+            {[
+              { label: "Semua Produk", value: "ALL" },
+              { label: "Tersedia (Available)", value: "Available" },
+              { label: "Dibekukan (Booked)", value: "Booked" },
+              { label: "Terjual (Sold)", value: "Sold" },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  statusFilter === tab.value
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="text"
+            placeholder="Cari ID produk tas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+          />
+        </div>
+
+        {/* Products Table View */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          {loading ? (
+            <div className="text-center py-12 text-slate-500 text-sm">Loading produk...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="p-12 text-center text-slate-500 text-sm">
+              Tidak ada produk yang ditemukan.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-700">
+                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="p-4">Foto</th>
+                    <th className="p-4">ID Tas</th>
+                    <th className="p-4">Toko Asal</th>
+                    <th className="p-4">Harga Modal</th>
+                    <th className="p-4">Harga Jual</th>
+                    <th className="p-4">Profit (Margin)</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {filteredProducts.map((p) => {
+                    const profit = p.price - (p.capitalPrice || 0);
+
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-4">
+                          <div className="w-12 h-12 rounded bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center">
+                            {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
+                              <Image src={p.photoUrl} alt={p.id} fill className="object-cover" />
+                            ) : (
+                              <span className="material-symbols-outlined text-slate-400 text-base">local_mall</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 font-mono font-extrabold text-blue-600">#{p.id}</td>
+                        <td className="p-4 font-bold text-slate-900">{p.shopOrigin}</td>
+                        <td className="p-4 font-mono text-slate-600">
+                          Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-4 font-mono font-bold text-slate-900">
+                          Rp {p.price.toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-4 font-mono font-bold text-emerald-600">
+                          +Rp {profit.toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase shadow-sm ${
+                              p.status === "Available"
+                                ? "bg-blue-600 text-white"
+                                : p.status === "Booked"
+                                ? "bg-amber-500 text-white"
+                                : "bg-slate-600 text-white"
+                            }`}
+                          >
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => openEditModal(p)}
+                            disabled={p.status === "Sold"}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-all disabled:opacity-40"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p)}
+                            disabled={p.status === "Sold"}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition-all disabled:opacity-40"
+                          >
+                            🗑️ Hapus
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Modal Tambah/Edit Produk Tas */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
+              {editingProduct ? `Edit Produk Tas [${editingProduct.id}]` : "Tambah Produk Tas Baru"}
+            </h3>
+
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+                ⚠️ {errorMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">ID Tas (Custom ID) *</label>
+                <input
+                  type="text"
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
+                  disabled={!!editingProduct}
+                  placeholder="Misal: T01, H14, B42"
+                  required
+                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Toko Asal / Supplier *</label>
+                <input
+                  type="text"
+                  value={shopOrigin}
+                  onChange={(e) => setShopOrigin(e.target.value)}
+                  placeholder="Sukaraja (Kab. Bogor)"
+                  required
+                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Harga Modal (Rp)</label>
+                  <input
+                    type="number"
+                    value={capitalPriceInput}
+                    onChange={(e) => setCapitalPriceInput(e.target.value)}
+                    placeholder="Misal: 150000"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Harga Jual (Rp) *</label>
+                  <input
+                    type="number"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    placeholder="Misal: 250000"
+                    required
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Debounced Profit Margin Display */}
+              {debouncedProfit !== null && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-semibold flex justify-between items-center transition-all">
+                  <span>Estimasi Profit Margin:</span>
+                  <span className="font-mono font-bold text-sm text-emerald-700">
+                    {debouncedProfit >= 0 ? `+Rp ${debouncedProfit.toLocaleString("id-ID")}` : `-Rp ${Math.abs(debouncedProfit).toLocaleString("id-ID")}`}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Upload Foto Produk Tas (Lokal)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-300 text-xs"
+                />
+              </div>
+
+              {previewUrl && (
+                <div className="w-full h-32 bg-slate-100 rounded-lg overflow-hidden relative flex items-center justify-center border border-slate-200">
+                  <Image src={previewUrl} alt="Preview" fill className="object-contain" />
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                >
+                  {saving ? "Menyimpan..." : "Simpan Produk Tas"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
