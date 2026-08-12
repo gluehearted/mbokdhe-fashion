@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
@@ -53,7 +53,7 @@ export default function OrdersPage() {
   const [trackingNoInput, setTrackingNoInput] = useState("");
   const [savingResi, setSavingResi] = useState(false);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/orders");
@@ -66,11 +66,20 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    let isMounted = true;
+    async function load() {
+      if (isMounted) {
+        await fetchOrders();
+      }
+    }
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {

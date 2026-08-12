@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ToastProvider";
 
 interface Customer {
@@ -67,7 +67,7 @@ export default function ReadyToShipPage() {
   const [trackingNoInput, setTrackingNoInput] = useState("");
   const [savingResi, setSavingResi] = useState(false);
 
-  const fetchReadyOrders = async () => {
+  const fetchReadyOrders = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/orders");
@@ -87,11 +87,20 @@ export default function ReadyToShipPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchReadyOrders();
-  }, []);
+    let isMounted = true;
+    async function load() {
+      if (isMounted) {
+        await fetchReadyOrders();
+      }
+    }
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchReadyOrders]);
 
   const handleCopyTemplate = (o: Order) => {
     const text = generateShippingTemplate(o);
