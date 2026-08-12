@@ -36,7 +36,7 @@ export function Sidebar() {
   if (pathname === "/login") return null;
 
   const navItems = [
-    { label: "Dashboard", path: "/", icon: "dashboard" },
+    { label: "Dashboard", path: "/dashboard", icon: "dashboard" },
     { label: "Products", path: "/products", icon: "inventory_2" },
     { label: "Kelola Toko", path: "/shops", icon: "store" },
     { label: "Customers", path: "/customers", icon: "group" },
@@ -73,7 +73,7 @@ export function Sidebar() {
         <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive =
-              item.path === "/" ? pathname === "/" : pathname.startsWith(item.path);
+              pathname === item.path || (item.path !== "/dashboard" && pathname.startsWith(item.path));
             return (
               <Link
                 key={item.path}
