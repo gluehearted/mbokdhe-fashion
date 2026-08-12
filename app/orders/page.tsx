@@ -160,32 +160,32 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">Pipeline & Rekap Pesanan</h1>
+          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Pipeline & Rekap Pesanan</h1>
         </div>
 
         <div className="flex items-center gap-3">
           {/* View Mode Toggle */}
-          <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center gap-1 text-xs">
+          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1 text-xs">
             <button
               onClick={() => setViewMode("card")}
               className={`px-3 py-1 rounded-md font-bold transition-all ${
                 viewMode === "card"
-                  ? "bg-white text-blue-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              Tampilan Card
+              Tampilan Kartu
             </button>
             <button
               onClick={() => setViewMode("table")}
               className={`px-3 py-1 rounded-md font-bold transition-all ${
                 viewMode === "table"
-                  ? "bg-white text-blue-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               Tampilan Tabel
@@ -202,10 +202,10 @@ export default function OrdersPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
               {label: "Semua Order", value: "ALL" },

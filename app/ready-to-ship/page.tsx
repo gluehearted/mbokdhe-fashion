@@ -158,26 +158,26 @@ export default function ReadyToShipPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">
+          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">
             Rekap Pesanan Perlu Dikirim ({filteredOrders.length})
           </h1>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
 
         {/* Search Bar & Banner */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
           <div className="space-y-0.5">
-            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
               Rekapitulasi Pesanan Belum Dikirim (Sudah DP / Lunas)
             </h2>
-            <p className="text-slate-500 text-[11px]">
+            <p className="text-slate-500 dark:text-slate-400 text-[11px]">
               Klik &quot;Salin Label&quot; atau &quot;Kirim WA&quot; untuk mengirimkan detail alamat pengiriman ke pelanggan.
             </p>
           </div>
@@ -187,15 +187,15 @@ export default function ReadyToShipPage() {
             placeholder="Cari nama, WA, ID order..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
           />
         </div>
 
         {/* Cards Grid */}
         {loading ? (
-          <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan siap dikirim...</div>
+          <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading pesanan siap dikirim...</div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-sm shadow-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500 dark:text-slate-400 text-sm shadow-sm">
             Tidak ada pesanan yang perlu dikirim saat ini. Semua pesanan sudah terkirim!
           </div>
         ) : (

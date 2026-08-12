@@ -201,11 +201,11 @@ function CustomersPageContent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">CRM Database Pelanggan</h1>
+          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">CRM Database Pelanggan</h1>
         </div>
         <button
           onClick={openCreateModal}
@@ -216,31 +216,31 @@ function CustomersPageContent() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
 
         {/* Search Bar */}
-        <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
           <input
             type="text"
             placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-50 text-slate-800 text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+            className="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
           />
         </div>
 
         {/* Customers Data Table */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">Loading database pelanggan...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading database pelanggan...</div>
           ) : customers.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-sm">
               Tidak ada data pelanggan yang ditemukan.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4 text-center">CUST ID</th>
                     <th className="p-4 text-center">Nama Pelanggan</th>

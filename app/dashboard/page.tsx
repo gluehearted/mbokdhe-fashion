@@ -147,11 +147,32 @@ export default async function DashboardPage() {
               <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
                 {totalAvailableBags}
               </span>
-              <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800/60">
-                Tersedia
+            </div>
+          </div>
+
+                    {/* Card 3: Total Order Hari Ini */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Total Order Hari Ini
+            </h3>
+            <div className="flex items-end justify-between">
+              <span className="text-3xl font-extrabold text-blue-700 dark:text-blue-400 font-mono">
+                {todayOrderCount}
               </span>
             </div>
           </div>
+
+          {/* Card 4: Perlu Dikirim */}
+          <Link href="/ready-to-ship" className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              Perlu Dikirim
+            </h3>
+            <div className="flex items-end justify-between">
+              <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
+                {readyToShipCount}
+              </span>
+            </div>
+          </Link>
 
           {/* Card 2: Total Keuntungan */}
           <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-blue-200 dark:border-blue-800/80 shadow-sm flex flex-col gap-2 bg-gradient-to-br from-white dark:from-slate-900 to-blue-50/30 dark:to-blue-950/30 transition-colors">
@@ -167,36 +188,6 @@ export default async function DashboardPage() {
               Profit bersih toko
             </span>
           </div>
-
-          {/* Card 3: Total Order Hari Ini */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Total Order Hari Ini
-            </h3>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-extrabold text-blue-700 dark:text-blue-400 font-mono">
-                {todayOrderCount}
-              </span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
-                Hari Ini
-              </span>
-            </div>
-          </div>
-
-          {/* Card 4: Perlu Dikirim */}
-          <Link href="/ready-to-ship" className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-              Perlu Dikirim
-            </h3>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
-                {readyToShipCount}
-              </span>
-              <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2 py-1 rounded border border-blue-200 dark:border-blue-800/60">
-                Perlu Dikirim
-              </span>
-            </div>
-          </Link>
 
         </div>
 

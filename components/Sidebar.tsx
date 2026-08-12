@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ThemeToggle } from "./ThemeToggle";
+import { ThemeToggle } from "./ThemeProvider";
 
 interface UserProfile {
   email: string;

@@ -126,11 +126,11 @@ export default function ShopsPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">Kelola Toko & Supplier</h1>
+          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Kelola Toko & Supplier</h1>
         </div>
         <button
           onClick={openCreateModal}
@@ -141,11 +141,11 @@ export default function ShopsPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
 
         {/* Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-          <h2 className="text-sm font-bold text-slate-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-white">
             Daftar Nama Toko Terdaftar ({filteredShops.length})
           </h2>
           <input
@@ -153,22 +153,22 @@ export default function ShopsPage() {
             placeholder="Cari nama toko..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
           />
         </div>
 
         {/* Shops Table */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">Loading toko...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading toko...</div>
           ) : filteredShops.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-sm">
               Belum ada toko yang terdaftar. Klik &quot;Tambah Toko Baru&quot; untuk menambahkan.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4 text-center">No</th>
                     <th className="p-4 text-center">Nama Toko / Supplier</th>
@@ -176,14 +176,14 @@ export default function ShopsPage() {
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {filteredShops.map((shop, idx) => (
-                    <tr key={shop.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 text-center font-mono font-bold text-slate-500">{idx + 1}</td>
-                      <td className="p-4 text-center font-bold text-slate-900">
+                    <tr key={shop.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="p-4 text-center font-mono font-bold text-slate-500 dark:text-slate-400">{idx + 1}</td>
+                      <td className="p-4 text-center font-bold text-slate-900 dark:text-white">
                         {shop.name}
                       </td>
-                      <td className="p-4 text-center text-slate-500 font-mono">
+                      <td className="p-4 text-center text-slate-500 dark:text-slate-400 font-mono">
                         {new Date(shop.createdAt).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
@@ -218,21 +218,21 @@ export default function ShopsPage() {
 
       {/* Modal Tambah/Edit Toko */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
               {editingShop ? "Edit Nama Toko" : "Tambah Toko Baru"}
             </h3>
 
             {errorMessage && (
-              <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-bold">
                 {errorMessage}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Nama Toko / Supplier *</label>
+                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Nama Toko / Supplier *</label>
                 <input
                   type="text"
                   value={shopNameInput}
@@ -240,15 +240,15 @@ export default function ShopsPage() {
                   placeholder="Contoh: Sukaraja Store, Supplier Batam"
                   required
                   autoFocus
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
+                  className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                 >
                   Batal
                 </button>
