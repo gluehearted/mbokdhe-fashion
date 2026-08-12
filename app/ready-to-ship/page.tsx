@@ -13,7 +13,10 @@ interface Customer {
 
 interface Product {
   id: string;
-  shopOrigin: string;
+  shop?: {
+    id: string;
+    name: string;
+  } | null;
   capitalPrice?: number;
   price: number;
 }

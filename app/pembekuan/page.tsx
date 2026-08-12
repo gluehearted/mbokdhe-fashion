@@ -11,7 +11,10 @@ interface Customer {
 
 interface Product {
   id: string;
-  shopOrigin: string;
+  shop?: {
+    id: string;
+    name: string;
+  } | null;
   capitalPrice?: number;
   price: number;
   status: string;
@@ -405,7 +408,7 @@ export default function ProfitReportPage() {
                           <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
                             {o.products.map((p) => (
                               <span key={p.id} className="bg-blue-50 text-blue-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200">
-                                #{p.id} ({p.shopOrigin})
+                                #{p.id} {p.shop?.name ? `(${p.shop.name})` : ""}
                               </span>
                             ))}
                           </div>

@@ -15,7 +15,10 @@ interface Customer {
 
 interface Product {
   id: string;
-  shopOrigin: string;
+  shop?: {
+    id: string;
+    name: string;
+  } | null;
   capitalPrice?: number;
   price: number;
   discount?: number;
@@ -447,10 +450,10 @@ export default function OrdersPage() {
                             o.products.map((p) => (
                               <span
                                 key={p.id}
-                                className="bg-blue-50 text-blue-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200"
-                                title={`Supplier: ${p.shopOrigin}`}
+                                className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-extrabold text-[11px]"
+                                title={`Supplier: ${p.shop?.name || "-"}`}
                               >
-                                #{p.id} ({p.shopOrigin})
+                                #{p.id} {p.shop?.name ? `(${p.shop.name})` : ""}
                               </span>
                             ))
                           ) : (

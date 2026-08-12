@@ -7,7 +7,11 @@ import { useToast } from "@/components/ToastProvider";
 
 interface Product {
   id: string;
-  shopOrigin: string;
+  shopId?: string | null;
+  shop?: {
+    id: string;
+    name: string;
+  } | null;
   capitalPrice: number;
   price: number;
   discount?: number;
@@ -129,7 +133,7 @@ export default function ProductsPage() {
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
     setId(p.id);
-    setShopOrigin(p.shopOrigin);
+    setShopOrigin(p.shop?.name || "");
     setCapitalPriceInput(String(p.capitalPrice || 0));
     setPriceInput(String(p.price));
     setDescriptionInput(p.description || "");
@@ -213,7 +217,7 @@ export default function ProductsPage() {
 
   const filteredProducts = products.filter((p) =>
     p.id.toLowerCase().includes(search.toLowerCase()) ||
-    p.shopOrigin.toLowerCase().includes(search.toLowerCase()) ||
+    (p.shop?.name && p.shop.name.toLowerCase().includes(search.toLowerCase())) ||
     (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -325,7 +329,7 @@ export default function ProductsPage() {
                           {p.description || "-"}
                         </td>
                         <td className="p-4 text-center font-bold text-slate-900">
-                          {p.shopOrigin}
+                          {p.shop?.name || "-"}
                         </td>
                         <td className="p-4 text-center font-mono text-slate-600">
                           Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
@@ -408,7 +412,7 @@ export default function ProductsPage() {
                 <h3 className="text-base font-extrabold text-blue-700 font-mono">
                   Detail Foto Produk #{viewingPhotoProduct.id}
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">Supplier Toko: {viewingPhotoProduct.shopOrigin}</p>
+                <p className="text-xs text-slate-500 font-medium">Supplier Toko: {viewingPhotoProduct.shop?.name || "-"}</p>
               </div>
               <button
                 onClick={() => setViewingPhotoProduct(null)}

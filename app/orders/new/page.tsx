@@ -18,7 +18,10 @@ interface Customer {
 
 interface Product {
   id: string;
-  shopOrigin: string;
+  shop?: {
+    id: string;
+    name: string;
+  } | null;
   capitalPrice?: number;
   price: number;
   description?: string;
@@ -610,8 +613,8 @@ export default function NewOrderPage() {
                 <h3 className="text-base font-extrabold text-blue-700 font-mono">
                   Foto Tas #{zoomProduct.id}
                 </h3>
-                {zoomProduct.shopOrigin && (
-                  <p className="text-xs text-slate-500 font-medium">Toko Supplier: {zoomProduct.shopOrigin}</p>
+                {zoomProduct.shop?.name && (
+                  <p className="text-xs text-slate-500 font-medium">Toko Supplier: {zoomProduct.shop.name}</p>
                 )}
               </div>
               <button
