@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import imageCompression from "browser-image-compression";
+import { supabase } from "@/lib/supabase";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 
@@ -56,6 +58,8 @@ export default function ProductsPage() {
   const [descriptionInput, setDescriptionInput] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [compressedInfo, setCompressedInfo] = useState<string | null>(null);
 
   const [debouncedProfit, setDebouncedProfit] = useState<number | null>(null);
 
@@ -126,6 +130,7 @@ export default function ProductsPage() {
     setDescriptionInput("");
     setFile(null);
     setPreviewUrl(null);
+    setCompressedInfo(null);
     setErrorMessage(null);
     setIsModalOpen(true);
   };
@@ -143,11 +148,33 @@ export default function ProductsPage() {
     setIsModalOpen(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      setFile(selectedFile);
-      setPreviewUrl(URL.createObjectURL(selectedFile));
+      const originalFile = e.target.files[0];
+      setCompressing(true);
+      setCompressedInfo(null);
+
+      try {
+        const options = {
+          maxSizeMB: 0.3, // Maksimal 300 KB
+          maxWidthOrHeight: 1200, // Maksimal dimensi gambar 1200px
+          useWebWorker: true,
+        };
+
+        const origSizeKB = (originalFile.size / 1024).toFixed(1);
+        const compressedFile = await imageCompression(originalFile, options);
+        const compSizeKB = (compressedFile.size / 1024).toFixed(1);
+
+        setCompressedInfo(`Ukuran Asli: ${origSizeKB} KB ➔ Dikompresi: ${compSizeKB} KB (<300 KB)`);
+        setFile(compressedFile);
+        setPreviewUrl(URL.createObjectURL(compressedFile));
+      } catch (err) {
+        console.error("Gagal mengompresi foto:", err);
+        setFile(originalFile);
+        setPreviewUrl(URL.createObjectURL(originalFile));
+      } finally {
+        setCompressing(false);
+      }
     }
   };
 
@@ -163,11 +190,29 @@ export default function ProductsPage() {
 
     try {
       const formData = new FormData();
-      if (id) formData.append("id", id.trim());
       formData.append("shopOrigin", shopOrigin.trim());
       formData.append("capitalPrice", capitalPriceInput);
       formData.append("price", priceInput);
       formData.append("description", descriptionInput.trim());
+
+      // If Supabase Storage is configured, upload directly to Supabase
+      if (supabase && file) {
+        try {
+          const fileExt = file.name.split(".").pop() || "jpg";
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+          const filePath = `bags/${fileName}`;
+          const { error: uploadError } = await supabase.storage.from("products").upload(filePath, file);
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(filePath);
+            if (publicUrlData?.publicUrl) {
+              formData.append("photoUrl", publicUrlData.publicUrl);
+            }
+          }
+        } catch (sErr) {
+          console.warn("Upload Supabase tidak aktif, menggunakan penyimpanan lokal:", sErr);
+        }
+      }
+
       if (file) {
         formData.append("file", file);
       }
@@ -591,8 +636,19 @@ export default function ProductsPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  disabled={compressing}
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
                 />
+                {compressing && (
+                  <p className="text-xs text-blue-600 font-bold mt-1.5 animate-pulse">
+                    ⚡ Mengompresi foto di browser (target &lt; 300 KB)...
+                  </p>
+                )}
+                {compressedInfo && !compressing && (
+                  <p className="text-[11px] text-blue-700 font-mono font-bold mt-1.5 bg-blue-50 p-2 rounded-lg border border-blue-200">
+                    ✅ {compressedInfo}
+                  </p>
+                )}
               </div>
 
               {/* Preview Foto */}
