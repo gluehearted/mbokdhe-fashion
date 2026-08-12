@@ -430,18 +430,13 @@ function CustomersPageContent() {
 
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Ekspedisi Preferred</label>
-                  <select
+                  <input
+                    type="text"
                     value={courier}
                     onChange={(e) => setCourier(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
-                  >
-                    <option value="">-- Pilih Ekspedisi --</option>
-                    {COURIER_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Contoh: JNE, SiCepat, J&T, Lion"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
                 </div>
               </div>
 
@@ -462,18 +457,13 @@ function CustomersPageContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Behavioral</label>
-                  <select
+                  <input
+                    type="text"
                     value={behavioral}
                     onChange={(e) => setBehavioral(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
-                  >
-                    <option value="">-- Pilih Behavioral --</option>
-                    {BEHAVIORAL_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Contoh: Impulsif, Ragu-ragu, Pelanggan Setia, Pemburu Diskon"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
                 </div>
 
                 <div>
@@ -492,18 +482,13 @@ function CustomersPageContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Status Hubungan</label>
-                  <select
+                  <input
+                    type="text"
                     value={relationshipStatus}
                     onChange={(e) => setRelationshipStatus(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
-                  >
-                    <option value="">-- Pilih Status Hubungan --</option>
-                    {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Contoh: New Customer, Repeat Buyer, Aktif, Prospek Baru"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
                 </div>
 
                 <div>
