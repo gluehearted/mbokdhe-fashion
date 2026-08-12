@@ -3,26 +3,25 @@ import { NextResponse, type NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public static assets and auth API endpoints
-  if (
+  // Public routes accessible without authentication
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/uploads") ||
-    pathname === "/favicon.ico"
-  ) {
-    return NextResponse.next();
-  }
+    pathname === "/favicon.ico";
 
   const sessionCookie = request.cookies.get("mbokdhe_session")?.value;
   const isAuthenticated = Boolean(sessionCookie && sessionCookie === "active_admin_session");
 
-  // Redirect authenticated user away from login page to dashboard
+  // Redirect authenticated user away from login page to admin dashboard
   if (pathname === "/login" && isAuthenticated) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Redirect unauthenticated user accessing protected pages to login page
-  if (pathname !== "/login" && !isAuthenticated) {
+  // Redirect unauthenticated user accessing protected routes to login page
+  if (!isPublicRoute && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);

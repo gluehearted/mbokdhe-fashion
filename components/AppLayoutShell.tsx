@@ -6,9 +6,9 @@ import { FloatingNewOrderButton } from "@/components/FloatingNewOrderButton";
 
 export function AppLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
+  const isPublicPage = pathname === "/" || pathname === "/login";
 
-  if (isLoginPage) {
+  if (isPublicPage) {
     return (
       <div className="min-h-screen w-full bg-slate-900 text-slate-900 font-sans overflow-x-hidden">
         {children}
