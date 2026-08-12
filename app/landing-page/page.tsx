@@ -47,7 +47,6 @@ export default async function LandingPage() {
           <nav className="hidden sm:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#katalog" className="hover:text-blue-700 transition-colors">Katalog Tas</a>
             <a href="#keunggulan" className="hover:text-blue-700 transition-colors">Keunggulan</a>
-            <a href="#kontak" className="hover:text-blue-700 transition-colors">Hubungi Kami</a>
           </nav>
         </div>
       </header>
