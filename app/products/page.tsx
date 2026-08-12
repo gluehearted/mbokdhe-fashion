@@ -521,18 +521,18 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Modal Form Tambah/Edit Produk */}
+      {/* Modal Tambah/Edit Produk */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh] transition-colors">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 {editingProduct ? `Edit Produk [${editingProduct.id}]` : "Tambah Produk Tas Baru"}
               </h3>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-bold">
                 {errorMessage}
               </div>
             )}
@@ -541,25 +541,25 @@ export default function ProductsPage() {
               
               {/* Product ID Notice */}
               {editingProduct ? (
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-700 flex justify-between items-center">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-blue-700 dark:text-blue-400 flex justify-between items-center">
                   <span>ID TAS (CUSTOM):</span>
                   <span>#{editingProduct.id}</span>
                 </div>
               ) : (
-                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-800">
+                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-lg text-xs font-medium text-blue-800 dark:text-blue-300">
                   ID Tas akan di-generate otomatis berdasarkan Toko Asal & tanggal input (misal: SKR-260811-01)
                 </div>
               )}
 
               {/* Row 1: Toko Asal (Supplier) */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Toko Asal / Supplier *</label>
+                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Toko Asal / Supplier *</label>
                 {shops.length > 0 ? (
                   <select
                     value={shopOrigin}
                     onChange={(e) => setShopOrigin(e.target.value)}
                     required
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-bold"
                   >
                     <option value="">-- Pilih Toko Asal / Supplier --</option>
                     {shops.map((s) => (
@@ -575,7 +575,7 @@ export default function ProductsPage() {
                     onChange={(e) => setShopOrigin(e.target.value)}
                     placeholder="Contoh: Sukaraja Store, Supplier Batam"
                     required
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-bold"
                   />
                 )}
               </div>
@@ -583,32 +583,32 @@ export default function ProductsPage() {
               {/* Row 2: Harga Modal & Harga Jual */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Harga Modal (Rp)</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Harga Modal (Rp)</label>
                   <input
                     type="number"
                     value={capitalPriceInput}
                     onChange={(e) => setCapitalPriceInput(e.target.value)}
                     placeholder="Contoh: 70000"
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Harga Jual (Rp) *</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Harga Jual (Rp) *</label>
                   <input
                     type="number"
                     value={priceInput}
                     onChange={(e) => setPriceInput(e.target.value)}
                     placeholder="Contoh: 95000"
                     required
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono font-bold"
                   />
                 </div>
               </div>
 
               {/* Debounced Profit Margin Badge */}
               {debouncedProfit !== null && (
-                <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-mono font-bold text-blue-700 flex justify-between items-center">
+                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 text-xs font-mono font-bold text-blue-700 dark:text-blue-300 flex justify-between items-center">
                   <span>Estimasi Profit Margin:</span>
                   <span>+Rp {debouncedProfit.toLocaleString("id-ID")}</span>
                 </div>
@@ -616,33 +616,33 @@ export default function ProductsPage() {
 
               {/* Row 3: Deskripsi Produk */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Deskripsi Produk Tas</label>
+                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Deskripsi Produk Tas</label>
                 <textarea
                   value={descriptionInput}
                   onChange={(e) => setDescriptionInput(e.target.value)}
                   placeholder="Contoh: Bahan kulit sintetis, warna hitam, kondisi mulus 95%"
                   rows={2}
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none text-xs font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none text-xs font-medium"
                 />
               </div>
 
               {/* Row 4: Upload Foto Tas */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Foto Produk Tas</label>
+                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Foto Produk Tas</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   disabled={compressing}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                  className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 dark:file:bg-blue-950/80 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 disabled:opacity-50"
                 />
                 {compressing && (
-                  <p className="text-xs text-blue-600 font-bold mt-1.5 animate-pulse">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1.5 animate-pulse">
                     ⚡ Mengompresi foto di browser (target &lt; 300 KB)...
                   </p>
                 )}
                 {compressedInfo && !compressing && (
-                  <p className="text-[11px] text-blue-700 font-mono font-bold mt-1.5 bg-blue-50 p-2 rounded-lg border border-blue-200">
+                  <p className="text-[11px] text-blue-700 dark:text-blue-400 font-mono font-bold mt-1.5 bg-blue-50 dark:bg-blue-950/80 p-2 rounded-lg border border-blue-200 dark:border-blue-800/60">
                     ✅ {compressedInfo}
                   </p>
                 )}
@@ -650,16 +650,16 @@ export default function ProductsPage() {
 
               {/* Preview Foto */}
               {previewUrl && (
-                <div className="w-24 h-24 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative mx-auto">
+                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 relative mx-auto">
                   <Image src={previewUrl} alt="Preview" fill sizes="96px" className="object-cover" />
                 </div>
               )}
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
+                  className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                 >
                   Batal
                 </button>

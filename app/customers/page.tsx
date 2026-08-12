@@ -341,16 +341,16 @@ function CustomersPageContent() {
 
       {/* Modal Form Tambah/Edit Pelanggan */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh] transition-colors">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan Baru"}
               </h3>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl text-blue-900 text-xs font-bold">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-bold">
                 {errorMessage}
               </div>
             )}
@@ -359,12 +359,12 @@ function CustomersPageContent() {
               
               {/* CUST ID Badge */}
               {editingCustomer ? (
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold text-blue-700 flex justify-between items-center">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-blue-700 dark:text-blue-400 flex justify-between items-center">
                   <span>CUST ID:</span>
                   <span>#{editingCustomer.id}</span>
                 </div>
               ) : (
-                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-800">
+                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-lg text-xs font-medium text-blue-800 dark:text-blue-300">
                   CUST ID akan dibuat otomatis (Format: CST-YYMMDD-XX)
                 </div>
               )}
@@ -372,26 +372,26 @@ function CustomersPageContent() {
               {/* Row 1: Nama & WhatsApp */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Nama Pelanggan *</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Nama Pelanggan *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Siti Rahma"
                     required
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">No. WhatsApp *</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">No. WhatsApp *</label>
                   <input
                     type="text"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="Contoh: 081234567890"
                     required
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -399,34 +399,34 @@ function CustomersPageContent() {
               {/* Row 2: Domisili, Ongkir, Ekspedisi */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Domisili *</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Domisili *</label>
                   <input
                     type="text"
                     value={domisili}
                     onChange={(e) => setDomisili(e.target.value)}
                     placeholder="Contoh: Kab. Bogor, Jawa Barat"
                     required
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Ongkir Default (Rp)</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Ongkir Default (Rp)</label>
                   <input
                     type="number"
                     value={shippingCostInput}
                     onChange={(e) => setShippingCostInput(e.target.value)}
                     placeholder="Contoh: 15000"
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Ekspedisi Preferred</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Ekspedisi Preferred</label>
                   <select
                     value={courier}
                     onChange={(e) => setCourier(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
                   >
                     <option value="">-- Pilih Ekspedisi --</option>
                     {COURIER_OPTIONS.map((opt) => (
@@ -440,25 +440,25 @@ function CustomersPageContent() {
 
               {/* Row 3: Detail Alamat */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Detail Alamat Jalan & Patokan *</label>
+                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Detail Alamat Jalan & Patokan *</label>
                 <textarea
                   rows={2}
                   value={addressDetail}
                   onChange={(e) => setAddressDetail(e.target.value)}
                   placeholder="Contoh: Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
                   required
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
               {/* Row 4: Behavioral & Tipe Konsumen */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Behavioral</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Behavioral</label>
                   <select
                     value={behavioral}
                     onChange={(e) => setBehavioral(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
                   >
                     <option value="">-- Pilih Behavioral --</option>
                     {BEHAVIORAL_OPTIONS.map((opt) => (
@@ -470,13 +470,13 @@ function CustomersPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Tipe Konsumen (Teks)</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Tipe Konsumen (Teks)</label>
                   <input
                     type="text"
                     value={consumerType}
                     onChange={(e) => setConsumerType(e.target.value)}
                     placeholder="Contoh: Value Seeker, Price Sensitive, Design Oriented, Convenience Seeker, Eceran"
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
                   />
                 </div>
               </div>
@@ -484,11 +484,11 @@ function CustomersPageContent() {
               {/* Row 5: Status Hubungan & Catatan Status Krisis (Optional) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Status Hubungan</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Status Hubungan</label>
                   <select
                     value={relationshipStatus}
                     onChange={(e) => setRelationshipStatus(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
                   >
                     <option value="">-- Pilih Status Hubungan --</option>
                     {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
@@ -500,22 +500,22 @@ function CustomersPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Status Krisis (Catatan Opsional Teks)</label>
+                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Status Krisis (Catatan Opsional Teks)</label>
                   <input
                     type="text"
                     value={crisisStatus}
                     onChange={(e) => setCrisisStatus(e.target.value)}
                     placeholder="Contoh: Sering komplain, Pernah cancel DP"
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
+                  className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
                 >
                   Batal
                 </button>

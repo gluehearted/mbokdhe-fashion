@@ -49,7 +49,6 @@ export default async function LandingPage() {
             <nav className="hidden sm:flex items-center gap-8 text-sm font-semibold text-slate-600 dark:text-slate-300">
               <a href="#katalog" className="hover:text-blue-700 dark:hover:text-blue-400 transition-colors">Katalog Tas</a>
               <a href="#keunggulan" className="hover:text-blue-700 dark:hover:text-blue-400 transition-colors">Keunggulan</a>
-              <a href="#kontak" className="hover:text-blue-700 dark:hover:text-blue-400 transition-colors">Hubungi Kami</a>
             </nav>
             <ThemeToggle />
           </div>
@@ -59,9 +58,6 @@ export default async function LandingPage() {
       {/* 2. Hero Section */}
       <section className="pt-16 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 text-xs font-bold font-mono">
-            Koleksi Tas Fashion 2026
-          </div>
 
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
             Koleksi Tas Elegant & <br />
