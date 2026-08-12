@@ -17,26 +17,28 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
 
+  const applyTheme = (targetTheme: Theme) => {
+    if (targetTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
+    }
+  };
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("mbokdhe_theme") as Theme | null;
-    if (savedTheme === "dark") {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
-    }
+    const initialTheme = savedTheme === "dark" ? "dark" : "light";
+    setTheme(initialTheme);
+    applyTheme(initialTheme);
   }, []);
 
   const toggleTheme = () => {
     const nextTheme: Theme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
     localStorage.setItem("mbokdhe_theme", nextTheme);
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    applyTheme(nextTheme);
   };
 
   return (

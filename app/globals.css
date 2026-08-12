@@ -1,17 +1,30 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f7f9fb;
-  --foreground: #191c1e;
+  --foreground: #0f172a;
+}
+
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+html.dark, body.dark {
+  background-color: #020617 !important;
+  color: #f8fafc !important;
 }
 
 body {
-  background-color: #f7f9fb;
-  color: #191c1e;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbar for Kanban board */
+/* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   height: 8px;
   width: 8px;
@@ -23,6 +36,6 @@ body {
   background-color: #cbd5e1;
   border-radius: 20px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #334155;
 }
