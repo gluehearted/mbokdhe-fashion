@@ -5,6 +5,7 @@ export function middleware(request: NextRequest) {
 
   // Public routes accessible without authentication
   const isPublicRoute =
+    pathname === "/" ||
     pathname === "/landing-page" ||
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
