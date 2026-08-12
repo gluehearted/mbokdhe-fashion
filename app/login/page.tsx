@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || "Gagal masuk. Periksa email dan kata sandi.");
       } else {
-        router.push("/");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch {
