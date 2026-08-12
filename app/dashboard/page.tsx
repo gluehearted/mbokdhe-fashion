@@ -8,51 +8,87 @@ export default async function DashboardPage() {
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const [
-    availableProducts,
-    allOrders,
-    recentOrders,
-  ] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        OR: [{ status: "Tersedia" }, { status: "Available" }],
-      },
-      include: {
-        shop: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-    prisma.order.findMany({
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            whatsapp: true,
-            domisili: true,
-          },
+  let availableProducts: Array<{
+    id: string;
+    capitalPrice?: number | null;
+    price: number;
+    status: string;
+    photoUrl: string;
+    shop?: { name: string } | null;
+  }> = [];
+
+  let allOrders: Array<{
+    id: string;
+    status: string;
+    totalPrice: number;
+    shippingCost: number;
+    dpAmount: number;
+    dpForfeited: boolean;
+    createdAt: Date;
+    products: Array<{ capitalPrice?: number | null }>;
+  }> = [];
+
+  let recentOrders: Array<{
+    id: string;
+    status: string;
+    totalPrice: number;
+    shippingCourier?: string | null;
+    shippingService?: string | null;
+    trackingNo?: string | null;
+    createdAt: Date;
+    customer?: { name: string; whatsapp: string } | null;
+    products: Array<{ id: string }>;
+  }> = [];
+
+  try {
+    const res = await Promise.all([
+      prisma.product.findMany({
+        where: {
+          OR: [{ status: "Tersedia" }, { status: "Available" }],
         },
-        products: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.order.findMany({
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            whatsapp: true,
-            domisili: true,
-          },
+        include: {
+          shop: true,
         },
-        products: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-  ]);
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.order.findMany({
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              whatsapp: true,
+              domisili: true,
+            },
+          },
+          products: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.order.findMany({
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              whatsapp: true,
+              domisili: true,
+            },
+          },
+          products: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }),
+    ]);
+
+    availableProducts = res[0];
+    allOrders = res[1];
+    recentOrders = res[2];
+  } catch (err) {
+    console.warn("Koneksi database belum terhubung atau kata sandi database pada .env belum diisi:", err);
+  }
 
   const totalAvailableBags = availableProducts.length;
 
@@ -99,7 +135,7 @@ export default async function DashboardPage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] w-full pb-8 space-y-6">
         
-        {/* Metric Cards (Top Section - 4 Columns, Clean Blue & White) */}
+        {/* Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* Card 1: Total Tas Tersedia */}

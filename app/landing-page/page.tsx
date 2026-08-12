@@ -4,16 +4,30 @@ import Image from "next/image";
 export const revalidate = 0;
 
 export default async function LandingPage() {
-  const availableProducts = await prisma.product.findMany({
-    where: {
-      OR: [{ status: "Tersedia" }, { status: "Available" }],
-    },
-    include: {
-      shop: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
+  let availableProducts: Array<{
+    id: string;
+    description?: string | null;
+    price: number;
+    discount?: number | null;
+    photoUrl: string;
+    status: string;
+    shop?: { name: string } | null;
+  }> = [];
+
+  try {
+    availableProducts = await prisma.product.findMany({
+      where: {
+        OR: [{ status: "Tersedia" }, { status: "Available" }],
+      },
+      include: {
+        shop: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    });
+  } catch (err) {
+    console.warn("Koneksi database belum terhubung atau kata sandi database pada .env belum diisi:", err);
+  }
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased">
