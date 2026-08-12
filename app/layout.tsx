@@ -1,7 +1,10 @@
-import type { Metadata } from "next";
+"use client";
+
+import { usePathname } from "next/navigation";
 import { Inter } from "next/font/google";
+import { Sidebar } from "@/components/Sidebar";
 import { ToastProvider } from "@/components/ToastProvider";
-import { AppLayoutShell } from "@/components/AppLayoutShell";
+import { FloatingNewOrderButton } from "@/components/FloatingNewOrderButton";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,16 +12,14 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: "Mbokdhe Fashion — Admin Dashboard",
-  description: "Internal Inventory & Order Management Dashboard",
-};
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isPublicPage = pathname === "/" || pathname === "/landing-page" || pathname === "/login";
+
   return (
     <html lang="id" className={`${inter.variable} h-full bg-[#f7f9fb] antialiased`}>
       <head>
@@ -35,7 +36,19 @@ export default function RootLayout({
       </head>
       <body className="h-full font-sans text-[#191c1e] bg-[#f7f9fb] flex flex-row overflow-hidden">
         <ToastProvider>
-          <AppLayoutShell>{children}</AppLayoutShell>
+          {isPublicPage ? (
+            <div className="min-h-screen w-full bg-slate-900 text-slate-900 font-sans overflow-x-hidden">
+              {children}
+            </div>
+          ) : (
+            <div className="flex h-screen bg-[#f7f9fb] text-[#191c1e] font-sans overflow-hidden w-full relative">
+              <Sidebar />
+              <main className="flex-1 flex flex-col h-screen ml-[260px] relative w-full overflow-hidden">
+                {children}
+              </main>
+              <FloatingNewOrderButton />
+            </div>
+          )}
         </ToastProvider>
       </body>
     </html>
