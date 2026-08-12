@@ -3,8 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Disarankan untuk Supabase
+}
+
+// Tambahan Tabel User untuk Admin
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("admin") // "admin", "staff"
+  createdAt DateTime @default(now())
+
+  @@map("users")
 }
 
 model Shop {
@@ -12,6 +24,8 @@ model Shop {
   name      String    @unique
   createdAt DateTime  @default(now())
   products  Product[]
+
+  @@map("shops")
 }
 
 model Customer {
@@ -30,6 +44,8 @@ model Customer {
   crisisStatus       String?  // STATUS KRISIS ("Normal", "Risiko Rendah", "Risiko Sedang", "Risiko Tinggi", "Daftar Hitam")
   createdAt          DateTime @default(now())
   orders             Order[]
+
+  @@map("customers")
 }
 
 model Order {
@@ -50,6 +66,8 @@ model Order {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   products        Product[]
+
+  @@map("orders")
 }
 
 model Product {
@@ -65,4 +83,6 @@ model Product {
   status       String   @default("Tersedia") // "Tersedia", "Dibooking", "Terjual"
   photoUrl     String
   createdAt    DateTime @default(now())
+
+  @@map("products")
 }
