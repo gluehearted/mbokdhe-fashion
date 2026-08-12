@@ -384,16 +384,6 @@ export default function NewOrderPage() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <span className="font-extrabold text-blue-700 font-mono text-sm">#{p.id}</span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setZoomProduct(p);
-                                    }}
-                                    className="text-[10px] text-blue-600 hover:underline font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"
-                                  >
-                                    🔍 Lihat Gambar
-                                  </button>
                                 </div>
                                 <span className="text-slate-500 text-xs font-semibold block">Harga Normal: Rp {p.price.toLocaleString("id-ID")}</span>
                                 {p.description && (
@@ -622,7 +612,7 @@ export default function NewOrderPage() {
                 onClick={() => setZoomProduct(null)}
                 className="text-slate-400 hover:text-slate-700 font-bold text-sm px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
               >
-                ✕ Tutup
+                Tutup
               </button>
             </div>
 

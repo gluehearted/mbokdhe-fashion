@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
 
   // Public routes accessible without authentication
   const isPublicRoute =
-    pathname === "/" ||
+    pathname === "/landing-page" ||
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
@@ -15,9 +15,9 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get("mbokdhe_session")?.value;
   const isAuthenticated = Boolean(sessionCookie && sessionCookie === "active_admin_session");
 
-  // Redirect authenticated user away from login page to admin dashboard
+  // Redirect authenticated user away from login page to main admin dashboard
   if (pathname === "/login" && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   // Redirect unauthenticated user accessing protected routes to login page
