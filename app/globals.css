@@ -8,13 +8,13 @@
 }
 
 .dark {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #090d16;
+  --foreground: #ffffff;
 }
 
 html.dark, body.dark {
-  background-color: #020617 !important;
-  color: #f8fafc !important;
+  background-color: #090d16;
+  color: #ffffff;
 }
 
 body {

@@ -242,7 +242,7 @@ export default function OrdersPage() {
         {loading ? (
           <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan...</div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-sm shadow-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500 dark:text-slate-400 text-sm font-medium shadow-sm transition-colors">
             Tidak ada data pesanan ditemukan.
           </div>
         ) : viewMode === "card" ? (

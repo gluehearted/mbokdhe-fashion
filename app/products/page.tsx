@@ -317,7 +317,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Products Table View */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
           {loading ? (
             <div className="text-center py-12 text-slate-500 text-sm">Loading produk...</div>
           ) : filteredProducts.length === 0 ? (
