@@ -49,11 +49,11 @@ function generateShippingTemplate(o: Order): string {
   const rawAddress = c.addressDetail ? c.addressDetail.trim() : "";
   const rawDomisili = c.domisili ? c.domisili.trim() : "";
 
-  return `👤 Nama: ${c.name}
-📱 No. WA: ${wa}
-📍 Alamat: ${rawAddress.toUpperCase()}
+  return `Nama: ${c.name}
+No. WA: ${wa}
+Alamat: ${rawAddress.toUpperCase()}
 DOMISILI / KOTA: ${rawDomisili.toUpperCase()} (${rawDomisili})
-🚚 Ekspedisi: ${o.shippingCourier || "JNE"}`;
+Ekspedisi: ${o.shippingCourier || "JNE"}`;
 }
 
 export default function ReadyToShipPage() {
@@ -220,10 +220,7 @@ export default function ReadyToShipPage() {
 
                   {/* Template Shipping Box Preview */}
                   <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Template Format Label Pengiriman:
-                    </span>
-                    <pre className="bg-slate-900 text-blue-300 font-mono text-[11px] p-3.5 rounded-xl whitespace-pre-wrap leading-relaxed border border-slate-800 shadow-inner">
+                    <pre className="bg-slate-50 text-slate-900 font-mono text-[11px] p-3.5 rounded-xl whitespace-pre-wrap leading-relaxed border border-slate-200 shadow-sm">
                       {labelText}
                     </pre>
                   </div>
