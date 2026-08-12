@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Inter } from "next/font/google";
 import { Sidebar } from "@/components/Sidebar";
 import { ToastProvider } from "@/components/ToastProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { FloatingNewOrderButton } from "@/components/FloatingNewOrderButton";
 import "./globals.css";
 
@@ -21,7 +22,7 @@ export default function RootLayout({
   const isPublicPage = pathname === "/" || pathname === "/landing-page" || pathname === "/login";
 
   return (
-    <html lang="id" className={`${inter.variable} h-full bg-[#f7f9fb] antialiased`}>
+    <html lang="id" className={`${inter.variable} h-full antialiased`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -34,22 +35,24 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="h-full font-sans text-[#191c1e] bg-[#f7f9fb] flex flex-row overflow-hidden">
-        <ToastProvider>
-          {isPublicPage ? (
-            <div className="min-h-screen w-full bg-slate-900 text-slate-900 font-sans overflow-x-hidden">
-              {children}
-            </div>
-          ) : (
-            <div className="flex h-screen bg-[#f7f9fb] text-[#191c1e] font-sans overflow-hidden w-full relative">
-              <Sidebar />
-              <main className="flex-1 flex flex-col h-screen ml-[260px] relative w-full overflow-hidden">
+      <body className="h-full font-sans text-slate-900 dark:text-slate-100 bg-[#f7f9fb] dark:bg-slate-950 flex flex-row overflow-hidden">
+        <ThemeProvider>
+          <ToastProvider>
+            {isPublicPage ? (
+              <div className="min-h-screen w-full bg-white dark:bg-slate-950 font-sans overflow-x-hidden">
                 {children}
-              </main>
-              <FloatingNewOrderButton />
-            </div>
-          )}
-        </ToastProvider>
+              </div>
+            ) : (
+              <div className="flex h-screen bg-[#f7f9fb] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden w-full relative">
+                <Sidebar />
+                <main className="flex-1 flex flex-col h-screen ml-[260px] relative w-full overflow-hidden">
+                  {children}
+                </main>
+                <FloatingNewOrderButton />
+              </div>
+            )}
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

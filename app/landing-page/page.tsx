@@ -54,10 +54,6 @@ export default async function LandingPage() {
       {/* 2. Hero Section */}
       <section className="pt-16 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold font-mono">
-            Koleksi Tas Fashion 2026
-          </div>
-
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
             Koleksi Tas Elegant & <br />
             <span className="text-blue-700">Kualitas Terjamin</span>

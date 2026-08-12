@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface UserProfile {
   email: string;
@@ -110,13 +111,16 @@ export function Sidebar() {
               </div>
             </div>
 
-            <button
-              onClick={() => setShowLogoutModal(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              title="Keluar Sesi Admin"
-            >
-              <span className="material-symbols-outlined text-lg">logout</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800 transition-colors"
+                title="Keluar Sesi Admin"
+              >
+                <span className="material-symbols-outlined text-lg">logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
