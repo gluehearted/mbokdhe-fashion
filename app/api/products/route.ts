@@ -99,6 +99,7 @@ export async function POST(request: Request) {
     const shopOrigin = (formData.get("shopOrigin") as string || "").trim();
     const capitalPrice = parseInt((formData.get("capitalPrice") as string) || "0", 10);
     const price = parseInt((formData.get("price") as string) || "0", 10);
+    const description = ((formData.get("description") as string) || "").trim();
     const file = formData.get("file") as File | null;
 
     if (!shopOrigin || isNaN(price) || price <= 0) {
@@ -151,9 +152,9 @@ export async function POST(request: Request) {
       data: {
         id,
         shopId: shopObj.id,
-        shopOrigin,
         capitalPrice,
         price,
+        description,
         status: "Tersedia",
         photoUrl,
       },

@@ -10,6 +10,8 @@ interface Product {
   shopOrigin: string;
   capitalPrice: number;
   price: number;
+  discount?: number;
+  description?: string;
   status: string;
   photoUrl: string;
   orderId?: string | null;
@@ -47,6 +49,7 @@ export default function ProductsPage() {
   const [shopOrigin, setShopOrigin] = useState("");
   const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
   const [priceInput, setPriceInput] = useState<string>("");
+  const [descriptionInput, setDescriptionInput] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -116,6 +119,7 @@ export default function ProductsPage() {
     setShopOrigin("");
     setCapitalPriceInput("");
     setPriceInput("");
+    setDescriptionInput("");
     setFile(null);
     setPreviewUrl(null);
     setErrorMessage(null);
@@ -128,6 +132,7 @@ export default function ProductsPage() {
     setShopOrigin(p.shopOrigin);
     setCapitalPriceInput(String(p.capitalPrice || 0));
     setPriceInput(String(p.price));
+    setDescriptionInput(p.description || "");
     setFile(null);
     setPreviewUrl(p.photoUrl);
     setErrorMessage(null);
@@ -158,6 +163,7 @@ export default function ProductsPage() {
       formData.append("shopOrigin", shopOrigin.trim());
       formData.append("capitalPrice", capitalPriceInput);
       formData.append("price", priceInput);
+      formData.append("description", descriptionInput.trim());
       if (file) {
         formData.append("file", file);
       }
@@ -276,6 +282,7 @@ export default function ProductsPage() {
                   <tr>
                     <th className="p-4 text-center">Foto</th>
                     <th className="p-4 text-center">ID Tas</th>
+                    <th className="p-4 text-center">Deskripsi</th>
                     <th className="p-4 text-center">Toko Asal</th>
                     <th className="p-4 text-center">Harga Modal</th>
                     <th className="p-4 text-center">Harga Jual</th>
@@ -313,6 +320,9 @@ export default function ProductsPage() {
                           >
                             #{p.id}
                           </button>
+                        </td>
+                        <td className="p-4 text-center max-w-[150px] truncate text-slate-600 font-medium" title={p.description || "-"}>
+                          {p.description || "-"}
                         </td>
                         <td className="p-4 text-center font-bold text-slate-900">
                           {p.shopOrigin}
@@ -558,7 +568,19 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* Row 3: Upload Foto Tas */}
+              {/* Row 3: Deskripsi Produk */}
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Deskripsi Produk Tas</label>
+                <textarea
+                  value={descriptionInput}
+                  onChange={(e) => setDescriptionInput(e.target.value)}
+                  placeholder="Contoh: Bahan kulit sintetis, warna hitam, kondisi mulus 95%"
+                  rows={2}
+                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none text-xs font-medium"
+                />
+              </div>
+
+              {/* Row 4: Upload Foto Tas */}
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">Foto Produk Tas</label>
                 <input

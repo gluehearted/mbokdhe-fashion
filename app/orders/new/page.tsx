@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useToast } from "@/components/ToastProvider";
 
 interface Customer {
@@ -20,6 +21,7 @@ interface Product {
   shopOrigin: string;
   capitalPrice?: number;
   price: number;
+  description?: string;
   status: string;
   photoUrl: string;
 }
@@ -55,6 +57,7 @@ export default function NewOrderPage() {
   const [orderStatus, setOrderStatus] = useState("");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
+  const [zoomProduct, setZoomProduct] = useState<Product | null>(null);
   const [selectedCourier, setSelectedCourier] = useState("");
   const [manualShippingCost, setManualShippingCost] = useState<string>("");
 
@@ -352,11 +355,47 @@ export default function NewOrderPage() {
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => {}}
-                                className="accent-blue-600 w-4 h-4"
+                                className="accent-blue-600 w-4 h-4 shrink-0"
                               />
+
+                              {/* Bag Image Thumbnail & Zoom Trigger */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setZoomProduct(p);
+                                }}
+                                className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative shrink-0 hover:opacity-85 transition-all shadow-sm group"
+                                title="Klik untuk zoom gambar tas secara jelas"
+                              >
+                                {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
+                                  <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
+                                ) : (
+                                  <span className="text-slate-400 font-bold text-[10px]">Foto</span>
+                                )}
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                                  Zoom
+                                </div>
+                              </button>
+
                               <div>
-                                <span className="font-extrabold text-blue-700 font-mono text-sm">#{p.id}</span>
-                                <span className="text-slate-500 text-xs font-semibold ml-3">Harga Normal: Rp {p.price.toLocaleString("id-ID")}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-blue-700 font-mono text-sm">#{p.id}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setZoomProduct(p);
+                                    }}
+                                    className="text-[10px] text-blue-600 hover:underline font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"
+                                  >
+                                    🔍 Lihat Gambar
+                                  </button>
+                                </div>
+                                <span className="text-slate-500 text-xs font-semibold block">Harga Normal: Rp {p.price.toLocaleString("id-ID")}</span>
+                                {p.description && (
+                                  <span className="text-slate-400 text-[11px] font-medium block truncate max-w-xs">{p.description}</span>
+                                )}
                               </div>
                             </div>
 
@@ -561,6 +600,57 @@ export default function NewOrderPage() {
           </form>
         )}
       </div>
+
+      {/* Lightbox Zoom Modal Gambar Tas */}
+      {zoomProduct && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-blue-700 font-mono">
+                  Foto Tas #{zoomProduct.id}
+                </h3>
+                {zoomProduct.shopOrigin && (
+                  <p className="text-xs text-slate-500 font-medium">Toko Supplier: {zoomProduct.shopOrigin}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setZoomProduct(null)}
+                className="text-slate-400 hover:text-slate-700 font-bold text-sm px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                ✕ Tutup
+              </button>
+            </div>
+
+            {/* High-res Image Preview */}
+            <div className="w-full h-80 bg-slate-900 rounded-xl overflow-hidden relative border border-slate-200 flex items-center justify-center">
+              {zoomProduct.photoUrl && zoomProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
+                <Image src={zoomProduct.photoUrl} alt={zoomProduct.id} fill sizes="600px" className="object-contain" />
+              ) : (
+                <span className="text-slate-400 font-bold text-sm">Tidak ada foto produk</span>
+              )}
+            </div>
+
+            {zoomProduct.description && (
+              <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 font-medium">
+                <strong>Deskripsi:</strong> {zoomProduct.description}
+              </p>
+            )}
+
+            <div className="flex justify-between items-center pt-2 text-xs font-mono">
+              <span className="text-slate-600 font-bold">Harga Normal: Rp {zoomProduct.price.toLocaleString("id-ID")}</span>
+              <button
+                type="button"
+                onClick={() => setZoomProduct(null)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all text-xs"
+              >
+                Selesai Melihat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,9 @@ export default async function HomePage() {
       where: {
         OR: [{ status: "Tersedia" }, { status: "Available" }],
       },
+      include: {
+        shop: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
@@ -269,7 +272,7 @@ export default async function HomePage() {
                       </div>
                     </td>
                     <td className="p-4 text-center font-mono font-extrabold text-blue-600">#{prod.id}</td>
-                    <td className="p-4 text-center font-bold text-slate-900">{prod.shopOrigin}</td>
+                    <td className="p-4 text-center font-bold text-slate-900">{prod.shop?.name || "-"}</td>
                     <td className="p-4 text-center text-slate-600 font-mono">Rp {(prod.capitalPrice || 0).toLocaleString("id-ID")}</td>
                     <td className="p-4 text-center font-mono font-bold text-slate-900">
                       Rp {prod.price.toLocaleString("id-ID")}

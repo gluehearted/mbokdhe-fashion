@@ -58,10 +58,10 @@ model Product {
   order        Order?   @relation(fields: [orderId], references: [id])
   shopId       String?
   shop         Shop?    @relation(fields: [shopId], references: [id])
-  shopOrigin   String   // Nama Toko Asal Supplier
   capitalPrice Int      @default(0)
   price        Int
   discount     Int      @default(0) // Diskon per tas (Rp)
+  description  String   @default("") // Deskripsi Produk
   status       String   @default("Tersedia") // "Tersedia", "Dibooking", "Terjual"
   photoUrl     String
   createdAt    DateTime @default(now())

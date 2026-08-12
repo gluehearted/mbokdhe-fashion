@@ -70,6 +70,7 @@ export async function PATCH(
     let shopOrigin: string | undefined;
     let capitalPrice: number | undefined;
     let price: number | undefined;
+    let description: string | undefined;
     let status: string | undefined;
     let photoUrl: string | undefined;
 
@@ -78,12 +79,14 @@ export async function PATCH(
       const originVal = formData.get("shopOrigin") as string;
       const capitalVal = formData.get("capitalPrice") as string;
       const priceVal = formData.get("price") as string;
+      const descVal = formData.get("description") as string;
       const statusVal = formData.get("status") as string;
       const file = formData.get("file") as File | null;
 
       if (originVal) shopOrigin = originVal;
       if (capitalVal) capitalPrice = parseInt(capitalVal, 10);
       if (priceVal) price = parseInt(priceVal, 10);
+      if (descVal !== null && descVal !== undefined) description = descVal.trim();
       if (statusVal) status = statusVal;
 
       if (file && file.size > 0) {
@@ -103,6 +106,7 @@ export async function PATCH(
       shopOrigin = body.shopOrigin;
       if (body.capitalPrice !== undefined) capitalPrice = parseInt(String(body.capitalPrice), 10);
       if (body.price !== undefined) price = parseInt(String(body.price), 10);
+      if (body.description !== undefined) description = String(body.description).trim();
       status = body.status;
       photoUrl = body.photoUrl;
     }
@@ -110,9 +114,9 @@ export async function PATCH(
     const updated = await prisma.product.update({
       where: { id },
       data: {
-        ...(shopOrigin && { shopOrigin }),
         ...(capitalPrice !== undefined && !isNaN(capitalPrice) && { capitalPrice }),
         ...(price !== undefined && !isNaN(price) && { price }),
+        ...(description !== undefined && { description }),
         ...(status && { status }),
         ...(photoUrl && { photoUrl }),
       },
