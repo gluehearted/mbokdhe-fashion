@@ -77,7 +77,7 @@ export default function ProfitReportPage() {
     let completedOrderCount = 0;
 
     orders.forEach((o) => {
-      if (o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped") {
+      if (o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped") {
         completedOrderCount++;
         totalGrossRevenue += o.totalPrice;
         totalShippingCost += o.shippingCost;
@@ -108,7 +108,7 @@ export default function ProfitReportPage() {
     const map: Record<string, DailySummary> = {};
 
     orders.forEach((o) => {
-      const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
+      const isCompleted = o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
       const isForfeited = o.dpForfeited && o.dpAmount > 0;
 
       if (!isCompleted && !isForfeited) return;
@@ -174,7 +174,7 @@ export default function ProfitReportPage() {
 
   const filteredCompletedOrders = useMemo(() => {
     return orders.filter((o) => {
-      const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped" || o.dpForfeited;
+      const isCompleted = o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped" || o.dpForfeited;
       const matchesSearch =
         o.id.toLowerCase().includes(search.toLowerCase()) ||
         o.customer?.name.toLowerCase().includes(search.toLowerCase()) ||

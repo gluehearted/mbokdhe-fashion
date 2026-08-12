@@ -195,10 +195,10 @@ export default function OrdersPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
-              { label: "Semua Order", value: "ALL" },
+              {label: "Semua Order", value: "ALL" },
               { label: "Menunggu", value: "Menunggu" },
               { label: "DP", value: "DP" },
-              { label: "Siap Packing", value: "Siap Packing" },
+              { label: "Siap Kirim", value: "Siap Kirim" },
               { label: "Dikirim", value: "Dikirim" },
               { label: "Dibatalkan", value: "Dibatalkan" },
             ].map((tab) => (
@@ -262,7 +262,7 @@ export default function OrdersPage() {
 
                     <span
                       className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm ${
-                        o.status === "Siap Packing" || o.status === "Lunas"
+                        o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Lunas"
                           ? "bg-blue-600 text-white"
                           : o.status === "DP"
                           ? "bg-blue-100 text-blue-800 border border-blue-300"
@@ -481,7 +481,7 @@ export default function OrdersPage() {
                         >
                           <option value="Menunggu">Menunggu</option>
                           <option value="DP">DP</option>
-                          <option value="Siap Packing">Siap Packing</option>
+                          <option value="Siap Kirim">Siap Kirim</option>
                           <option value="Dikirim">Dikirim</option>
                           <option value="Dibatalkan">Dibatalkan</option>
                         </select>
@@ -499,9 +499,9 @@ export default function OrdersPage() {
                               },
                             },
                             {
-                              label: "Tandai Siap Packing",
+                              label: "Tandai Siap Kirim",
                               icon: "task_alt",
-                              onClick: () => updateOrderStatus(o.id, "Siap Packing"),
+                              onClick: () => updateOrderStatus(o.id, "Siap Kirim"),
                             },
                             {
                               label: "Hapus Order",

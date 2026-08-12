@@ -21,11 +21,11 @@ export async function POST(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // Update order status to "Siap Packing"
+      // Update order status to "Siap Kirim"
       const order = await tx.order.update({
         where: { id },
         data: {
-          status: "Siap Packing",
+          status: "Siap Kirim",
           notes: `Lunas pada ${new Date().toLocaleDateString("id-ID")}`,
         },
         include: {
@@ -48,7 +48,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: updated,
-      message: `Pesanan ID ${id} berhasil dilunasi dan masuk antrean Siap Packing.`,
+      message: `Pesanan ID ${id} berhasil dilunasi dan masuk antrean Siap Kirim.`,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";

@@ -58,9 +58,9 @@ export default async function HomePage() {
   let todayOrderCount = 0;
 
   allOrders.forEach((o) => {
-    const isCompleted = o.status === "Siap Packing" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
+    const isCompleted = o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Dikirim" || o.status === "Shipped";
     if (isCompleted) {
-      if (o.status === "Siap Packing" || o.status === "Siap_Packing") {
+      if (o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim") {
         readyToShipCount++;
       }
       const prodRevenue = o.totalPrice - o.shippingCost;

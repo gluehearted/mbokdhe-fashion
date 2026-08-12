@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     // Map legacy status strings to Indonesian equivalents
     if (status === "Keep") status = "Menunggu";
-    if (status === "Siap_Packing") status = "Siap Packing";
+    if (status === "Siap_Packing" || status === "Siap_Kirim" || status === "Siap Packing") status = "Siap Kirim";
     if (status === "Shipped") status = "Dikirim";
     if (status === "Cancelled") status = "Dibatalkan";
 

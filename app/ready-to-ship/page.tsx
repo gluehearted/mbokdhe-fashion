@@ -73,12 +73,12 @@ export default function ReadyToShipPage() {
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
-        // Filter orders that need shipping: Siap Packing or DP or Belum Dikirim
+        // Filter orders that are ready to ship: ONLY Siap Kirim (or legacy Siap Packing)
         const ready = data.data.filter(
           (o: Order) =>
+            o.status === "Siap Kirim" ||
             o.status === "Siap Packing" ||
-            o.status === "DP" ||
-            o.status === "Menunggu"
+            o.status === "Siap_Kirim"
         );
         setOrders(ready);
       }
@@ -209,7 +209,7 @@ export default function ReadyToShipPage() {
 
                     <span
                       className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm ${
-                        o.status === "Siap Packing"
+                        o.status === "Siap Kirim" || o.status === "Siap Packing"
                           ? "bg-blue-600 text-white"
                           : "bg-blue-100 text-blue-800 border border-blue-300"
                       }`}

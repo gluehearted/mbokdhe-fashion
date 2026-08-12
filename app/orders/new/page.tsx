@@ -487,7 +487,7 @@ export default function NewOrderPage() {
                     <option value="">-- Pilih Status Awal Pesanan --</option>
                     <option value="Menunggu">Menunggu Pembayaran</option>
                     <option value="DP">DP (Pembekuan Dana)</option>
-                    <option value="Siap Packing">Siap Packing (Lunas)</option>
+                    <option value="Siap Kirim">Siap Kirim (Lunas)</option>
                   </select>
                 </div>
 
