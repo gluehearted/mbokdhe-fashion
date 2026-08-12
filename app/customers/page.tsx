@@ -478,18 +478,13 @@ function CustomersPageContent() {
 
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Tipe Konsumen</label>
-                  <select
+                  <input
+                    type="text"
                     value={consumerType}
                     onChange={(e) => setConsumerType(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-medium"
-                  >
-                    <option value="">-- Pilih Tipe Konsumen --</option>
-                    {CONSUMER_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Contoh: Value Seeker, Price Sensitive, Design Oriented, Convenience Seeker, Eceran"
+                    className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none"
+                  />
                 </div>
               </div>
 

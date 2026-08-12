@@ -46,6 +46,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
 
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
@@ -150,15 +151,41 @@ export default function OrdersPage() {
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white border-b border-slate-200 z-30 sticky top-0 shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 tracking-tight">Tabel Pipeline Pesanan</h1>
+          <h1 className="text-xl font-bold text-blue-700 tracking-tight">Pipeline & Rekap Pesanan</h1>
         </div>
 
-        <Link
-          href="/orders/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
-        >
-          Buat Pesanan Baru
-        </Link>
+        <div className="flex items-center gap-3">
+          {/* View Mode Toggle */}
+          <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center gap-1 text-xs">
+            <button
+              onClick={() => setViewMode("card")}
+              className={`px-3 py-1 rounded-md font-bold transition-all ${
+                viewMode === "card"
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Tampilan Card
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`px-3 py-1 rounded-md font-bold transition-all ${
+                viewMode === "table"
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Tampilan Tabel
+            </button>
+          </div>
+
+          <Link
+            href="/orders/new"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+          >
+            Buat Pesanan Baru
+          </Link>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -198,22 +225,187 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* Orders Data Table */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          {loading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan...</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
-              Tidak ada data pesanan ditemukan.
-            </div>
-          ) : (
+        {/* Orders Content Area */}
+        {loading ? (
+          <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan...</div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500 text-sm shadow-sm">
+            Tidak ada data pesanan ditemukan.
+          </div>
+        ) : viewMode === "card" ? (
+          /* CARD VIEW LAYOUT */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredOrders.map((o) => {
+              const totalBarang = o.products.reduce((acc, p) => acc + p.price, 0);
+              const sisaTagihan = o.dpAmount > 0 ? o.totalPrice - o.dpAmount : 0;
+
+              return (
+                <div key={o.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-blue-300 transition-all">
+                  
+                  {/* Card Header: Order ID & Status */}
+                  <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-extrabold text-blue-700">#{o.id.slice(0, 8)}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(o.createdAt).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Pelanggan: <strong className="text-slate-900">{o.customer?.name || "Pelanggan Terhapus"}</strong>
+                      </p>
+                    </div>
+
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm ${
+                        o.status === "Siap Packing" || o.status === "Lunas"
+                          ? "bg-blue-600 text-white"
+                          : o.status === "DP"
+                          ? "bg-blue-100 text-blue-800 border border-blue-300"
+                          : o.status === "Dikirim"
+                          ? "bg-slate-100 text-slate-800 border border-slate-300"
+                          : "bg-slate-100 text-slate-600 border border-slate-200"
+                      }`}
+                    >
+                      {o.status}
+                    </span>
+                  </div>
+
+                  {/* Customer Info Box */}
+                  {o.customer && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-900">{o.customer.name}</span>
+                        <a
+                          href={`https://wa.me/${o.customer.whatsapp}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-blue-600 font-bold hover:underline"
+                        >
+                          {o.customer.whatsapp}
+                        </a>
+                      </div>
+                      <p className="text-slate-500 text-[11px] leading-relaxed">
+                        {o.customer.addressDetail}, {o.customer.domisili || "-"}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Rincian Barang Table */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Rincian Barang Dipesan ({o.products.length} Tas):
+                    </span>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden text-xs">
+                      <table className="w-full text-center divide-y divide-slate-200">
+                        <thead className="bg-slate-100 text-slate-500 text-[10px] uppercase font-bold">
+                          <tr>
+                            <th className="p-2 text-center">ID Tas</th>
+                            <th className="p-2 text-center">Toko Supplier</th>
+                            <th className="p-2 text-center">Harga Modal</th>
+                            <th className="p-2 text-center">Harga Jual</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                          {o.products.map((p) => (
+                            <tr key={p.id} className="hover:bg-white">
+                              <td className="p-2 text-center font-bold text-blue-600">#{p.id}</td>
+                              <td className="p-2 text-center font-sans font-bold text-slate-800">
+                                <span className="bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
+                                  {p.shopOrigin}
+                                </span>
+                              </td>
+                              <td className="p-2 text-center text-slate-500">
+                                Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
+                              </td>
+                              <td className="p-2 text-center font-bold text-slate-900">
+                                Rp {p.price.toLocaleString("id-ID")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Financial Breakdown Grid */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs font-mono">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Total Barang ({o.products.length}):</span>
+                      <span className="font-bold text-slate-800">Rp {totalBarang.toLocaleString("id-ID")}</span>
+                    </div>
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>Ongkir ({o.shippingCourier || "Ekspedisi"}):</span>
+                      <span className="font-bold text-blue-700">Rp {(o.shippingCost || 0).toLocaleString("id-ID")}</span>
+                    </div>
+
+                    {o.dpAmount > 0 && (
+                      <div className="flex justify-between text-blue-800 font-bold border-t border-slate-200 pt-1.5">
+                        <span>DP Dibayar:</span>
+                        <span>-Rp {o.dpAmount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
+                    {sisaTagihan > 0 && (
+                      <div className="flex justify-between text-amber-700 font-bold">
+                        <span>Sisa Pelunasan:</span>
+                        <span>Rp {sisaTagihan.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between text-slate-900 font-extrabold text-sm border-t border-slate-200 pt-1.5">
+                      <span>Total Tagihan:</span>
+                      <span className="text-blue-700">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
+                    </div>
+                  </div>
+
+                  {/* Resi Badge */}
+                  {o.trackingNo ? (
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs flex justify-between items-center font-mono">
+                      <span className="text-blue-700 font-bold">Resi {o.shippingCourier || "Ekspedisi"}:</span>
+                      <span className="font-bold text-blue-900">{o.trackingNo}</span>
+                    </div>
+                  ) : null}
+
+                  {/* Action Bar */}
+                  <div className="flex gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        setEditingResiOrder(o);
+                        setTrackingNoInput(o.trackingNo || "");
+                      }}
+                      className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
+                    >
+                      {o.trackingNo ? "Edit Resi" : "+ Input Resi & Kirim"}
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteOrder(o.id)}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg transition-colors border border-slate-200"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* TABLE VIEW LAYOUT */
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-center text-xs text-slate-700">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="p-4 text-center">Order ID</th>
                     <th className="p-4 text-center">Pelanggan</th>
-                    <th className="p-4 text-center">Produk Tas</th>
+                    <th className="p-4 text-center">Produk Tas & Supplier</th>
                     <th className="p-4 text-center">Ekspedisi</th>
                     <th className="p-4 text-center">No. Resi</th>
                     <th className="p-4 text-center">Total Price</th>
@@ -222,148 +414,153 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {filteredOrders.map((o) => {
-                    return (
-                      <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">
-                          #{o.id.slice(0, 8)}
-                        </td>
+                  {filteredOrders.map((o) => (
+                    <tr key={o.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-center font-mono font-extrabold text-blue-600">
+                        #{o.id.slice(0, 8)}
+                      </td>
 
-                        <td className="p-4 text-center">
-                          {o.customer ? (
-                            <div>
-                              <p className="font-bold text-slate-900">{o.customer.name}</p>
-                              <p className="text-[11px] font-mono text-slate-500">{o.customer.whatsapp}</p>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400">Pelanggan terhapus</span>
-                          )}
-                        </td>
-
-                        <td className="p-4 text-center">
-                          <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
-                            {o.products && o.products.length > 0 ? (
-                              o.products.map((p) => (
-                                <span
-                                  key={p.id}
-                                  className="bg-blue-50 text-blue-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200"
-                                >
-                                  #{p.id}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-slate-400">-</span>
-                            )}
+                      <td className="p-4 text-center">
+                        {o.customer ? (
+                          <div>
+                            <p className="font-bold text-slate-900">{o.customer.name}</p>
+                            <p className="text-[11px] font-mono text-slate-500">{o.customer.whatsapp}</p>
                           </div>
-                        </td>
+                        ) : (
+                          <span className="text-slate-400">Pelanggan terhapus</span>
+                        )}
+                      </td>
 
-                        <td className="p-4 text-center text-slate-600">
-                          <span className="font-bold text-slate-900">{o.shippingCourier}</span>
-                          <span className="text-[11px] text-slate-500 block">{o.shippingService}</span>
-                        </td>
-
-                        <td className="p-4 text-center font-mono">
-                          {o.trackingNo ? (
-                            <span className="text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded border border-blue-200 text-[11px]">
-                              {o.trackingNo}
-                            </span>
+                      <td className="p-4 text-center">
+                        <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
+                          {o.products && o.products.length > 0 ? (
+                            o.products.map((p) => (
+                              <span
+                                key={p.id}
+                                className="bg-blue-50 text-blue-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200"
+                                title={`Supplier: ${p.shopOrigin}`}
+                              >
+                                #{p.id} ({p.shopOrigin})
+                              </span>
+                            ))
                           ) : (
-                            <span className="text-slate-400 font-normal">-</span>
+                            <span className="text-slate-400">-</span>
                           )}
-                        </td>
+                        </div>
+                      </td>
 
-                        <td className="p-4 text-center">
-                          <span className="font-mono font-bold text-slate-900 block">
-                            Rp {o.totalPrice.toLocaleString("id-ID")}
+                      <td className="p-4 text-center font-mono">
+                        <span className="font-bold text-slate-900 block">{o.shippingCourier || "JNE"}</span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                          Rp {(o.shippingCost || 0).toLocaleString("id-ID")}
+                        </span>
+                      </td>
+
+                      <td className="p-4 text-center font-mono">
+                        {o.trackingNo ? (
+                          <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[11px] inline-block">
+                            {o.trackingNo}
                           </span>
-                          {o.dpAmount > 0 && (
-                            <span className="text-[11px] text-blue-700 font-mono font-bold block">
-                              DP: Rp {o.dpAmount.toLocaleString("id-ID")}
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="p-4 text-center">
-                          <select
-                            value={o.status === "Keep" ? "Menunggu" : o.status === "Shipped" ? "Dikirim" : o.status}
-                            onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                            className="bg-slate-50 text-slate-800 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold focus:outline-none focus:border-blue-600"
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setEditingResiOrder(o);
+                              setTrackingNoInput("");
+                            }}
+                            className="text-blue-600 font-bold hover:underline text-[11px]"
                           >
-                            <option value="Menunggu">Menunggu</option>
-                            <option value="DP">DP</option>
-                            <option value="Siap Packing">Siap Packing</option>
-                            <option value="Dikirim">Dikirim</option>
-                            <option value="Dibatalkan">Dibatalkan</option>
-                          </select>
-                        </td>
+                            + Input Resi
+                          </button>
+                        )}
+                      </td>
 
-                        <td className="p-4 text-center">
-                          <TableActionsMenu
-                            items={[
-                              {
-                                label: o.trackingNo ? "Edit Resi" : "Input Resi",
-                                icon: "edit",
-                                onClick: () => {
-                                  setEditingResiOrder(o);
-                                  setTrackingNoInput(o.trackingNo || "");
-                                },
+                      <td className="p-4 text-center font-mono font-bold text-slate-900">
+                        Rp {o.totalPrice.toLocaleString("id-ID")}
+                        {o.dpAmount > 0 && (
+                          <span className="block text-[10px] text-blue-700 font-bold mt-0.5">
+                            DP: Rp {o.dpAmount.toLocaleString("id-ID")}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-4 text-center">
+                        <select
+                          value={o.status}
+                          onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                          className="bg-slate-50 border border-slate-200 text-slate-900 text-[11px] font-bold p-1.5 rounded-lg focus:border-blue-600 focus:outline-none"
+                        >
+                          <option value="Menunggu">Menunggu</option>
+                          <option value="DP">DP</option>
+                          <option value="Siap Packing">Siap Packing</option>
+                          <option value="Dikirim">Dikirim</option>
+                          <option value="Dibatalkan">Dibatalkan</option>
+                        </select>
+                      </td>
+
+                      <td className="p-4 text-center">
+                        <TableActionsMenu
+                          items={[
+                            {
+                              label: "Input / Edit Resi",
+                              icon: "edit",
+                              onClick: () => {
+                                setEditingResiOrder(o);
+                                setTrackingNoInput(o.trackingNo || "");
                               },
-                              {
-                                label: "Set Lunas (Siap Packing)",
-                                icon: "task_alt",
-                                onClick: () => updateOrderStatus(o.id, "Siap Packing"),
-                                disabled: o.status === "Siap Packing" || o.status === "Dikirim",
-                              },
-                              {
-                                label: "Hapus Order",
-                                icon: "delete",
-                                danger: true,
-                                onClick: () => handleDeleteOrder(o.id),
-                              },
-                            ]}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
+                            },
+                            {
+                              label: "Tandai Siap Packing",
+                              icon: "task_alt",
+                              onClick: () => updateOrderStatus(o.id, "Siap Packing"),
+                            },
+                            {
+                              label: "Hapus Order",
+                              icon: "delete",
+                              danger: true,
+                              onClick: () => handleDeleteOrder(o.id),
+                            },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
       </div>
 
-      {/* Modal Edit Resi */}
+      {/* Modal Input Resi */}
       {editingResiOrder && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900">
-                Input Nomor Resi [#{editingResiOrder.id.slice(0, 8)}]
-              </h3>
-              <button
-                onClick={() => setEditingResiOrder(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
-              >
-                Batal
-              </button>
-            </div>
+            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+              Input Nomor Resi Pengiriman
+            </h3>
 
             <form onSubmit={handleSaveResi} className="space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 font-mono">
+                <p className="font-bold text-blue-700">Order ID: #{editingResiOrder.id.slice(0, 8)}</p>
+                <p className="text-slate-700">Pelanggan: {editingResiOrder.customer?.name}</p>
+                <p className="text-slate-500 text-[11px]">Ekspedisi: {editingResiOrder.shippingCourier || "JNE"}</p>
+              </div>
+
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Nomor Resi Pengiriman *</label>
+                <label className="block text-slate-600 font-semibold mb-1">Nomor Resi *</label>
                 <input
                   type="text"
                   value={trackingNoInput}
                   onChange={(e) => setTrackingNoInput(e.target.value)}
-                  placeholder="Contoh: JNE8829102391"
+                  placeholder="Contoh: JNE1234567890"
                   required
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono focus:border-blue-600 focus:outline-none uppercase"
+                  autoFocus
+                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm font-bold focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setEditingResiOrder(null)}
@@ -376,13 +573,14 @@ export default function OrdersPage() {
                   disabled={savingResi}
                   className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
                 >
-                  {savingResi ? "Simpan..." : "Simpan Resi"}
+                  {savingResi ? "Simpan..." : "Simpan Resi & Kirim"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

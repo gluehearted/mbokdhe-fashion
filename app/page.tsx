@@ -144,20 +144,20 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Card 4: Siap Packing Hari Ini */}
-          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Siap Packing Hari Ini
+          {/* Card 4: Perlu Dikirim */}
+          <Link href="/ready-to-ship" className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2 hover:border-blue-300 transition-all group">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
+              Perlu Dikirim
             </h3>
             <div className="flex items-end justify-between">
               <span className="text-3xl font-bold text-slate-900 font-mono">
                 {readyToShipCount}
               </span>
               <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">
-                Siap Kirim
+                Perlu Dikirim
               </span>
             </div>
-          </div>
+          </Link>
 
         </div>
 
