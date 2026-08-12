@@ -1,13 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+
+interface UserProfile {
+  email: string;
+  name: string;
+  role: string;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (pathname === "/login") return;
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        const data = await res.json();
+        if (data.success && data.user) {
+          setUser(data.user);
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    loadUser();
+  }, [pathname]);
 
   // Do not render Sidebar on Login Page
   if (pathname === "/login") return null;
@@ -75,11 +98,15 @@ export function Sidebar() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-extrabold text-xs shadow-sm shrink-0">
-                MF
+                {user?.name ? user.name.slice(0, 2).toUpperCase() : "MF"}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-extrabold text-slate-800 truncate">Admin Mbokdhe</p>
-                <p className="text-[10px] text-slate-500 truncate">Sesi Aktif</p>
+                <p className="text-xs font-extrabold text-slate-800 truncate">
+                  {user?.name || "Admin Mbokdhe"}
+                </p>
+                <p className="text-[10px] text-blue-700 font-bold truncate">
+                  {user?.role || "Owner"} • {user?.email || "Sesi Aktif"}
+                </p>
               </div>
             </div>
 
