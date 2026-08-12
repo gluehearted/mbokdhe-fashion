@@ -98,14 +98,14 @@ export function Sidebar() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-extrabold text-xs shadow-sm shrink-0">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : "MF"}
+                {user?.name ? user.name.slice(0, 1).toUpperCase() : <span className="material-symbols-outlined text-base">person</span>}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-extrabold text-slate-800 truncate">
-                  {user?.name || "Admin Mbokdhe"}
+                  {user?.name}
                 </p>
                 <p className="text-[10px] text-blue-700 font-bold truncate">
-                  {user?.role || "Owner"} • {user?.email || "Sesi Aktif"}
+                  {user?.role}
                 </p>
               </div>
             </div>

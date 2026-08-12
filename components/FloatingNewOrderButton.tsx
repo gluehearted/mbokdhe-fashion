@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 export function FloatingNewOrderButton() {
   const pathname = usePathname();
 
-  // Hide button if already on the create order page
-  if (pathname === "/orders/new") {
+  // Hide button if on create order page or login page
+  if (pathname === "/orders/new" || pathname === "/login") {
     return null;
   }
 
