@@ -129,7 +129,7 @@ export default function NewOrderPage() {
         if (individualDiscounts[id] === undefined) {
           setIndividualDiscounts((prevDisc) => ({
             ...prevDisc,
-            [id]: "0",
+            [id]: "",
           }));
         }
         return [...prev, id];
@@ -331,7 +331,7 @@ export default function NewOrderPage() {
                   <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                     {availableProducts.map((p) => {
                       const isSelected = selectedProductIds.includes(p.id);
-                      const currentDiscount = individualDiscounts[p.id] !== undefined ? individualDiscounts[p.id] : "0";
+                      const currentDiscount = individualDiscounts[p.id] !== undefined ? individualDiscounts[p.id] : "";
                       const currentPrice = customPrices[p.id] !== undefined ? customPrices[p.id] : String(p.price);
 
                       const discVal = parseInt(currentDiscount, 10) || 0;
@@ -385,7 +385,7 @@ export default function NewOrderPage() {
                                     value={currentDiscount}
                                     onChange={(e) => handleDiscountChange(p, e.target.value)}
                                     className="w-full text-right font-mono font-bold text-xs text-blue-900 focus:outline-none"
-                                    placeholder="0"
+                                    placeholder="Contoh: 10000"
                                   />
                                 </div>
                               </div>
