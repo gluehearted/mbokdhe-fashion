@@ -319,8 +319,8 @@ export default function OrdersPage() {
                               </td>
                               <td className="p-2 text-center font-bold">
                                 {p.discount && p.discount > 0 ? (
-                                  <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                                    -Rp {p.discount.toLocaleString("id-ID")}
+                                  <span className="text-red-700">
+                                    Rp {p.discount.toLocaleString("id-ID")}
                                   </span>
                                 ) : (
                                   <span className="text-slate-400 font-normal">-</span>
