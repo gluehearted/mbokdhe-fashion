@@ -252,17 +252,15 @@ export default function NewOrderPage() {
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/orders"
-            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-semibold transition-colors flex items-center gap-1"
-          >
-            ← Kembali ke Data Pesanan
-          </Link>
-          <h1 className="text-lg font-bold text-blue-700 dark:text-blue-400 tracking-tight">
-            Buat Pesanan Baru (Checkout)
-          </h1>
-        </div>
+        <h1 className="text-lg font-bold text-blue-700 dark:text-blue-400 tracking-tight">
+          Buat Pesanan Baru (Checkout)
+        </h1>
+        <Link
+          href="/orders"
+          className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg transition-colors border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-sm"
+        >
+          ← Kembali ke Data Pesanan
+        </Link>
       </header>
 
       {/* Main Content Scroll Container */}
