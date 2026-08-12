@@ -305,23 +305,13 @@ export default function OrdersPage() {
                         <thead className="bg-slate-100 text-slate-500 text-[10px] uppercase font-bold">
                           <tr>
                             <th className="p-2 text-center">ID Tas</th>
-                            <th className="p-2 text-center">Toko Supplier</th>
-                            <th className="p-2 text-center">Harga Modal</th>
-                            <th className="p-2 text-center">Harga Jual</th>
+                            <th className="p-2 text-center">Harga</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
                           {o.products.map((p) => (
                             <tr key={p.id} className="hover:bg-white">
                               <td className="p-2 text-center font-bold text-blue-600">#{p.id}</td>
-                              <td className="p-2 text-center font-sans font-bold text-slate-800">
-                                <span className="bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 text-[10px]">
-                                  {p.shopOrigin}
-                                </span>
-                              </td>
-                              <td className="p-2 text-center text-slate-500">
-                                Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
-                              </td>
                               <td className="p-2 text-center font-bold text-slate-900">
                                 Rp {p.price.toLocaleString("id-ID")}
                               </td>

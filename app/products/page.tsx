@@ -314,10 +314,8 @@ export default function ProductsPage() {
                             #{p.id}
                           </button>
                         </td>
-                        <td className="p-4 text-center">
-                          <span className="font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 inline-block text-xs">
-                            {p.shopOrigin}
-                          </span>
+                        <td className="p-4 text-center font-bold text-slate-900">
+                          {p.shopOrigin}
                         </td>
                         <td className="p-4 text-center font-mono text-slate-600">
                           Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}

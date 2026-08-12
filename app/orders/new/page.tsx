@@ -44,10 +44,14 @@ export default function NewOrderPage() {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Initial values set to empty ("") / null by default
+  // Form states
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  
+  // Per-product pricing and individual discounts
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
+  const [individualDiscounts, setIndividualDiscounts] = useState<Record<string, string>>({});
+
   const [orderStatus, setOrderStatus] = useState("");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
 
@@ -94,7 +98,16 @@ export default function NewOrderPage() {
 
   const selectedProducts = availableProducts.filter((p) => selectedProductIds.includes(p.id));
 
-  const totalBarangPrice = selectedProducts.reduce((sum, p) => {
+  // Calculations for total pricing and individual discounts
+  const totalNormalBarangPrice = selectedProducts.reduce((sum, p) => sum + p.price, 0);
+
+  const totalIndividualDiscount = selectedProducts.reduce((sum, p) => {
+    const discStr = individualDiscounts[p.id];
+    const discVal = discStr !== undefined && discStr !== "" ? (parseInt(discStr, 10) || 0) : 0;
+    return sum + discVal;
+  }, 0);
+
+  const totalBarangPriceAfterDiscount = selectedProducts.reduce((sum, p) => {
     const customStr = customPrices[p.id];
     const priceVal = customStr !== undefined && customStr !== "" ? (parseInt(customStr, 10) || 0) : p.price;
     return sum + priceVal;
@@ -113,15 +126,46 @@ export default function NewOrderPage() {
             [id]: String(p.price),
           }));
         }
+        if (individualDiscounts[id] === undefined) {
+          setIndividualDiscounts((prevDisc) => ({
+            ...prevDisc,
+            [id]: "0",
+          }));
+        }
         return [...prev, id];
       }
     });
   };
 
-  const handlePriceChange = (productId: string, val: string) => {
+  // Handler when user edits the discount amount for a specific bag
+  const handleDiscountChange = (p: Product, val: string) => {
+    const discVal = parseInt(val, 10) || 0;
+    const newFinalPrice = Math.max(0, p.price - discVal);
+
+    setIndividualDiscounts((prev) => ({
+      ...prev,
+      [p.id]: val,
+    }));
+
     setCustomPrices((prev) => ({
       ...prev,
-      [productId]: val,
+      [p.id]: String(newFinalPrice),
+    }));
+  };
+
+  // Handler when user directly edits the final item price for a specific bag
+  const handleCustomPriceChange = (p: Product, val: string) => {
+    const finalVal = parseInt(val, 10) || 0;
+    const calculatedDisc = Math.max(0, p.price - finalVal);
+
+    setCustomPrices((prev) => ({
+      ...prev,
+      [p.id]: val,
+    }));
+
+    setIndividualDiscounts((prev) => ({
+      ...prev,
+      [p.id]: String(calculatedDisc),
     }));
   };
 
@@ -169,7 +213,7 @@ export default function NewOrderPage() {
           shippingCost: parsedCost,
           totalWeightGram: 1000,
           dpAmount: parsedDp,
-          totalPrice: totalBarangPrice + parsedCost,
+          totalPrice: totalBarangPriceAfterDiscount + parsedCost,
         }),
       });
 
@@ -190,7 +234,7 @@ export default function NewOrderPage() {
   };
 
   const parsedCostNum = parseInt(manualShippingCost, 10) || 0;
-  const totalTagihan = totalBarangPrice + parsedCostNum;
+  const totalTagihan = totalBarangPriceAfterDiscount + parsedCostNum;
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc]">
@@ -203,7 +247,7 @@ export default function NewOrderPage() {
           href="/orders"
           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors border border-slate-200"
         >
-          ← Kembali ke Tabel Orders
+          ← Kembali ke Pesanan
         </Link>
       </header>
 
@@ -270,10 +314,10 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 2: Multi-Select Available Products */}
+              {/* Step 2: Multi-Select Available Products & Per-Bag Individual Discounts */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex justify-between items-center">
-                  <span>2. Pilih Produk Tas & Edit Harga Jual</span>
+                  <span>2. Pilih Tas & Atur Diskon Individual per Tas</span>
                   <span className="text-xs text-blue-600 font-mono font-bold">
                     {selectedProductIds.length} Tas Terpilih
                   </span>
@@ -284,55 +328,93 @@ export default function NewOrderPage() {
                     Tidak ada tas berstatus &apos;Tersedia&apos; saat ini.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                     {availableProducts.map((p) => {
                       const isSelected = selectedProductIds.includes(p.id);
+                      const currentDiscount = individualDiscounts[p.id] !== undefined ? individualDiscounts[p.id] : "0";
                       const currentPrice = customPrices[p.id] !== undefined ? customPrices[p.id] : String(p.price);
+
+                      const discVal = parseInt(currentDiscount, 10) || 0;
 
                       return (
                         <div
                           key={p.id}
                           onClick={() => toggleProductSelect(p)}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between text-xs ${
+                          className={`p-3.5 rounded-xl border cursor-pointer transition-all text-xs ${
                             isSelected
-                              ? "bg-blue-50 border-blue-600 text-blue-900 shadow-sm"
+                              ? "bg-blue-50/70 border-blue-600 text-blue-900 shadow-sm"
                               : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
                           }`}
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-extrabold text-blue-700 font-mono text-sm">#{p.id}</p>
-                              <p className="text-[11px] text-slate-500">Toko: {p.shopOrigin}</p>
-                            </div>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="accent-blue-600 w-4 h-4 mt-0.5"
-                            />
-                          </div>
-
-                          {isSelected ? (
-                            <div
-                              className="mt-3 pt-2 border-t border-blue-200 flex items-center justify-between gap-2"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <label className="text-[11px] font-bold text-blue-800">Edit Harga (Rp):</label>
-                              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-blue-400 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20">
-                                <span className="font-mono text-[11px] font-bold text-slate-400">Rp</span>
-                                <input
-                                  type="number"
-                                  value={currentPrice}
-                                  onChange={(e) => handlePriceChange(p.id, e.target.value)}
-                                  className="w-24 text-right font-mono font-bold text-xs text-blue-900 focus:outline-none"
-                                  placeholder={String(p.price)}
-                                />
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                className="accent-blue-600 w-4 h-4"
+                              />
+                              <div>
+                                <span className="font-extrabold text-blue-700 font-mono text-sm">#{p.id}</span>
+                                <span className="text-slate-500 text-xs font-semibold ml-3">Harga Normal: Rp {p.price.toLocaleString("id-ID")}</span>
                               </div>
                             </div>
-                          ) : (
-                            <p className="font-bold text-slate-900 mt-2 text-right">
-                              Rp {p.price.toLocaleString("id-ID")}
-                            </p>
+
+                            {!isSelected && (
+                              <span className="font-bold text-slate-900 font-mono">
+                                Rp {p.price.toLocaleString("id-ID")}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Individual Discount Controls per Bag */}
+                          {isSelected && (
+                            <div
+                              className="mt-3 pt-3 border-t border-blue-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Input Diskon Individual (Rp) */}
+                              <div>
+                                <label className="block text-[11px] font-bold text-blue-800 mb-1">
+                                  Diskon Tas Ini (Rp):
+                                </label>
+                                <div className="flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-blue-400 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20">
+                                  <span className="font-mono text-xs font-bold text-slate-400">Rp</span>
+                                  <input
+                                    type="number"
+                                    value={currentDiscount}
+                                    onChange={(e) => handleDiscountChange(p, e.target.value)}
+                                    className="w-full text-right font-mono font-bold text-xs text-blue-900 focus:outline-none"
+                                    placeholder="0"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Input Harga Akhir (Rp) */}
+                              <div>
+                                <label className="block text-[11px] font-bold text-blue-800 mb-1">
+                                  Harga Akhir Setelah Diskon (Rp):
+                                </label>
+                                <div className="flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-blue-400 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20">
+                                  <span className="font-mono text-xs font-bold text-slate-400">Rp</span>
+                                  <input
+                                    type="number"
+                                    value={currentPrice}
+                                    onChange={(e) => handleCustomPriceChange(p, e.target.value)}
+                                    className="w-full text-right font-mono font-bold text-xs text-blue-900 focus:outline-none"
+                                    placeholder={String(p.price)}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Individual Discount Badge Notice */}
+                              {discVal > 0 && (
+                                <div className="sm:col-span-2 p-2 bg-blue-100 border border-blue-300 rounded-lg text-[11px] font-mono font-bold text-blue-900 flex justify-between items-center">
+                                  <span>Potongan Diskon Tas:</span>
+                                  <span>-Rp {discVal.toLocaleString("id-ID")}</span>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       );
@@ -341,7 +423,7 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 3: Input Ekspedisi & Ongkos Kirim */}
+              {/* Step 3: Input Ekspedisi & Nominal Ongkos Kirim */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
                   3. Ekspedisi & Nominal Ongkos Kirim
@@ -424,30 +506,42 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Summary Tagihan */}
+              {/* Summary Tagihan with Individual Discount Breakdown */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm text-xs">
                 <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
                   Ringkasan Tagihan Order
                 </h3>
 
-                <div className="space-y-3">
+                <div className="space-y-3 font-mono">
                   <div className="flex justify-between items-center text-slate-600">
-                    <span>Total Harga Barang ({selectedProductIds.length} Tas):</span>
-                    <span className="font-mono text-slate-900 font-bold text-sm">
-                      Rp {totalBarangPrice.toLocaleString("id-ID")}
+                    <span>Total Normal Barang ({selectedProductIds.length} Tas):</span>
+                    <span className="text-slate-900 font-bold">
+                      Rp {totalNormalBarangPrice.toLocaleString("id-ID")}
                     </span>
+                  </div>
+
+                  {totalIndividualDiscount > 0 && (
+                    <div className="flex justify-between items-center text-blue-700 font-bold">
+                      <span>Total Diskon Barang:</span>
+                      <span>-Rp {totalIndividualDiscount.toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-slate-700 font-bold border-t border-slate-100 pt-2">
+                    <span>Subtotal Barang Setelah Diskon:</span>
+                    <span>Rp {totalBarangPriceAfterDiscount.toLocaleString("id-ID")}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-slate-600">
                     <span>Ongkos Kirim ({selectedCourier || "Ekspedisi"}):</span>
-                    <span className="font-mono text-blue-700 font-bold text-sm">
+                    <span className="text-blue-700 font-bold">
                       Rp {parsedCostNum.toLocaleString("id-ID")}
                     </span>
                   </div>
 
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-center text-sm">
-                    <span className="font-bold text-slate-900">Total Tagihan:</span>
-                    <span className="font-bold text-blue-700 font-mono text-xl">
+                    <span className="font-bold text-slate-900 font-sans">Total Tagihan:</span>
+                    <span className="font-bold text-blue-700 text-xl">
                       Rp {totalTagihan.toLocaleString("id-ID")}
                     </span>
                   </div>

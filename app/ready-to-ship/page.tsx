@@ -237,7 +237,7 @@ export default function ReadyToShipPage() {
                     <div className="flex flex-wrap gap-1 pt-1">
                       {o.products.map((p) => (
                         <span key={p.id} className="bg-blue-50 text-blue-900 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200">
-                          #{p.id} ({p.shopOrigin})
+                          #{p.id}
                         </span>
                       ))}
                     </div>
