@@ -61,6 +61,7 @@ model Product {
   shopOrigin   String   // Nama Toko Asal Supplier
   capitalPrice Int      @default(0)
   price        Int
+  discount     Int      @default(0) // Diskon per tas (Rp)
   status       String   @default("Tersedia") // "Tersedia", "Dibooking", "Terjual"
   photoUrl     String
   createdAt    DateTime @default(now())

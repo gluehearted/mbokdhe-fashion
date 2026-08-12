@@ -18,6 +18,7 @@ interface Product {
   shopOrigin: string;
   capitalPrice?: number;
   price: number;
+  discount?: number;
   status: string;
 }
 
@@ -306,6 +307,7 @@ export default function OrdersPage() {
                           <tr>
                             <th className="p-2 text-center">ID Tas</th>
                             <th className="p-2 text-center">Harga</th>
+                            <th className="p-2 text-center">Diskon</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
@@ -314,6 +316,15 @@ export default function OrdersPage() {
                               <td className="p-2 text-center font-bold text-blue-600">#{p.id}</td>
                               <td className="p-2 text-center font-bold text-slate-900">
                                 Rp {p.price.toLocaleString("id-ID")}
+                              </td>
+                              <td className="p-2 text-center font-bold">
+                                {p.discount && p.discount > 0 ? (
+                                  <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                    -Rp {p.discount.toLocaleString("id-ID")}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 font-normal">-</span>
+                                )}
                               </td>
                             </tr>
                           ))}

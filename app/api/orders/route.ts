@@ -104,9 +104,14 @@ export async function POST(request: Request) {
           if (customPrices[pId] !== undefined) {
             const newPrice = parseInt(String(customPrices[pId]), 10);
             if (!isNaN(newPrice) && newPrice >= 0) {
+              const pOrig = await tx.product.findUnique({ where: { id: pId } });
+              const discAmount = pOrig ? Math.max(0, pOrig.price - newPrice) : 0;
               await tx.product.update({
                 where: { id: pId },
-                data: { price: newPrice },
+                data: {
+                  price: newPrice,
+                  discount: discAmount,
+                },
               });
             }
           }
