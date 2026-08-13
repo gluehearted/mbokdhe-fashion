@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 export async function PATCH(
   request: Request,
@@ -16,10 +17,16 @@ export async function PATCH(
     if (status === "Shipped") status = "Dikirim";
     if (status === "Cancelled") status = "Dibatalkan";
 
-    const existingOrder = await prisma.order.findUnique({
-      where: { id },
-      include: { products: true },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existingOrder, error: checkError } = await supabase
+      .from("orders")
+      .select("*, products(*)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (!existingOrder) {
       return NextResponse.json(
@@ -28,49 +35,53 @@ export async function PATCH(
       );
     }
 
-    const updatedOrder = await prisma.$transaction(async (tx) => {
-      // If status is changed to Dibatalkan/Cancelled, revert all linked products to Tersedia
-      if (status === "Dibatalkan" || status === "Cancelled") {
-        await tx.product.updateMany({
-          where: { orderId: id },
-          data: {
-            status: "Tersedia",
-            orderId: null,
-          },
-        });
-      } else if (status === "Dikirim" || status === "Shipped") {
-        // If status changed to Dikirim, products become Terjual
-        await tx.product.updateMany({
-          where: { orderId: id },
-          data: {
-            status: "Terjual",
-          },
-        });
-      }
+    // If status is changed to Dibatalkan/Cancelled, revert all linked products to Tersedia
+    if (status === "Dibatalkan" || status === "Cancelled") {
+      const { error: prodError } = await supabase
+        .from("products")
+        .update({
+          status: "Tersedia",
+          orderId: null,
+        })
+        .eq("orderId", id);
+      if (prodError) throw prodError;
+    } else if (status === "Dikirim" || status === "Shipped") {
+      // If status changed to Dikirim, products become Terjual
+      const { error: prodError } = await supabase
+        .from("products")
+        .update({
+          status: "Terjual",
+        })
+        .eq("orderId", id);
+      if (prodError) throw prodError;
+    }
 
-      const order = await tx.order.update({
-        where: { id },
-        data: {
-          ...(status && { status }),
-          ...(trackingNo !== undefined && { trackingNo }),
-          ...(shippingCourier !== undefined && { shippingCourier }),
-          ...(shippingService !== undefined && { shippingService }),
-          ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
-          ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),
-          ...(totalPrice !== undefined && { totalPrice: parseInt(String(totalPrice), 10) }),
-        },
-        include: {
-          customer: true,
-          products: true,
-        },
-      });
+    const { data: order, error: updateError } = await supabase
+      .from("orders")
+      .update({
+        ...(status && { status }),
+        ...(trackingNo !== undefined && { trackingNo }),
+        ...(shippingCourier !== undefined && { shippingCourier }),
+        ...(shippingService !== undefined && { shippingService }),
+        ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
+        ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),
+        ...(totalPrice !== undefined && { totalPrice: parseInt(String(totalPrice), 10) }),
+      })
+      .eq("id", id)
+      .select("*, customer:customers(*), products(*)")
+      .single();
 
-      return order;
-    });
+    if (updateError) throw updateError;
+
+    const normalized = {
+      ...order,
+      customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
+      products: order.products || [],
+    };
 
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
+      data: normalized,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";
@@ -87,13 +98,17 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const order = await prisma.order.findUnique({
-      where: { id },
-      include: {
-        customer: true,
-        products: true,
-      },
-    });
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("*, customer:customers(*), products(*)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
 
     if (!order) {
       return NextResponse.json(
@@ -102,9 +117,15 @@ export async function GET(
       );
     }
 
+    const normalized = {
+      ...order,
+      customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
+      products: order.products || [],
+    };
+
     return NextResponse.json({
       success: true,
-      data: order,
+      data: normalized,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";

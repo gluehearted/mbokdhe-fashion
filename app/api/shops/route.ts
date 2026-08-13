@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 // GET /api/shops
 export async function GET() {
   try {
-    const shops = await prisma.shop.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: shops, error } = await supabase
+      .from("shops")
+      .select("*")
+      .order("createdAt", { ascending: false });
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
@@ -36,9 +43,16 @@ export async function POST(request: Request) {
 
     const cleanName = name.trim();
 
-    const existing = await prisma.shop.findUnique({
-      where: { name: cleanName },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existing, error: checkError } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("name", cleanName)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (existing) {
       return NextResponse.json(
@@ -47,9 +61,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const shop = await prisma.shop.create({
-      data: { name: cleanName },
-    });
+    const { data: shop, error: createError } = await supabase
+      .from("shops")
+      .insert({ name: cleanName })
+      .select()
+      .single();
+
+    if (createError) throw createError;
 
     return NextResponse.json(
       { success: true, message: `Toko '${cleanName}' berhasil ditambahkan.`, data: shop },

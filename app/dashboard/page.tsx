@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -41,51 +42,49 @@ export default async function DashboardPage() {
   }> = [];
 
   try {
-    const res = await Promise.all([
-      prisma.product.findMany({
-        where: {
-          OR: [{ status: "Tersedia" }, { status: "Available" }],
-        },
-        include: {
-          shop: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
-      prisma.order.findMany({
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              whatsapp: true,
-              domisili: true,
-            },
-          },
-          products: true,
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.order.findMany({
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              whatsapp: true,
-              domisili: true,
-            },
-          },
-          products: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const [productsRes, allOrdersRes, recentOrdersRes] = await Promise.all([
+      supabase
+        .from("products")
+        .select("*, shop:shops(*)")
+        .or("status.eq.Tersedia,status.eq.Available")
+        .order("createdAt", { ascending: false })
+        .limit(5),
+      supabase
+        .from("orders")
+        .select("*, customer:customers(id, name, whatsapp, domisili), products(*)")
+        .order("createdAt", { ascending: false }),
+      supabase
+        .from("orders")
+        .select("*, customer:customers(id, name, whatsapp, domisili), products(*)")
+        .order("createdAt", { ascending: false })
+        .limit(8),
     ]);
 
-    availableProducts = res[0];
-    allOrders = res[1];
-    recentOrders = res[2];
+    if (productsRes.error) throw productsRes.error;
+    if (allOrdersRes.error) throw allOrdersRes.error;
+    if (recentOrdersRes.error) throw recentOrdersRes.error;
+
+    availableProducts = (productsRes.data || []).map((p: any) => ({
+      ...p,
+      shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
+    }));
+
+    allOrders = (allOrdersRes.data || []).map((o: any) => ({
+      ...o,
+      createdAt: new Date(o.createdAt),
+      customer: Array.isArray(o.customer) ? o.customer[0] : o.customer || null,
+      products: o.products || [],
+    }));
+
+    recentOrders = (recentOrdersRes.data || []).map((o: any) => ({
+      ...o,
+      createdAt: new Date(o.createdAt),
+      customer: Array.isArray(o.customer) ? o.customer[0] : o.customer || null,
+      products: o.products || [],
+    }));
   } catch (err) {
     console.warn("Koneksi database belum terhubung atau kata sandi database pada .env belum diisi:", err);
   }

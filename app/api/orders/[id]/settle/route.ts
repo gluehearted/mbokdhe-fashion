@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 export async function POST(
   request: Request,
@@ -8,10 +9,16 @@ export async function POST(
   try {
     const { id } = await context.params;
 
-    const existingOrder = await prisma.order.findUnique({
-      where: { id },
-      include: { products: true },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existingOrder, error: checkError } = await supabase
+      .from("orders")
+      .select("*, products(*)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (!existingOrder) {
       return NextResponse.json(
@@ -20,35 +27,39 @@ export async function POST(
       );
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      // Update order status to "Siap Kirim"
-      const order = await tx.order.update({
-        where: { id },
-        data: {
-          status: "Siap Kirim",
-          notes: `Lunas pada ${new Date().toLocaleDateString("id-ID")}`,
-        },
-        include: {
-          customer: true,
-          products: true,
-        },
-      });
+    // Update order status to "Siap Kirim"
+    const { data: order, error: updateOrderError } = await supabase
+      .from("orders")
+      .update({
+        status: "Siap Kirim",
+        notes: `Lunas pada ${new Date().toLocaleDateString("id-ID")}`,
+      })
+      .eq("id", id)
+      .select("*, customer:customers(*), products(*)")
+      .single();
 
-      // Mark attached products as "Terjual"
-      await tx.product.updateMany({
-        where: { orderId: id },
-        data: {
-          status: "Terjual",
-        },
-      });
+    if (updateOrderError) throw updateOrderError;
 
-      return order;
-    });
+    // Mark attached products as "Terjual"
+    const { error: updateProductsError } = await supabase
+      .from("products")
+      .update({
+        status: "Terjual",
+      })
+      .eq("orderId", id);
+
+    if (updateProductsError) throw updateProductsError;
+
+    const normalized = {
+      ...order,
+      customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
+      products: order.products || [],
+    };
 
     return NextResponse.json({
       success: true,
-      data: updated,
-      message: `Pesanan ID ${id} berhasil dilunasi dan masuk antrean Siap Kirim.`,
+      data: normalized,
+      message: `Pesanan ID ${id} berhasil dilunasi and masuk antrean Siap Kirim.`,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";

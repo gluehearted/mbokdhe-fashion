@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -15,33 +16,38 @@ export async function GET(request: Request) {
     if (status === "Booked") mappedStatus = "Dibooking";
     if (status === "Sold") mappedStatus = "Terjual";
 
-    const whereClause = mappedStatus ? { status: mappedStatus } : {};
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
 
-    const products = await prisma.product.findMany({
-      where: whereClause,
-      include: {
-        shop: true,
-        order: {
-          select: {
-            id: true,
-            status: true,
-            customer: {
-              select: {
-                name: true,
-                whatsapp: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        id: "asc",
-      },
+    let query = supabase
+      .from("products")
+      .select("*, shop:shops(*), order:orders(id, status, customer:customers(name, whatsapp))")
+      .order("id", { ascending: true });
+
+    if (mappedStatus && mappedStatus !== "ALL") {
+      query = query.eq("status", mappedStatus);
+    }
+
+    const { data: products, error } = await query;
+
+    if (error) throw error;
+
+    const mapped = (products || []).map((p: any) => {
+      const shop = Array.isArray(p.shop) ? p.shop[0] : p.shop;
+      const order = Array.isArray(p.order) ? p.order[0] : p.order;
+      return {
+        ...p,
+        shop: shop || null,
+        order: order ? {
+          ...order,
+          customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null
+        } : null
+      };
     });
 
     return NextResponse.json({
       success: true,
-      data: products,
+      data: mapped,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";
@@ -52,7 +58,7 @@ export async function GET(request: Request) {
   }
 }
 
-async function generateAutoProductId(shopOrigin: string): Promise<string> {
+async function generateAutoProductId(supabase: any, shopOrigin: string): Promise<string> {
   const cleanShop = shopOrigin.trim().replace(/[()]/g, "");
   const words = cleanShop.split(/\s+/).filter(Boolean);
   let prefix = "TAS";
@@ -71,18 +77,27 @@ async function generateAutoProductId(shopOrigin: string): Promise<string> {
   const dateCode = `${yy}${mm}${dd}`;
 
   const datePrefix = `${prefix}-${dateCode}-`;
-  const existingCount = await prisma.product.count({
-    where: {
-      id: {
-        startsWith: datePrefix,
-      },
-    },
-  });
 
-  let seq = existingCount + 1;
+  const { count, error } = await supabase
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .like("id", `${datePrefix}%`);
+
+  if (error) throw error;
+
+  let seq = (count || 0) + 1;
   let candidate = `${datePrefix}${String(seq).padStart(2, "0")}`;
 
-  while (await prisma.product.findUnique({ where: { id: candidate } })) {
+  while (true) {
+    const { data: existing, error: checkError } = await supabase
+      .from("products")
+      .select("id")
+      .eq("id", candidate)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+    if (!existing) break;
+
     seq++;
     candidate = `${datePrefix}${String(seq).padStart(2, "0")}`;
   }
@@ -101,6 +116,7 @@ export async function POST(request: Request) {
     const price = parseInt((formData.get("price") as string) || "0", 10);
     const description = ((formData.get("description") as string) || "").trim();
     const file = formData.get("file") as File | null;
+    const clientPhotoUrl = (formData.get("photoUrl") as string) || "";
 
     if (!shopOrigin || isNaN(price) || price <= 0) {
       return NextResponse.json(
@@ -109,13 +125,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
     // Auto-generate ID if not provided
     if (!id) {
-      id = await generateAutoProductId(shopOrigin);
+      id = await generateAutoProductId(supabase, shopOrigin);
     } else {
-      const existing = await prisma.product.findUnique({
-        where: { id },
-      });
+      const { data: existing, error: checkError } = await supabase
+        .from("products")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
 
       if (existing) {
         return NextResponse.json(
@@ -125,15 +148,29 @@ export async function POST(request: Request) {
       }
     }
 
-    // 1-to-Many Relation: Find or create Shop to link shopId
-    let shopObj = await prisma.shop.findUnique({ where: { name: shopOrigin } });
+    // Find or create Shop to link shopId
+    let { data: shopObj, error: shopFindError } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("name", shopOrigin)
+      .maybeSingle();
+
+    if (shopFindError) throw shopFindError;
+
     if (!shopObj) {
-      shopObj = await prisma.shop.create({ data: { name: shopOrigin } });
+      const { data: newShop, error: shopCreateError } = await supabase
+        .from("shops")
+        .insert({ name: shopOrigin })
+        .select()
+        .single();
+
+      if (shopCreateError) throw shopCreateError;
+      shopObj = newShop;
     }
 
-    let photoUrl = "/uploads/placeholder.jpg";
+    let photoUrl = clientPhotoUrl || "/uploads/placeholder.jpg";
 
-    if (file && file.size > 0) {
+    if (!clientPhotoUrl && file && file.size > 0) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
@@ -148,8 +185,9 @@ export async function POST(request: Request) {
       photoUrl = `/uploads/${fileName}`;
     }
 
-    const product = await prisma.product.create({
-      data: {
+    const { data: product, error: productCreateError } = await supabase
+      .from("products")
+      .insert({
         id,
         shopId: shopObj.id,
         capitalPrice,
@@ -157,8 +195,11 @@ export async function POST(request: Request) {
         description,
         status: "Tersedia",
         photoUrl,
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (productCreateError) throw productCreateError;
 
     return NextResponse.json(
       {

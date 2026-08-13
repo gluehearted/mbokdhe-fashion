@@ -63,14 +63,10 @@ export function Sidebar() {
         {/* Brand Header with ThemeToggle next to Title */}
         <div className="px-5 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 font-bold text-2xl shrink-0">
-              local_mall
-            </span>
             <span className="text-base font-extrabold text-blue-700 dark:text-blue-400 tracking-tight truncate">
               Mbokdhe Fashion
             </span>
           </div>
-
           {/* Theme Toggle Button next to Title */}
           <div className="shrink-0">
             <ThemeToggle />

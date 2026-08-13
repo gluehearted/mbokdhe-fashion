@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 // PATCH /api/shops/[id]
 export async function PATCH(
@@ -20,10 +21,17 @@ export async function PATCH(
 
     const cleanName = name.trim();
 
-    const updated = await prisma.shop.update({
-      where: { id },
-      data: { name: cleanName },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: updated, error } = await supabase
+      .from("shops")
+      .update({ name: cleanName })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
@@ -47,9 +55,15 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    await prisma.shop.delete({
-      where: { id },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { error } = await supabase
+      .from("shops")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,

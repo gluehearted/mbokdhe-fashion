@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
-async function generateAutoCustomerId(): Promise<string> {
+async function generateAutoCustomerId(supabase: any): Promise<string> {
   const now = new Date();
   const yy = String(now.getFullYear()).slice(-2);
   const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -9,14 +10,26 @@ async function generateAutoCustomerId(): Promise<string> {
   const dateCode = `${yy}${mm}${dd}`;
   const prefix = `CST-${dateCode}-`;
 
-  const count = await prisma.customer.count({
-    where: { id: { startsWith: prefix } },
-  });
+  const { count, error } = await supabase
+    .from("customers")
+    .select("id", { count: "exact", head: true })
+    .like("id", `${prefix}%`);
 
-  let seq = count + 1;
+  if (error) throw error;
+
+  let seq = (count || 0) + 1;
   let candidate = `${prefix}${String(seq).padStart(2, "0")}`;
 
-  while (await prisma.customer.findUnique({ where: { id: candidate } })) {
+  while (true) {
+    const { data: existing, error: checkError } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("id", candidate)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+    if (!existing) break;
+
     seq++;
     candidate = `${prefix}${String(seq).padStart(2, "0")}`;
   }
@@ -30,45 +43,32 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
 
-    const customers = await prisma.customer.findMany({
-      where: search
-        ? {
-            OR: [
-              { id: { contains: search } },
-              { name: { contains: search } },
-              { whatsapp: { contains: search } },
-              { domisili: { contains: search } },
-              { courier: { contains: search } },
-              { behavioral: { contains: search } },
-              { consumerType: { contains: search } },
-            ],
-          }
-        : undefined,
-      include: {
-        _count: {
-          select: { orders: true },
-        },
-        orders: {
-          select: {
-            id: true,
-            status: true,
-            totalPrice: true,
-            createdAt: true,
-          },
-        },
-      },
-      take: 100,
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    let query = supabase
+      .from("customers")
+      .select("*, orders(id, status, totalPrice, createdAt)")
+      .order("createdAt", { ascending: false });
+
+    if (search) {
+      query = query.or(
+        `id.ilike.%${search}%,name.ilike.%${search}%,whatsapp.ilike.%${search}%,domisili.ilike.%${search}%,courier.ilike.%${search}%,behavioral.ilike.%${search}%,consumerType.ilike.%${search}%`
+      );
+    }
+
+    const { data: customers, error } = await query;
+
+    if (error) throw error;
 
     // Compute live totalSpending & totalTransactions if needed
-    const mapped = customers.map((c) => {
-      const ordersCount = c._count?.orders || 0;
-      const calculatedSpending = c.orders.reduce((sum, o) => sum + (o.status !== "Cancelled" ? o.totalPrice : 0), 0);
+    const mapped = (customers || []).map((c: any) => {
+      const orders = c.orders || [];
+      const ordersCount = orders.length;
+      const calculatedSpending = orders.reduce((sum: number, o: any) => sum + (o.status !== "Dibatalkan" && o.status !== "Cancelled" ? o.totalPrice : 0), 0);
       return {
         ...c,
+        _count: { orders: ordersCount },
         totalTransactions: c.totalTransactions || ordersCount,
         totalSpending: c.totalSpending || calculatedSpending,
       };
@@ -113,9 +113,16 @@ export async function POST(request: Request) {
 
     const cleanWhatsapp = String(whatsapp).trim().replace(/[^0-9]/g, "");
 
-    const existing = await prisma.customer.findUnique({
-      where: { whatsapp: cleanWhatsapp },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existing, error: checkError } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("whatsapp", cleanWhatsapp)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (existing) {
       return NextResponse.json(
@@ -124,10 +131,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const customId = await generateAutoCustomerId();
+    const customId = await generateAutoCustomerId(supabase);
 
-    const newCustomer = await prisma.customer.create({
-      data: {
+    const { data: newCustomer, error: createError } = await supabase
+      .from("customers")
+      .insert({
         id: customId,
         name: name.trim(),
         whatsapp: cleanWhatsapp,
@@ -139,8 +147,11 @@ export async function POST(request: Request) {
         consumerType: consumerType ? consumerType.trim() : "Retail",
         relationshipStatus: relationshipStatus ? relationshipStatus.trim() : "Active",
         crisisStatus: crisisStatus ? crisisStatus.trim() : "Normal",
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
 
     return NextResponse.json(
       {

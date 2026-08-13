@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
@@ -10,16 +11,17 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        order: {
-          include: {
-            customer: true,
-          },
-        },
-      },
-    });
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: product, error } = await supabase
+      .from("products")
+      .select("*, order:orders(*, customer:customers(*))")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
 
     if (!product) {
       return NextResponse.json(
@@ -28,9 +30,18 @@ export async function GET(
       );
     }
 
+    const order = Array.isArray(product.order) ? product.order[0] : product.order;
+    const normalized = {
+      ...product,
+      order: order ? {
+        ...order,
+        customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null
+      } : null
+    };
+
     return NextResponse.json({
       success: true,
-      data: product,
+      data: normalized,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";
@@ -48,9 +59,17 @@ export async function PATCH(
 ) {
   try {
     const { id } = await context.params;
-    const existing = await prisma.product.findUnique({
-      where: { id },
-    });
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existing, error: checkError } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (!existing) {
       return NextResponse.json(
@@ -111,16 +130,20 @@ export async function PATCH(
       photoUrl = body.photoUrl;
     }
 
-    const updated = await prisma.product.update({
-      where: { id },
-      data: {
+    const { data: updated, error: updateError } = await supabase
+      .from("products")
+      .update({
         ...(capitalPrice !== undefined && !isNaN(capitalPrice) && { capitalPrice }),
         ...(price !== undefined && !isNaN(price) && { price }),
         ...(description !== undefined && { description }),
         ...(status && { status }),
         ...(photoUrl && { photoUrl }),
-      },
-    });
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({
       success: true,
@@ -142,10 +165,17 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-    const existing = await prisma.product.findUnique({
-      where: { id },
-      include: { order: true },
-    });
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existing, error: checkError } = await supabase
+      .from("products")
+      .select("*, order:orders(*)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (!existing) {
       return NextResponse.json(
@@ -171,9 +201,12 @@ export async function DELETE(
       }
     }
 
-    await prisma.product.delete({
-      where: { id },
-    });
+    const { error: deleteError } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({
       success: true,

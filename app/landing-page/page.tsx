@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/ThemeProvider";
 
@@ -16,16 +17,22 @@ export default async function LandingPage() {
   }> = [];
 
   try {
-    availableProducts = await prisma.product.findMany({
-      where: {
-        OR: [{ status: "Tersedia" }, { status: "Available" }],
-      },
-      include: {
-        shop: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("*, shop:shops(*)")
+      .or("status.eq.Tersedia,status.eq.Available")
+      .order("createdAt", { ascending: false })
+      .limit(8);
+
+    if (error) throw error;
+
+    availableProducts = (data || []).map((p: any) => ({
+      ...p,
+      shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
+    }));
   } catch (err) {
     console.warn("Koneksi database belum terhubung atau kata sandi database pada .env belum diisi:", err);
   }

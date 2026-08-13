@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 // GET /api/customers/[id]
 export async function GET(
@@ -8,22 +9,29 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const customer = await prisma.customer.findUnique({
-      where: { id },
-      include: {
-        orders: {
-          include: {
-            products: true,
-          },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: customer, error } = await supabase
+      .from("customers")
+      .select("*, orders(*, products(*))")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
 
     if (!customer) {
       return NextResponse.json(
         { success: false, error: "Pelanggan tidak ditemukan." },
         { status: 404 }
+      );
+    }
+
+    // Sort orders in memory to match orderBy: { createdAt: "desc" }
+    if (customer.orders && Array.isArray(customer.orders)) {
+      customer.orders.sort(
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     }
 
@@ -63,9 +71,16 @@ export async function PATCH(
       totalTransactions,
     } = body;
 
-    const existing = await prisma.customer.findUnique({
-      where: { id },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existing, error: checkExistingError } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkExistingError) throw checkExistingError;
 
     if (!existing) {
       return NextResponse.json(
@@ -78,9 +93,12 @@ export async function PATCH(
     if (whatsapp) {
       cleanWhatsapp = String(whatsapp).trim().replace(/[^0-9]/g, "");
       if (cleanWhatsapp !== existing.whatsapp) {
-        const checkWa = await prisma.customer.findUnique({
-          where: { whatsapp: cleanWhatsapp },
-        });
+        const { data: checkWa, error: checkWaError } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("whatsapp", cleanWhatsapp)
+          .maybeSingle();
+        if (checkWaError) throw checkWaError;
         if (checkWa) {
           return NextResponse.json(
             { success: false, error: `Nomor WhatsApp ${cleanWhatsapp} sudah digunakan pelanggan lain.` },
@@ -90,9 +108,9 @@ export async function PATCH(
       }
     }
 
-    const updated = await prisma.customer.update({
-      where: { id },
-      data: {
+    const { data: updated, error: updateError } = await supabase
+      .from("customers")
+      .update({
         ...(name && { name: name.trim() }),
         ...(cleanWhatsapp && { whatsapp: cleanWhatsapp }),
         ...(domisili !== undefined && { domisili: domisili ? domisili.trim() : null }),
@@ -105,8 +123,12 @@ export async function PATCH(
         ...(crisisStatus !== undefined && { crisisStatus: crisisStatus ? crisisStatus.trim() : null }),
         ...(totalSpending !== undefined && { totalSpending: parseInt(String(totalSpending), 10) }),
         ...(totalTransactions !== undefined && { totalTransactions: parseInt(String(totalTransactions), 10) }),
-      },
-    });
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({
       success: true,
@@ -128,9 +150,17 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-    const customer = await prisma.customer.findUnique({
-      where: { id },
-    });
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: customer, error: fetchError } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
 
     if (!customer) {
       return NextResponse.json(
@@ -139,36 +169,44 @@ export async function DELETE(
       );
     }
 
-    // Cascade deletion: Delete customer and their orders, but retain products (unlinked & set to Tersedia)
-    await prisma.$transaction(async (tx) => {
-      const orders = await tx.order.findMany({
-        where: { customerId: id },
-        select: { id: true },
-      });
+    // Cascade deletion
+    const { data: orders, error: fetchOrdersError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("customerId", id);
 
-      const orderIds = orders.map((o) => o.id);
+    if (fetchOrdersError) throw fetchOrdersError;
 
-      if (orderIds.length > 0) {
-        // Unlink products, set status back to "Tersedia"
-        await tx.product.updateMany({
-          where: { orderId: { in: orderIds } },
-          data: {
-            orderId: null,
-            status: "Tersedia",
-          },
-        });
+    const orderIds = (orders || []).map((o) => o.id);
 
-        // Delete all orders for this customer
-        await tx.order.deleteMany({
-          where: { customerId: id },
-        });
-      }
+    if (orderIds.length > 0) {
+      // Unlink products, set status back to "Tersedia"
+      const { error: unlinkError } = await supabase
+        .from("products")
+        .update({
+          orderId: null,
+          status: "Tersedia",
+        })
+        .in("orderId", orderIds);
 
-      // Delete customer record
-      await tx.customer.delete({
-        where: { id },
-      });
-    });
+      if (unlinkError) throw unlinkError;
+
+      // Delete all orders for this customer
+      const { error: deleteOrdersError } = await supabase
+        .from("orders")
+        .delete()
+        .eq("customerId", id);
+
+      if (deleteOrdersError) throw deleteOrdersError;
+    }
+
+    // Delete customer record
+    const { error: deleteCustomerError } = await supabase
+      .from("customers")
+      .delete()
+      .eq("id", id);
+
+    if (deleteCustomerError) throw deleteCustomerError;
 
     return NextResponse.json({
       success: true,

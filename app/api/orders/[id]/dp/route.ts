@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 export async function POST(
   request: Request,
@@ -19,9 +20,16 @@ export async function POST(
       );
     }
 
-    const existingOrder = await prisma.order.findUnique({
-      where: { id },
-    });
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existingOrder, error: checkError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
 
     if (!existingOrder) {
       return NextResponse.json(
@@ -30,24 +38,30 @@ export async function POST(
       );
     }
 
-    const updatedOrder = await prisma.order.update({
-      where: { id },
-      data: {
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from("orders")
+      .update({
         dpAmount: parsedDp,
-        dpDate: new Date(),
+        dpDate: new Date().toISOString(),
         status: "DP",
         dpForfeited: false,
         ...(notes && { notes }),
-      },
-      include: {
-        customer: true,
-        products: true,
-      },
-    });
+      })
+      .eq("id", id)
+      .select("*, customer:customers(*), products(*)")
+      .single();
+
+    if (updateError) throw updateError;
+
+    const normalized = {
+      ...updatedOrder,
+      customer: Array.isArray(updatedOrder.customer) ? updatedOrder.customer[0] : updatedOrder.customer || null,
+      products: updatedOrder.products || [],
+    };
 
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
+      data: normalized,
       message: `DP sebesar Rp ${parsedDp.toLocaleString("id-ID")} berhasil dicatat.`,
     });
   } catch (error: unknown) {
