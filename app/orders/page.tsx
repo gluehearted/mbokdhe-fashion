@@ -189,7 +189,10 @@ export default function OrdersPage() {
 
     const productList = o.products
       .map((p, idx) => {
-        const itemDesc = p.description ? p.description.trim() : `#${p.id.toUpperCase()}`;
+        const desc = p.description?.trim();
+        const itemDesc = desc
+          ? desc
+          : `Produk #${p.id.slice(0, 8).toUpperCase()}`;
         let itemStr = `${idx + 1}. ${itemDesc} - Rp ${p.price.toLocaleString("id-ID")}`;
         if (p.discount && p.discount > 0) {
           itemStr += ` (Diskon: Rp ${p.discount.toLocaleString("id-ID")})`;

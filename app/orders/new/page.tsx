@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -58,35 +58,32 @@ export default function NewOrderPage() {
 
   const [zoomProduct, setZoomProduct] = useState<Product | null>(null);
 
-  const fetchInitialData = useCallback(async () => {
-    setLoadingData(true);
-    try {
-      const [custRes, prodRes] = await Promise.all([
-        fetch("/api/customers"),
-        fetch("/api/products"),
-      ]);
-
-      const custData = await custRes.json();
-      const prodData = await prodRes.json();
-
-      if (custData.success) {
-        setCustomers(custData.data);
-      }
-
-      if (prodData.success) {
-        const available = prodData.data.filter((p: Product) => p.status === "Tersedia");
-        setAvailableProducts(available);
-      }
-    } catch {
-      setErrorMessage("Gagal memuat data pelanggan & produk.");
-    } finally {
-      setLoadingData(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+    let isMounted = true;
+    const load = async () => {
+      setLoadingData(true);
+      try {
+        const [custRes, prodRes] = await Promise.all([
+          fetch("/api/customers"),
+          fetch("/api/products"),
+        ]);
+        const custData = await custRes.json();
+        const prodData = await prodRes.json();
+        if (!isMounted) return;
+        if (custData.success) setCustomers(custData.data);
+        if (prodData.success) {
+          const available = prodData.data.filter((p: Product) => p.status === "Tersedia");
+          setAvailableProducts(available);
+        }
+      } catch {
+        if (isMounted) setErrorMessage("Gagal memuat data pelanggan & produk.");
+      } finally {
+        if (isMounted) setLoadingData(false);
+      }
+    };
+    load();
+    return () => { isMounted = false; };
+  }, []);
 
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomerId(customerId);
