@@ -50,7 +50,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
 
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
@@ -150,6 +149,99 @@ export default function OrdersPage() {
     }
   };
 
+  const generateWhatsappMessage = (o: Order) => {
+    const customerName = o.customer?.name || "Pelanggan";
+    const formattedDate = new Date(o.createdAt).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    let statusDesc = o.status.toUpperCase();
+    if (o.status === "Menunggu") {
+      statusDesc = "MENUNGGU PEMBAYARAN";
+    } else if (o.status === "DP") {
+      statusDesc = `DP / UANG MUKA (Telah Diterima: Rp ${o.dpAmount.toLocaleString("id-ID")})`;
+    } else if (o.status === "Siap Kirim" || o.status === "Siap Packing") {
+      statusDesc = "SIAP KIRIM";
+    } else if (o.status === "Dikirim") {
+      statusDesc = "DIKIRIM (Dalam Pengiriman)";
+    } else if (o.status === "Dibatalkan") {
+      statusDesc = "DIBATALKAN";
+    } else if (o.status === "Lunas" || o.status === "Selesai") {
+      statusDesc = "LUNAS & SELESAI";
+    }
+
+    const totalBarang = o.products.reduce((acc, p) => acc + p.price, 0);
+    const sisaTagihan = o.dpAmount > 0 ? o.totalPrice - o.dpAmount : 0;
+
+    const productList = o.products
+      .map((p, idx) => {
+        let itemStr = `${idx + 1}. #${p.id.toUpperCase()} - Rp ${p.price.toLocaleString("id-ID")}`;
+        if (p.discount && p.discount > 0) {
+          itemStr += ` (Diskon: Rp ${p.discount.toLocaleString("id-ID")})`;
+        }
+        return itemStr;
+      })
+      .join("\n");
+
+    let financialLines = `• Total Barang (${o.products.length}): Rp ${totalBarang.toLocaleString("id-ID")}\n• Ongkir (${o.shippingCourier || "Ekspedisi"}): Rp ${(o.shippingCost || 0).toLocaleString("id-ID")}`;
+
+    if (o.dpAmount > 0) {
+      financialLines += `\n• DP Dibayar: -Rp ${o.dpAmount.toLocaleString("id-ID")}`;
+    }
+    if (sisaTagihan > 0) {
+      financialLines += `\n• Sisa Pelunasan: Rp ${sisaTagihan.toLocaleString("id-ID")}`;
+    }
+
+    let resiLine = "";
+    if (o.trackingNo) {
+      resiLine = `\n\n📦 *NO. RESI (${(o.shippingCourier || "EKSPEDISI").toUpperCase()})*:\n*${o.trackingNo}*`;
+    }
+
+    return `Halo *${customerName}*, berikut rekap pesanan Anda dari *Mbokdhe Fashion*:
+
+----------------------------------
+*REKAP PESANAN*
+----------------------------------
+*Order ID*: #${o.id.slice(0, 8).toUpperCase()}
+*Tanggal*: ${formattedDate}
+*Status*: *${statusDesc}*
+
+*DATA PELANGGAN*:
+• Nama: ${customerName}
+• No. WA: ${o.customer?.whatsapp || "-"}
+• Alamat: ${o.customer?.addressDetail || "-"}${o.customer?.domisili ? `, ${o.customer.domisili}` : ""}
+
+*RINCIAN BARANG DIPESAN*:
+${productList}
+
+*RINCIAN PEMBAYARAN*:
+${financialLines}
+----------------------------------
+*TOTAL TAGIHAN*: *Rp ${o.totalPrice.toLocaleString("id-ID")}*
+----------------------------------${resiLine}
+
+Terima kasih telah berbelanja di Mbokdhe Fashion!`;
+  };
+
+  const handleSendWhatsapp = (o: Order) => {
+    if (!o.customer?.whatsapp) {
+      showToast("Nomor WhatsApp pelanggan tidak ditemukan.", "error");
+      return;
+    }
+
+    let waNum = o.customer.whatsapp.replace(/\D/g, "");
+    if (waNum.startsWith("0")) {
+      waNum = "62" + waNum.slice(1);
+    }
+
+    const text = generateWhatsappMessage(o);
+    const encoded = encodeURIComponent(text);
+    const url = `https://wa.me/${waNum}?text=${encoded}`;
+    window.open(url, "_blank");
+  };
+
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = statusFilter === "ALL" || o.status === statusFilter;
     const matchesSearch =
@@ -173,30 +265,6 @@ export default function OrdersPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* View Mode Toggle */}
-          <div className="bg-[#f5f5f5] dark:bg-slate-800 p-1 rounded-[6px] border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1 text-[10px] font-bold uppercase font-technical">
-            <button
-              onClick={() => setViewMode("card")}
-              className={`px-3 py-1 rounded-[4px] cursor-pointer transition-all ${
-                viewMode === "card"
-                  ? "bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] shadow-sm font-bold"
-                  : "text-slate-500 dark:text-slate-400 hover:text-[#111111] dark:hover:text-white"
-              }`}
-            >
-              Kartu
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`px-3 py-1 rounded-[4px] cursor-pointer transition-all ${
-                viewMode === "table"
-                  ? "bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] shadow-sm font-bold"
-                  : "text-slate-500 dark:text-slate-400 hover:text-[#111111] dark:hover:text-white"
-              }`}
-            >
-              Tabel
-            </button>
-          </div>
-
           <Link
             href="/orders/new"
             className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
@@ -250,173 +318,6 @@ export default function OrdersPage() {
           <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
             Tidak ada data pesanan ditemukan.
           </div>
-        ) : viewMode === "card" ? (
-          /* CARD VIEW LAYOUT */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredOrders.map((o) => {
-              const totalBarang = o.products.reduce((acc, p) => acc + p.price, 0);
-              const sisaTagihan = o.dpAmount > 0 ? o.totalPrice - o.dpAmount : 0;
-              
-              let statusBg = "bg-[#f5f5f5] text-slate-700 dark:bg-slate-800 dark:text-slate-300"; // default
-              if (o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Lunas" || o.status === "Dikirim") {
-                statusBg = "bg-[#EDF3EC] text-[#346538]"; // Pastel Green
-              } else if (o.status === "DP") {
-                statusBg = "bg-[#E1F3FE] text-[#1F6C9F]"; // Pastel Blue
-              } else if (o.status === "Menunggu") {
-                statusBg = "bg-[#FBF3DB] text-[#956400]"; // Pastel Yellow
-              } else if (o.status === "Dibatalkan") {
-                statusBg = "bg-[#FDEBEC] text-[#9F2F2D]"; // Pastel Red
-              }
-
-              return (
-                <div key={o.id} className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.01)] space-y-4 hover:shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between">
-                  
-                  {/* Card Header: Order ID & Status */}
-                  <div className="flex justify-between items-start border-b border-[#eaeaea] dark:border-slate-800/80 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-technical text-xs font-bold text-[#111111] dark:text-[#f3f3f3]">
-                          ORDER ID: #{o.id.slice(0, 8).toUpperCase()}
-                        </span>
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-technical">
-                          {new Date(o.createdAt).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                        Pelanggan: <strong className="text-[#111111] dark:text-white font-semibold">{o.customer?.name || "Pelanggan Terhapus"}</strong>
-                      </p>
-                    </div>
-
-                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${statusBg}`}>
-                      {o.status.toUpperCase()}
-                    </span>
-                  </div>
-
-                  {/* Customer Info Box */}
-                  {o.customer && (
-                    <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] p-3 text-xs text-slate-700 dark:text-slate-300 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-slate-900 dark:text-white">{o.customer.name}</span>
-                        <a
-                          href={`https://wa.me/${o.customer.whatsapp}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-technical text-red-600 dark:text-red-400 font-bold hover:underline"
-                        >
-                          {o.customer.whatsapp}
-                        </a>
-                      </div>
-                      <p className="text-slate-400 dark:text-slate-500 text-[10px] leading-relaxed">
-                        {o.customer.addressDetail}, {o.customer.domisili || "-"}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Rincian Barang Table */}
-                  <div className="space-y-2 font-technical">
-                    <span className="text-[9px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest block">
-                      Rincian Barang Dipesan ({o.products.length} Tas):
-                    </span>
-                    <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] overflow-hidden text-xs">
-                      <table className="w-full text-center divide-y divide-[#eaeaea] dark:divide-slate-800">
-                        <thead className="bg-[#f0f0f0] dark:bg-[#252629] text-slate-500 dark:text-slate-400 text-[9px] uppercase font-bold">
-                          <tr>
-                            <th className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800">ID Tas</th>
-                            <th className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800">Harga</th>
-                            <th className="p-2 text-center">Diskon</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#eaeaea] dark:divide-slate-850 text-[10px] text-slate-800 dark:text-slate-200">
-                          {o.products.map((p) => (
-                            <tr key={p.id} className="hover:bg-white dark:hover:bg-[#141517]">
-                              <td className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800 font-bold text-red-600 dark:text-emerald-400">#{p.id.toUpperCase()}</td>
-                              <td className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800 font-bold">
-                                Rp {p.price.toLocaleString("id-ID")}
-                              </td>
-                              <td className="p-2 text-center font-bold">
-                                {p.discount && p.discount > 0 ? (
-                                  <span className="text-[#9F2F2D]">
-                                    Rp {p.discount.toLocaleString("id-ID")}
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400 font-normal">-</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Financial Breakdown Grid */}
-                  <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] p-3 space-y-1.5 text-xs font-technical uppercase">
-                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                      <span>Total Barang ({o.products.length}):</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">Rp {totalBarang.toLocaleString("id-ID")}</span>
-                    </div>
-
-                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                      <span>Ongkir ({o.shippingCourier || "Ekspedisi"}):</span>
-                      <span className="font-bold">Rp {(o.shippingCost || 0).toLocaleString("id-ID")}</span>
-                    </div>
-
-                    {o.dpAmount > 0 && (
-                      <div className="flex justify-between text-[#1F6C9F] dark:text-[#a2d8fa] font-bold border-t border-slate-200 dark:border-slate-800 pt-1.5">
-                        <span>DP Dibayar:</span>
-                        <span>-Rp {o.dpAmount.toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
-
-                    {sisaTagihan > 0 && (
-                      <div className="flex justify-between text-[#956400] dark:text-amber-300 font-bold">
-                        <span>Sisa Pelunasan:</span>
-                        <span>Rp {sisaTagihan.toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between text-[#111111] dark:text-white font-bold text-sm border-t border-slate-200 dark:border-slate-800 pt-1.5">
-                      <span>Total Tagihan:</span>
-                      <span className="text-red-600 dark:text-emerald-400">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
-                    </div>
-                  </div>
-
-                  {/* Resi Badge */}
-                  {o.trackingNo ? (
-                    <div className="p-2.5 bg-[#E1F3FE] text-[#1F6C9F] border border-[#d2ecfc] rounded-[6px] text-[10px] flex justify-between items-center font-technical uppercase">
-                      <span className="font-bold">Resi {o.shippingCourier || "Ekspedisi"}:</span>
-                      <span className="font-bold text-[#1F6C9F]">{o.trackingNo}</span>
-                    </div>
-                  ) : null}
-
-                  {/* Action Bar */}
-                  <div className="flex gap-2 pt-2 border-t border-[#eaeaea] dark:border-slate-800/80">
-                    <button
-                      onClick={() => {
-                        setEditingResiOrder(o);
-                        setTrackingNoInput(o.trackingNo || "");
-                      }}
-                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold text-xs rounded-[6px] transition-colors shadow-sm cursor-pointer font-technical uppercase tracking-wide"
-                    >
-                      {o.trackingNo ? "Edit Resi" : "+ Resi & Kirim"}
-                    </button>
-
-                    <button
-                      onClick={() => handleDeleteOrder(o.id)}
-                      className="px-3 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
-                    >
-                      HAPUS
-                    </button>
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
         ) : (
           /* TABLE VIEW LAYOUT */
           <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
@@ -458,7 +359,7 @@ export default function OrdersPage() {
                             o.products.map((p) => (
                               <span
                                 key={p.id}
-                                className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] rounded-full font-bold text-[9px] uppercase tracking-wider"
+                                className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#1c2c35] dark:text-[#6cb6e4] rounded-full font-bold text-[9px] uppercase tracking-wider"
                                 title={`Supplier: ${p.shop?.name || "-"}`}
                               >
                                 #{p.id.toUpperCase()} {p.shop?.name ? `(${p.shop.name})` : ""}
@@ -479,7 +380,7 @@ export default function OrdersPage() {
 
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono">
                         {o.trackingNo ? (
-                          <span className="font-bold text-[#1F6C9F] bg-[#E1F3FE] px-2.5 py-0.5 rounded-full text-[9px] inline-block uppercase">
+                          <span className="font-bold text-[#1F6C9F] bg-[#E1F3FE] dark:bg-[#1c2c35] dark:text-[#6cb6e4] px-2.5 py-0.5 rounded-full text-[9px] inline-block uppercase">
                             {o.trackingNo}
                           </span>
                         ) : (
@@ -521,6 +422,11 @@ export default function OrdersPage() {
                       <td className="p-4 text-center">
                         <TableActionsMenu
                           items={[
+                            {
+                              label: "Kirim Rekap WA",
+                              icon: "chat",
+                              onClick: () => handleSendWhatsapp(o),
+                            },
                             {
                               label: "Input / Edit Resi",
                               icon: "edit",

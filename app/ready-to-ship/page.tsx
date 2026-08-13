@@ -114,14 +114,6 @@ export default function ReadyToShipPage() {
     showToast(`Template label pengiriman '${o.customer?.name}' berhasil disalin!`, "success");
   };
 
-  const handleSendWhatsApp = (o: Order) => {
-    if (!o.customer) return;
-    const waPhone = formatWhatsAppNumber(o.customer.whatsapp);
-    const template = generateShippingTemplate(o);
-    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(template)}`;
-    window.open(waUrl, "_blank");
-    showToast(`Membuka WhatsApp untuk '${o.customer.name}'...`, "info");
-  };
 
   const handleSaveResiAndShip = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,18 +254,11 @@ export default function ReadyToShipPage() {
                     </button>
 
                     <button
-                      onClick={() => handleSendWhatsApp(o)}
-                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold text-xs rounded-[6px] transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <span>Kirim WA</span>
-                    </button>
-
-                    <button
                       onClick={() => {
                         setEditingResiOrder(o);
                         setTrackingNoInput(o.trackingNo || "");
                       }}
-                      className="w-full py-2 bg-[#EDF3EC] hover:bg-[#dbecdb] text-[#346538] dark:bg-[#182319] dark:text-emerald-300 dark:hover:bg-[#203021] font-bold text-xs rounded-[6px] transition-colors border border-[#cbe1cc] dark:border-emerald-950/60 cursor-pointer"
+                      className="flex-1 py-2 bg-[#EDF3EC] hover:bg-[#dbecdb] text-[#346538] dark:bg-[#182319] dark:text-emerald-300 dark:hover:bg-[#203021] font-bold text-xs rounded-[6px] transition-colors border border-[#cbe1cc] dark:border-emerald-950/60 cursor-pointer"
                     >
                       + Input Resi & Tandai Dikirim
                     </button>
