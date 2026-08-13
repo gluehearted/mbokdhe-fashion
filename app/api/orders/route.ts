@@ -109,6 +109,7 @@ export async function POST(request: Request) {
         totalPrice: totalTagihan,
         dpAmount: Number(dpAmount),
         dpDate: Number(dpAmount) > 0 ? new Date().toISOString() : null,
+        updatedAt: new Date().toISOString(),
       }])
       .select()
       .single();

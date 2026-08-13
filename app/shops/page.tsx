@@ -126,26 +126,31 @@ export default function ShopsPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Kelola Toko & Supplier</h1>
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            Kelola Toko & Supplier
+          </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Shops Directory ]
+          </span>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
         >
           Tambah Toko Baru
         </button>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
-          <h2 className="text-sm font-bold text-slate-800 dark:text-white">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          <h2 className="text-xs font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
             Daftar Nama Toko Terdaftar ({filteredShops.length})
           </h2>
           <input
@@ -153,22 +158,22 @@ export default function ShopsPage() {
             placeholder="Cari nama toko..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
+            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
           />
         </div>
 
         {/* Shops Table */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading toko...</div>
+            <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading toko... ]</div>
           ) : filteredShops.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
               Belum ada toko yang terdaftar. Klik &quot;Tambah Toko Baru&quot; untuk menambahkan.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
                     <th className="p-4 text-center">No</th>
                     <th className="p-4 text-center">Nama Toko / Supplier</th>
@@ -176,14 +181,14 @@ export default function ShopsPage() {
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {filteredShops.map((shop, idx) => (
-                    <tr key={shop.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="p-4 text-center font-mono font-bold text-slate-500 dark:text-slate-400">{idx + 1}</td>
-                      <td className="p-4 text-center font-bold text-slate-900 dark:text-white">
+                    <tr key={shop.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
+                      <td className="p-4 text-center font-bold text-slate-400">{idx + 1}</td>
+                      <td className="p-4 text-center font-semibold text-[#111111] dark:text-[#f3f3f3]">
                         {shop.name}
                       </td>
-                      <td className="p-4 text-center text-slate-500 dark:text-slate-400 font-mono">
+                      <td className="p-4 text-center text-slate-400 dark:text-slate-500">
                         {new Date(shop.createdAt).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
@@ -218,21 +223,23 @@ export default function ShopsPage() {
 
       {/* Modal Tambah/Edit Toko */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-6 space-y-5 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up">
+            <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
               {editingShop ? "Edit Nama Toko" : "Tambah Toko Baru"}
             </h3>
 
             {errorMessage && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-bold">
+              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical">
                 {errorMessage}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Nama Toko / Supplier *</label>
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-ui">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                  Nama Toko / Supplier *
+                </label>
                 <input
                   type="text"
                   value={shopNameInput}
@@ -240,22 +247,22 @@ export default function ShopsPage() {
                   placeholder="Contoh: Sukaraja Store, Supplier Batam"
                   required
                   autoFocus
-                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? "Menyimpan..." : "Simpan Toko"}
                 </button>

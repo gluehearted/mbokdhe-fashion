@@ -154,8 +154,8 @@ export default function ProductsPage() {
 
       try {
         const options = {
-          maxSizeMB: 0.3, // Maksimal 300 KB
-          maxWidthOrHeight: 1200, // Maksimal dimensi gambar 1200px
+          maxSizeMB: 0.3, 
+          maxWidthOrHeight: 1200, 
           useWebWorker: true,
         };
 
@@ -199,7 +199,6 @@ export default function ProductsPage() {
       formData.append("price", priceInput);
       formData.append("description", descriptionInput.trim());
 
-      // JIKA ADA FILE BARU: Upload langsung ke Supabase Storage
       let uploadedToSupabase = false;
       if (supabase && file) {
         try {
@@ -219,12 +218,10 @@ export default function ProductsPage() {
         }
       }
 
-      // JIKA SEDANG EDIT & TIDAK GANTI FOTO: Tetap kirim URL lama agar tidak terhapus
       if (!file && editingProduct && editingProduct.photoUrl) {
         formData.append("photoUrl", editingProduct.photoUrl);
       }
 
-      // Kirim file mentah ke backend hanya jika TIDAK berhasil terunggah ke Supabase (sebagai fallback lokal)
       if (file && !uploadedToSupabase) {
         formData.append("file", file);
       }
@@ -279,25 +276,30 @@ export default function ProductsPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Katalog Inventaris Produk Tas</h1>
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            Katalog Inventaris Produk Tas
+          </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Product Catalog ]
+          </span>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
         >
           Tambah Produk Baru
         </button>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
               { label: "Semua Produk", value: "ALL" },
@@ -308,10 +310,10 @@ export default function ProductsPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                   statusFilter === tab.value
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                    ? "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111] font-bold"
+                    : "bg-[#f5f5f5] dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-[#eaeaea] dark:border-slate-800"
                 }`}
               >
                 {tab.label}
@@ -324,22 +326,22 @@ export default function ProductsPage() {
             placeholder="Cari ID produk, toko, pembeli..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:outline-none font-mono"
+            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
           />
         </div>
 
         {/* Products Table View */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading produk...</div>
+            <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading produk... ]</div>
           ) : filteredProducts.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
               Tidak ada produk yang ditemukan.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
                     <th className="p-4 text-center">Foto</th>
                     <th className="p-4 text-center">ID Tas</th>
@@ -353,77 +355,79 @@ export default function ProductsPage() {
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {filteredProducts.map((p) => {
                     const profit = p.price - (p.capitalPrice || 0);
+                    let statusBg = "bg-[#f5f5f5] text-slate-700 dark:bg-slate-800 dark:text-slate-300"; // default
+                    
+                    if (p.status === "Tersedia" || p.status === "Available") {
+                      statusBg = "bg-[#EDF3EC] text-[#346538]"; // Pastel Green
+                    } else if (p.status === "Dibooking" || p.status === "Booked" || p.status === "DP") {
+                      statusBg = "bg-[#E1F3FE] text-[#1F6C9F]"; // Pastel Blue
+                    } else if (p.status === "Terjual" || p.status === "Sold") {
+                      statusBg = "bg-[#FDEBEC] text-[#9F2F2D]"; // Pastel Red
+                    }
 
                     return (
-                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <tr key={p.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
                         <td className="p-4 text-center">
                           <button
                             type="button"
                             onClick={() => setViewingPhotoProduct(p)}
-                            className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden relative flex items-center justify-center mx-auto hover:opacity-85 transition-all shadow-sm"
+                            className="w-12 h-12 rounded-[4px] bg-[#fbfbfa] dark:bg-slate-900 border border-[#eaeaea] dark:border-slate-800 overflow-hidden relative flex items-center justify-center mx-auto hover:opacity-80 transition-all cursor-pointer"
                             title="Klik untuk lihat foto detail"
                           >
                             {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
                               <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                             ) : (
-                              <span className="text-slate-400 dark:text-slate-500 font-bold text-xs">Tas</span>
+                              <span className="text-slate-300 dark:text-slate-600 font-bold text-xs uppercase font-technical">Tas</span>
                             )}
                           </button>
                         </td>
-                        <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">
+                        <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">
                           <button
                             type="button"
                             onClick={() => setViewingPhotoProduct(p)}
-                            className="hover:underline"
+                            className="hover:underline font-technical"
                           >
-                            #{p.id}
+                            #{p.id.toUpperCase()}
                           </button>
                         </td>
-                        <td className="p-4 text-center max-w-[150px] truncate text-slate-600 dark:text-slate-300 font-medium" title={p.description || "-"}>
+                        <td className="p-4 text-center max-w-[150px] truncate text-slate-500 dark:text-slate-400 font-medium" title={p.description || "-"}>
                           {p.description || "-"}
                         </td>
-                        <td className="p-4 text-center font-bold text-slate-900 dark:text-white">
+                        <td className="p-4 text-center font-semibold text-[#111111] dark:text-[#f3f3f3] uppercase">
                           {p.shop?.name || "-"}
                         </td>
-                        <td className="p-4 text-center font-mono text-slate-600 dark:text-slate-400">
+                        <td className="p-4 text-center text-slate-400 dark:text-slate-500">
                           Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
+                        <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">
                           Rp {p.price.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-center font-mono font-bold text-blue-700 dark:text-blue-400">
+                        <td className="p-4 text-center font-bold text-[#346538] dark:text-[#a0cfa4]">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
                         <td className="p-4 text-center">
-                          <span
-                            className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase shadow-sm inline-block ${
-                              p.status === "Tersedia" || p.status === "Available"
-                                ? "bg-blue-600 text-white dark:bg-blue-600 dark:text-white"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                            }`}
-                          >
-                            {p.status === "Available" ? "Tersedia" : p.status === "Booked" ? "Dibooking" : p.status === "Sold" ? "Terjual" : p.status}
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${statusBg} inline-block`}>
+                            {p.status === "Available" ? "Tersedia" : p.status === "Booked" ? "Dibooking" : p.status === "Sold" ? "Terjual" : p.status.toUpperCase()}
                           </span>
                         </td>
                         
-                        {/* Keterangan Pembeli / Pembook */}
                         <td className="p-4 text-center">
                           {p.status === "Tersedia" || p.status === "Available" || !p.order?.customer ? (
-                            <span className="text-slate-400 dark:text-slate-500 font-normal">-</span>
+                            <span className="text-slate-300 dark:text-slate-600 font-normal">-</span>
                           ) : p.status === "Dibooking" || p.status === "Booked" || p.status === "DP" || p.status === "Menunggu" ? (
-                            <div>
-                              <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold block uppercase">Dibooking oleh:</span>
-                              <span className="font-bold text-slate-900 dark:text-white">{p.order.customer.name}</span>
-                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">{p.order.customer.whatsapp}</span>
+                            <div className="font-ui">
+                              <span className="text-[9px] text-[#1F6C9F] font-bold block uppercase tracking-wider">Dibooking oleh:</span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">{p.order.customer.name}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-technical">{p.order.customer.whatsapp}</span>
                             </div>
                           ) : (
-                            <div>
-                              <span className="text-[10px] text-blue-800 dark:text-blue-400 font-bold block uppercase">Dibeli oleh:</span>
-                              <span className="font-bold text-slate-900 dark:text-white">{p.order.customer.name}</span>
-                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">{p.order.customer.whatsapp}</span>
+                            <div className="font-ui">
+                              <span className="text-[9px] text-[#9F2F2D] font-bold block uppercase tracking-wider">Dibeli oleh:</span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200">{p.order.customer.name}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-technical">{p.order.customer.whatsapp}</span>
                             </div>
                           )}
                         </td>
@@ -462,61 +466,61 @@ export default function ProductsPage() {
 
       {/* Modal Detail Foto Product Lightbox */}
       {viewingPhotoProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-hidden transition-colors">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-hidden transition-colors animate-fade-in-up font-ui">
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-blue-700 dark:text-blue-400 font-mono">
-                  Detail Foto Produk #{viewingPhotoProduct.id}
+                <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] font-technical uppercase">
+                  Detail Foto Produk #{viewingPhotoProduct.id.toUpperCase()}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Supplier Toko: {viewingPhotoProduct.shop?.name || "-"}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase mt-0.5">Supplier Toko: {viewingPhotoProduct.shop?.name || "-"}</p>
               </div>
               <button
                 onClick={() => setViewingPhotoProduct(null)}
-                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 font-bold text-sm px-2 py-1"
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white uppercase tracking-wider cursor-pointer"
               >
                 Tutup
               </button>
             </div>
 
             {/* High-res Image Preview */}
-            <div className="w-full h-72 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+            <div className="w-full h-72 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/80 flex items-center justify-center">
               {viewingPhotoProduct.photoUrl && viewingPhotoProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
                 <Image src={viewingPhotoProduct.photoUrl} alt={viewingPhotoProduct.id} fill sizes="600px" className="object-contain" />
               ) : (
-                <span className="text-slate-400 dark:text-slate-500 font-bold text-sm">Tidak ada foto produk</span>
+                <span className="text-slate-300 dark:text-slate-600 text-xs uppercase font-technical">[ Tidak ada foto produk ]</span>
               )}
             </div>
 
             {/* Customer Buyer Notice in Lightbox */}
             {viewingPhotoProduct.order?.customer && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs flex justify-between items-center">
-                <span className="text-blue-700 dark:text-blue-400 font-bold uppercase">
+              <div className="p-3 bg-[#E1F3FE] text-[#1F6C9F] rounded-[6px] border border-[#d2ecfc] text-xs flex justify-between items-center font-technical uppercase tracking-tight">
+                <span className="font-bold">
                   {viewingPhotoProduct.status === "Terjual" ? "Dibeli Oleh:" : "Dibooking Oleh:"}
                 </span>
-                <span className="font-bold text-slate-900 dark:text-white">
+                <span className="font-bold text-slate-800 dark:text-slate-100">
                   {viewingPhotoProduct.order.customer.name} ({viewingPhotoProduct.order.customer.whatsapp})
                 </span>
               </div>
             )}
 
             {/* Price Details Grid */}
-            <div className="grid grid-cols-3 gap-3 text-xs font-mono text-center pt-2">
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block uppercase">Harga Modal</span>
+            <div className="grid grid-cols-3 gap-3 text-xs font-technical text-center pt-2">
+              <div className="p-2.5 bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px]">
+                <span className="text-[9px] text-[#787774] dark:text-slate-400 font-bold block uppercase tracking-wider">Harga Modal</span>
                 <span className="font-bold text-slate-700 dark:text-slate-300">Rp {(viewingPhotoProduct.capitalPrice || 0).toLocaleString("id-ID")}</span>
               </div>
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block uppercase">Harga Jual</span>
-                <span className="font-extrabold text-slate-900 dark:text-white">Rp {viewingPhotoProduct.price.toLocaleString("id-ID")}</span>
+              <div className="p-2.5 bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px]">
+                <span className="text-[9px] text-[#787774] dark:text-slate-400 font-bold block uppercase tracking-wider">Harga Jual</span>
+                <span className="font-bold text-[#111111] dark:text-white">Rp {viewingPhotoProduct.price.toLocaleString("id-ID")}</span>
               </div>
-              <div className="p-2.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-lg">
-                <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold block uppercase">Profit Margin</span>
-                <span className="font-extrabold text-blue-700 dark:text-blue-400">+Rp {(viewingPhotoProduct.price - (viewingPhotoProduct.capitalPrice || 0)).toLocaleString("id-ID")}</span>
+              <div className="p-2.5 bg-[#EDF3EC] text-[#346538] border border-[#cbe1cc] rounded-[6px]">
+                <span className="text-[9px] font-bold block uppercase tracking-wider">Profit Margin</span>
+                <span className="font-bold">+Rp {(viewingPhotoProduct.price - (viewingPhotoProduct.capitalPrice || 0)).toLocaleString("id-ID")}</span>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#eaeaea] dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
@@ -524,7 +528,7 @@ export default function ProductsPage() {
                   setViewingPhotoProduct(null);
                   openEditModal(target);
                 }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors"
+                className="px-4 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-semibold text-xs rounded-[6px] tracking-wide uppercase cursor-pointer"
               >
                 Edit Produk Ini
               </button>
@@ -535,37 +539,37 @@ export default function ProductsPage() {
 
       {/* Modal Tambah/Edit Produk */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh] transition-colors">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-lg w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up font-ui">
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
                 {editingProduct ? `Edit Produk [${editingProduct.id}]` : "Tambah Produk Tas Baru"}
               </h3>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-bold">
+              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical">
                 {errorMessage}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-ui">
               
               {/* Product ID Notice */}
               {editingProduct ? (
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-blue-700 dark:text-blue-400 flex justify-between items-center">
+                <div className="p-2.5 bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-xs font-technical font-bold text-[#111111] dark:text-white flex justify-between items-center">
                   <span>ID TAS (CUSTOM):</span>
-                  <span>#{editingProduct.id}</span>
+                  <span>#{editingProduct.id.toUpperCase()}</span>
                 </div>
               ) : (
-                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-lg text-xs font-medium text-blue-800 dark:text-blue-300">
+                <div className="p-2.5 bg-[#E1F3FE] text-[#1F6C9F] rounded-[6px] text-[10px] font-technical uppercase">
                   ID Tas akan di-generate otomatis berdasarkan Toko Asal & tanggal input (misal: SKR-260811-01)
                 </div>
               )}
 
               {/* Row 1: Toko Asal (Supplier) */}
-              <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Toko Asal / Supplier *</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Toko Asal / Supplier *</label>
                 <input
                   type="text"
                   list="shops-options"
@@ -573,7 +577,7 @@ export default function ProductsPage() {
                   onChange={(e) => setShopOrigin(e.target.value)}
                   placeholder="Pilih atau ketik nama toko baru..."
                   required
-                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-bold"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-semibold"
                 />
                 <datalist id="shops-options">
                   {shops.map((s) => (
@@ -584,67 +588,67 @@ export default function ProductsPage() {
 
               {/* Row 2: Harga Modal & Harga Jual */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Harga Modal (Rp)</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Harga Modal (Rp)</label>
                   <input
                     type="number"
                     value={capitalPriceInput}
                     onChange={(e) => setCapitalPriceInput(e.target.value)}
                     placeholder="Contoh: 70000"
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Harga Jual (Rp) *</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Harga Jual (Rp) *</label>
                   <input
                     type="number"
                     value={priceInput}
                     onChange={(e) => setPriceInput(e.target.value)}
                     placeholder="Contoh: 95000"
                     required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono font-bold"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical font-semibold"
                   />
                 </div>
               </div>
 
               {/* Debounced Profit Margin Badge */}
               {debouncedProfit !== null && (
-                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 text-xs font-mono font-bold text-blue-700 dark:text-blue-300 flex justify-between items-center">
-                  <span>Estimasi Profit Margin:</span>
+                <div className="p-2.5 rounded-[6px] bg-[#EDF3EC] text-[#346538] border border-[#cbe1cc] text-[11px] font-technical font-semibold flex justify-between items-center">
+                  <span>ESTIMASI PROFIT MARGIN:</span>
                   <span>+Rp {debouncedProfit.toLocaleString("id-ID")}</span>
                 </div>
               )}
 
               {/* Row 3: Deskripsi Produk */}
-              <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Deskripsi Produk Tas</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Deskripsi Produk Tas</label>
                 <textarea
                   value={descriptionInput}
                   onChange={(e) => setDescriptionInput(e.target.value)}
                   placeholder="Contoh: Bahan kulit sintetis, warna hitam, kondisi mulus 95%"
                   rows={2}
-                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none text-xs font-medium"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none text-xs font-medium"
                 />
               </div>
 
               {/* Row 4: Upload Foto Tas */}
-              <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Foto Produk Tas</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Foto Produk Tas</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   disabled={compressing}
-                  className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 dark:file:bg-blue-950/80 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 disabled:opacity-50"
+                  className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-[4px] file:border file:border-[#eaeaea] dark:file:border-slate-700 file:text-xs file:font-semibold file:bg-white dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-[#f5f5f5] disabled:opacity-50"
                 />
                 {compressing && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1.5 animate-pulse">
-                    ⚡ Mengompresi foto di browser (target &lt; 300 KB)...
+                  <p className="text-xs text-slate-500 font-bold mt-1.5 animate-pulse font-technical">
+                    ⚡ MENGOMPRESI FOTO DI BROWSER (&lt; 300 KB)...
                   </p>
                 )}
                 {compressedInfo && !compressing && (
-                  <p className="text-[11px] text-blue-700 dark:text-blue-400 font-mono font-bold mt-1.5 bg-blue-50 dark:bg-blue-950/80 p-2 rounded-lg border border-blue-200 dark:border-blue-800/60">
+                  <p className="text-[10px] text-[#1F6C9F] font-technical font-bold mt-1.5 bg-[#E1F3FE] p-2 rounded-[6px] border border-[#d2ecfc] uppercase tracking-wide">
                     {compressedInfo}
                   </p>
                 )}
@@ -652,23 +656,23 @@ export default function ProductsPage() {
 
               {/* Preview Foto */}
               {previewUrl && (
-                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 relative mx-auto">
+                <div className="w-24 h-24 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden border border-[#eaeaea] dark:border-slate-800/80 relative mx-auto">
                   <Image src={previewUrl} alt="Preview" fill sizes="96px" className="object-cover" />
                 </div>
               )}
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? "Menyimpan..." : "Simpan Produk"}
                 </button>

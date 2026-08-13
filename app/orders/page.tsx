@@ -160,41 +160,46 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Pipeline & Rekap Pesanan</h1>
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            Pipeline & Rekap Pesanan
+          </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Order Pipeline ]
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
           {/* View Mode Toggle */}
-          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1 text-xs">
+          <div className="bg-[#f5f5f5] dark:bg-slate-800 p-1 rounded-[6px] border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1 text-[10px] font-bold uppercase font-technical">
             <button
               onClick={() => setViewMode("card")}
-              className={`px-3 py-1 rounded-md font-bold transition-all ${
+              className={`px-3 py-1 rounded-[4px] cursor-pointer transition-all ${
                 viewMode === "card"
-                  ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] shadow-sm font-bold"
+                  : "text-slate-500 dark:text-slate-400 hover:text-[#111111] dark:hover:text-white"
               }`}
             >
-              Tampilan Kartu
+              Kartu
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`px-3 py-1 rounded-md font-bold transition-all ${
+              className={`px-3 py-1 rounded-[4px] cursor-pointer transition-all ${
                 viewMode === "table"
-                  ? "bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] shadow-sm font-bold"
+                  : "text-slate-500 dark:text-slate-400 hover:text-[#111111] dark:hover:text-white"
               }`}
             >
-              Tampilan Tabel
+              Tabel
             </button>
           </div>
 
           <Link
             href="/orders/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+            className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
           >
             Buat Pesanan Baru
           </Link>
@@ -202,13 +207,13 @@ export default function OrdersPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
-              {label: "Semua Order", value: "ALL" },
+              { label: "Semua Order", value: "ALL" },
               { label: "Menunggu", value: "Menunggu" },
               { label: "DP", value: "DP" },
               { label: "Siap Kirim", value: "Siap Kirim" },
@@ -218,10 +223,10 @@ export default function OrdersPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                   statusFilter === tab.value
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                    ? "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111] font-bold"
+                    : "bg-[#f5f5f5] dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-[#eaeaea] dark:border-slate-800"
                 }`}
               >
                 {tab.label}
@@ -234,15 +239,15 @@ export default function OrdersPage() {
             placeholder="Cari ID pesanan, nama, WA..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
           />
         </div>
 
         {/* Orders Content Area */}
         {loading ? (
-          <div className="text-center py-12 text-slate-500 text-sm">Loading pesanan...</div>
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading pesanan... ]</div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500 dark:text-slate-400 text-sm font-medium shadow-sm transition-colors">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
             Tidak ada data pesanan ditemukan.
           </div>
         ) : viewMode === "card" ? (
@@ -251,16 +256,29 @@ export default function OrdersPage() {
             {filteredOrders.map((o) => {
               const totalBarang = o.products.reduce((acc, p) => acc + p.price, 0);
               const sisaTagihan = o.dpAmount > 0 ? o.totalPrice - o.dpAmount : 0;
+              
+              let statusBg = "bg-[#f5f5f5] text-slate-700 dark:bg-slate-800 dark:text-slate-300"; // default
+              if (o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Lunas" || o.status === "Dikirim") {
+                statusBg = "bg-[#EDF3EC] text-[#346538]"; // Pastel Green
+              } else if (o.status === "DP") {
+                statusBg = "bg-[#E1F3FE] text-[#1F6C9F]"; // Pastel Blue
+              } else if (o.status === "Menunggu") {
+                statusBg = "bg-[#FBF3DB] text-[#956400]"; // Pastel Yellow
+              } else if (o.status === "Dibatalkan") {
+                statusBg = "bg-[#FDEBEC] text-[#9F2F2D]"; // Pastel Red
+              }
 
               return (
-                <div key={o.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-blue-300 transition-all">
+                <div key={o.id} className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.01)] space-y-4 hover:shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between">
                   
                   {/* Card Header: Order ID & Status */}
-                  <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                  <div className="flex justify-between items-start border-b border-[#eaeaea] dark:border-slate-800/80 pb-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-base font-extrabold text-blue-700">#{o.id.slice(0, 8)}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        <span className="font-technical text-xs font-bold text-[#111111] dark:text-[#f3f3f3]">
+                          ORDER ID: #{o.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-technical">
                           {new Date(o.createdAt).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",
@@ -268,70 +286,60 @@ export default function OrdersPage() {
                           })}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        Pelanggan: <strong className="text-slate-900">{o.customer?.name || "Pelanggan Terhapus"}</strong>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                        Pelanggan: <strong className="text-[#111111] dark:text-white font-semibold">{o.customer?.name || "Pelanggan Terhapus"}</strong>
                       </p>
                     </div>
 
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm ${
-                        o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Lunas"
-                          ? "bg-blue-600 text-white"
-                          : o.status === "DP"
-                          ? "bg-blue-100 text-blue-800 border border-blue-300"
-                          : o.status === "Dikirim"
-                          ? "bg-slate-100 text-slate-800 border border-slate-300"
-                          : "bg-slate-100 text-slate-600 border border-slate-200"
-                      }`}
-                    >
-                      {o.status}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${statusBg}`}>
+                      {o.status.toUpperCase()}
                     </span>
                   </div>
 
                   {/* Customer Info Box */}
                   {o.customer && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                    <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] p-3 text-xs text-slate-700 dark:text-slate-300 space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="font-bold text-slate-900">{o.customer.name}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{o.customer.name}</span>
                         <a
                           href={`https://wa.me/${o.customer.whatsapp}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-mono text-blue-600 font-bold hover:underline"
+                          className="font-technical text-red-600 dark:text-red-400 font-bold hover:underline"
                         >
                           {o.customer.whatsapp}
                         </a>
                       </div>
-                      <p className="text-slate-500 text-[11px] leading-relaxed">
+                      <p className="text-slate-400 dark:text-slate-500 text-[10px] leading-relaxed">
                         {o.customer.addressDetail}, {o.customer.domisili || "-"}
                       </p>
                     </div>
                   )}
 
                   {/* Rincian Barang Table */}
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                  <div className="space-y-2 font-technical">
+                    <span className="text-[9px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest block">
                       Rincian Barang Dipesan ({o.products.length} Tas):
                     </span>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden text-xs">
-                      <table className="w-full text-center divide-y divide-slate-200">
-                        <thead className="bg-slate-100 text-slate-500 text-[10px] uppercase font-bold">
+                    <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] overflow-hidden text-xs">
+                      <table className="w-full text-center divide-y divide-[#eaeaea] dark:divide-slate-800">
+                        <thead className="bg-[#f0f0f0] dark:bg-[#252629] text-slate-500 dark:text-slate-400 text-[9px] uppercase font-bold">
                           <tr>
-                            <th className="p-2 text-center">ID Tas</th>
-                            <th className="p-2 text-center">Harga</th>
+                            <th className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800">ID Tas</th>
+                            <th className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800">Harga</th>
                             <th className="p-2 text-center">Diskon</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                        <tbody className="divide-y divide-[#eaeaea] dark:divide-slate-850 text-[10px] text-slate-800 dark:text-slate-200">
                           {o.products.map((p) => (
-                            <tr key={p.id} className="hover:bg-white">
-                              <td className="p-2 text-center font-bold text-blue-600">#{p.id}</td>
-                              <td className="p-2 text-center font-bold text-slate-900">
+                            <tr key={p.id} className="hover:bg-white dark:hover:bg-[#141517]">
+                              <td className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800 font-bold text-red-600 dark:text-emerald-400">#{p.id.toUpperCase()}</td>
+                              <td className="p-2 text-center border-r border-[#eaeaea] dark:border-slate-800 font-bold">
                                 Rp {p.price.toLocaleString("id-ID")}
                               </td>
                               <td className="p-2 text-center font-bold">
                                 {p.discount && p.discount > 0 ? (
-                                  <span className="text-red-700">
+                                  <span className="text-[#9F2F2D]">
                                     Rp {p.discount.toLocaleString("id-ID")}
                                   </span>
                                 ) : (
@@ -346,62 +354,62 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Financial Breakdown Grid */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs font-mono">
-                    <div className="flex justify-between text-slate-600">
+                  <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] p-3 space-y-1.5 text-xs font-technical uppercase">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
                       <span>Total Barang ({o.products.length}):</span>
-                      <span className="font-bold text-slate-800">Rp {totalBarang.toLocaleString("id-ID")}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">Rp {totalBarang.toLocaleString("id-ID")}</span>
                     </div>
 
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
                       <span>Ongkir ({o.shippingCourier || "Ekspedisi"}):</span>
-                      <span className="font-bold text-blue-700">Rp {(o.shippingCost || 0).toLocaleString("id-ID")}</span>
+                      <span className="font-bold">Rp {(o.shippingCost || 0).toLocaleString("id-ID")}</span>
                     </div>
 
                     {o.dpAmount > 0 && (
-                      <div className="flex justify-between text-blue-800 font-bold border-t border-slate-200 pt-1.5">
+                      <div className="flex justify-between text-[#1F6C9F] dark:text-[#a2d8fa] font-bold border-t border-slate-200 dark:border-slate-800 pt-1.5">
                         <span>DP Dibayar:</span>
                         <span>-Rp {o.dpAmount.toLocaleString("id-ID")}</span>
                       </div>
                     )}
 
                     {sisaTagihan > 0 && (
-                      <div className="flex justify-between text-amber-700 font-bold">
+                      <div className="flex justify-between text-[#956400] dark:text-amber-300 font-bold">
                         <span>Sisa Pelunasan:</span>
                         <span>Rp {sisaTagihan.toLocaleString("id-ID")}</span>
                       </div>
                     )}
 
-                    <div className="flex justify-between text-slate-900 font-extrabold text-sm border-t border-slate-200 pt-1.5">
+                    <div className="flex justify-between text-[#111111] dark:text-white font-bold text-sm border-t border-slate-200 dark:border-slate-800 pt-1.5">
                       <span>Total Tagihan:</span>
-                      <span className="text-blue-700">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
+                      <span className="text-red-600 dark:text-emerald-400">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
                     </div>
                   </div>
 
                   {/* Resi Badge */}
                   {o.trackingNo ? (
-                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs flex justify-between items-center font-mono">
-                      <span className="text-blue-700 font-bold">Resi {o.shippingCourier || "Ekspedisi"}:</span>
-                      <span className="font-bold text-blue-900">{o.trackingNo}</span>
+                    <div className="p-2.5 bg-[#E1F3FE] text-[#1F6C9F] border border-[#d2ecfc] rounded-[6px] text-[10px] flex justify-between items-center font-technical uppercase">
+                      <span className="font-bold">Resi {o.shippingCourier || "Ekspedisi"}:</span>
+                      <span className="font-bold text-[#1F6C9F]">{o.trackingNo}</span>
                     </div>
                   ) : null}
 
                   {/* Action Bar */}
-                  <div className="flex gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex gap-2 pt-2 border-t border-[#eaeaea] dark:border-slate-800/80">
                     <button
                       onClick={() => {
                         setEditingResiOrder(o);
                         setTrackingNoInput(o.trackingNo || "");
                       }}
-                      className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
+                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold text-xs rounded-[6px] transition-colors shadow-sm cursor-pointer font-technical uppercase tracking-wide"
                     >
-                      {o.trackingNo ? "Edit Resi" : "+ Input Resi & Kirim"}
+                      {o.trackingNo ? "Edit Resi" : "+ Resi & Kirim"}
                     </button>
 
                     <button
                       onClick={() => handleDeleteOrder(o.id)}
-                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-lg transition-colors border border-slate-200"
+                      className="px-3 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
                     >
-                      Hapus
+                      HAPUS
                     </button>
                   </div>
 
@@ -411,49 +419,49 @@ export default function OrdersPage() {
           </div>
         ) : (
           /* TABLE VIEW LAYOUT */
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
-                    <th className="p-4 text-center">Order ID</th>
-                    <th className="p-4 text-center">Pelanggan</th>
-                    <th className="p-4 text-center">Produk Tas & Supplier</th>
-                    <th className="p-4 text-center">Ekspedisi</th>
-                    <th className="p-4 text-center">No. Resi</th>
-                    <th className="p-4 text-center">Total Price</th>
-                    <th className="p-4 text-center">Status</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Order ID</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Pelanggan</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Produk Tas & Toko</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Ekspedisi</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">No. Resi</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Total Price</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Status</th>
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {filteredOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">
-                        #{o.id.slice(0, 8)}
+                    <tr key={o.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-bold text-red-600 dark:text-emerald-400">
+                        #{o.id.slice(0, 8).toUpperCase()}
                       </td>
 
-                      <td className="p-4 text-center">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">
                         {o.customer ? (
                           <div>
-                            <p className="font-bold text-slate-900">{o.customer.name}</p>
-                            <p className="text-[11px] font-mono text-slate-500">{o.customer.whatsapp}</p>
+                            <p className="font-semibold text-slate-900 dark:text-white">{o.customer.name}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{o.customer.whatsapp}</p>
                           </div>
                         ) : (
                           <span className="text-slate-400">Pelanggan terhapus</span>
                         )}
                       </td>
 
-                      <td className="p-4 text-center">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">
                         <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
                           {o.products && o.products.length > 0 ? (
                             o.products.map((p) => (
                               <span
                                 key={p.id}
-                                className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-extrabold text-[11px]"
+                                className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] rounded-full font-bold text-[9px] uppercase tracking-wider"
                                 title={`Supplier: ${p.shop?.name || "-"}`}
                               >
-                                #{p.id} {p.shop?.name ? `(${p.shop.name})` : ""}
+                                #{p.id.toUpperCase()} {p.shop?.name ? `(${p.shop.name})` : ""}
                               </span>
                             ))
                           ) : (
@@ -462,16 +470,16 @@ export default function OrdersPage() {
                         </div>
                       </td>
 
-                      <td className="p-4 text-center font-mono">
-                        <span className="font-bold text-slate-900 block">{o.shippingCourier || "JNE"}</span>
-                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono">
+                        <span className="font-bold text-[#111111] dark:text-white block">{o.shippingCourier || "JNE"}</span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
                           Rp {(o.shippingCost || 0).toLocaleString("id-ID")}
                         </span>
                       </td>
 
-                      <td className="p-4 text-center font-mono">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono">
                         {o.trackingNo ? (
-                          <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[11px] inline-block">
+                          <span className="font-bold text-[#1F6C9F] bg-[#E1F3FE] px-2.5 py-0.5 rounded-full text-[9px] inline-block uppercase">
                             {o.trackingNo}
                           </span>
                         ) : (
@@ -480,27 +488,27 @@ export default function OrdersPage() {
                               setEditingResiOrder(o);
                               setTrackingNoInput("");
                             }}
-                            className="text-blue-600 font-bold hover:underline text-[11px]"
+                            className="text-red-600 dark:text-red-400 font-bold hover:underline text-[10px] uppercase font-technical cursor-pointer"
                           >
                             + Input Resi
                           </button>
                         )}
                       </td>
 
-                      <td className="p-4 text-center font-mono font-bold text-slate-900">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono font-bold text-[#111111] dark:text-white">
                         Rp {o.totalPrice.toLocaleString("id-ID")}
                         {o.dpAmount > 0 && (
-                          <span className="block text-[10px] text-blue-700 font-bold mt-0.5">
+                          <span className="block text-[9px] text-[#1F6C9F] font-bold mt-0.5">
                             DP: Rp {o.dpAmount.toLocaleString("id-ID")}
                           </span>
                         )}
                       </td>
 
-                      <td className="p-4 text-center">
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">
                         <select
                           value={o.status}
                           onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                          className="bg-slate-50 border border-slate-200 text-slate-900 text-[11px] font-bold p-1.5 rounded-lg focus:border-blue-600 focus:outline-none"
+                          className="bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 text-[#111111] dark:text-white text-[10px] font-bold p-1.5 rounded-[6px] focus:border-[#111111] focus:outline-none cursor-pointer"
                         >
                           <option value="Menunggu">Menunggu</option>
                           <option value="DP">DP</option>
@@ -547,21 +555,21 @@ export default function OrdersPage() {
 
       {/* Modal Input Resi */}
       {editingResiOrder && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up font-ui">
+            <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
               Input Nomor Resi Pengiriman
             </h3>
 
-            <form onSubmit={handleSaveResi} className="space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 font-mono">
-                <p className="font-bold text-blue-700">Order ID: #{editingResiOrder.id.slice(0, 8)}</p>
-                <p className="text-slate-700">Pelanggan: {editingResiOrder.customer?.name}</p>
-                <p className="text-slate-500 text-[11px]">Ekspedisi: {editingResiOrder.shippingCourier || "JNE"}</p>
+            <form onSubmit={handleSaveResi} className="space-y-4 text-xs font-ui">
+              <div className="p-3 bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] space-y-1 font-technical uppercase">
+                <p className="font-bold text-[#111111] dark:text-white">Order ID: #{editingResiOrder.id.slice(0, 8).toUpperCase()}</p>
+                <p className="text-slate-750 dark:text-slate-350">Pelanggan: {editingResiOrder.customer?.name}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px]">Ekspedisi: {editingResiOrder.shippingCourier || "JNE"}</p>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Nomor Resi *</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nomor Resi *</label>
                 <input
                   type="text"
                   value={trackingNoInput}
@@ -569,22 +577,22 @@ export default function OrdersPage() {
                   placeholder="Contoh: JNE1234567890"
                   required
                   autoFocus
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm font-bold focus:border-blue-600 focus:outline-none"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-sm font-semibold focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
                   type="button"
                   onClick={() => setEditingResiOrder(null)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
+                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingResi}
-                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {savingResi ? "Simpan..." : "Simpan Resi & Kirim"}
                 </button>

@@ -46,6 +46,7 @@ export async function POST(
         status: "DP",
         dpForfeited: false,
         ...(notes && { notes }),
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
       .select("*, customer:customers(*), products(*)")

@@ -1,41 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Geist+Mono:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f7f9fb;
-  --foreground: #0f172a;
+  --background: #fbfbfa; /* Warm off-white */
+  --foreground: #111111; /* Off-black charcoal */
+  --font-plus-jakarta: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-instrument-serif: 'Instrument Serif', Georgia, serif;
+  --font-geist-mono: 'Geist Mono', monospace;
 }
 
 .dark {
-  --background: #090d16;
-  --foreground: #ffffff;
+  --background: #0c0d0f; /* Premium dark slate */
+  --foreground: #f3f3f3; /* Warm off-white text */
 }
 
-html.dark, body.dark {
-  background-color: #090d16;
-  color: #ffffff;
+html, body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.2.5s ease, color 0.25s ease;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  font-family: var(--font-plus-jakarta);
+}
+
+.font-editorial {
+  font-family: var(--font-instrument-serif);
+}
+
+.font-ui {
+  font-family: var(--font-plus-jakarta);
+}
+
+.font-technical {
+  font-family: var(--font-geist-mono);
+}
+
+/* Scroll entry animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
+  height: 6px;
+  width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 20px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #334155;
+  background-color: rgba(255, 255, 255, 0.1);
 }

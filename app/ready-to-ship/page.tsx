@@ -40,10 +40,8 @@ function formatWhatsAppNumber(phone: string): string {
   let cleaned = phone.replace(/[^0-9]/g, "");
   
   if (cleaned.startsWith("0")) {
-    // Jika diawali 0, ganti jadi 62
     cleaned = "62" + cleaned.slice(1);
   } else if (cleaned.startsWith("8")) {
-    // Jika admin lupa ketik 0 dan langsung angka 8, tambahkan 62 di depan
     cleaned = "62" + cleaned;
   }
   
@@ -82,7 +80,6 @@ export default function ReadyToShipPage() {
       const res = await fetch("/api/orders");
       const data = await res.json();
       if (data.success) {
-        // Filter orders that are ready to ship: ONLY Siap Kirim (or legacy Siap Packing)
         const ready = data.data.filter(
           (o: Order) =>
             o.status === "Siap Kirim" ||
@@ -114,7 +111,7 @@ export default function ReadyToShipPage() {
   const handleCopyTemplate = (o: Order) => {
     const text = generateShippingTemplate(o);
     navigator.clipboard.writeText(text);
-    showToast(`Template label pengiriman '${o.customer?.name}' berhasil disalin ke clipboard!`, "success");
+    showToast(`Template label pengiriman '${o.customer?.name}' berhasil disalin!`, "success");
   };
 
   const handleSendWhatsApp = (o: Order) => {
@@ -123,7 +120,7 @@ export default function ReadyToShipPage() {
     const template = generateShippingTemplate(o);
     const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(template)}`;
     window.open(waUrl, "_blank");
-    showToast(`Membuka WhatsApp Web untuk '${o.customer.name}'...`, "info");
+    showToast(`Membuka WhatsApp untuk '${o.customer.name}'...`, "info");
   };
 
   const handleSaveResiAndShip = async (e: React.FormEvent) => {
@@ -164,26 +161,29 @@ export default function ReadyToShipPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
             Rekap Pesanan Perlu Dikirim ({filteredOrders.length})
           </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Shipping Queue ]
+          </span>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Search Bar & Banner */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <div className="space-y-0.5">
-            <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+            <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase tracking-wider font-technical">
               Rekapitulasi Pesanan Belum Dikirim (Sudah DP / Lunas)
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+            <p className="text-[#787774] dark:text-slate-400 text-[10px]">
               Klik &quot;Salin Label&quot; atau &quot;Kirim WA&quot; untuk mengirimkan detail alamat pengiriman ke pelanggan.
             </p>
           </div>
@@ -193,15 +193,15 @@ export default function ReadyToShipPage() {
             placeholder="Cari nama, WA, ID order..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
+            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
           />
         </div>
 
         {/* Cards Grid */}
         {loading ? (
-          <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading pesanan siap dikirim...</div>
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading pesanan siap dikirim... ]</div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center text-slate-500 dark:text-slate-400 text-sm shadow-sm">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
             Tidak ada pesanan yang perlu dikirim saat ini. Semua pesanan sudah terkirim!
           </div>
         ) : (
@@ -212,66 +212,60 @@ export default function ReadyToShipPage() {
               return (
                 <div
                   key={o.id}
-                  className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-blue-300 transition-all"
+                  className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:-translate-y-0.5 transition-all duration-200 space-y-4 flex flex-col justify-between"
                 >
                   {/* Card Header */}
-                  <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                  <div className="flex justify-between items-start border-b border-[#eaeaea] dark:border-slate-800/80 pb-3">
                     <div>
-                      <span className="font-mono text-base font-extrabold text-blue-700">
-                        #{o.id.slice(0, 8)}
+                      <span className="font-technical text-xs font-bold text-[#111111] dark:text-[#f3f3f3] block">
+                        ORDER ID: #{o.id.slice(0, 8).toUpperCase()}
                       </span>
-                      <p className="text-xs text-slate-500 font-medium">
-                        Pelanggan: <strong className="text-slate-900">{o.customer?.name}</strong>
+                      <p className="text-xs text-[#787774] dark:text-slate-400 font-medium mt-0.5">
+                        Pelanggan: <strong className="text-[#111111] dark:text-white font-semibold">{o.customer?.name}</strong>
                       </p>
                     </div>
 
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-sm ${
-                        o.status === "Siap Kirim" || o.status === "Siap Packing"
-                          ? "bg-blue-600 text-white"
-                          : "bg-blue-100 text-blue-800 border border-blue-300"
-                      }`}
-                    >
-                      {o.status}
+                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[#E1F3FE] text-[#1F6C9F]">
+                      {o.status.toUpperCase()}
                     </span>
                   </div>
 
                   {/* Template Shipping Box Preview */}
                   <div className="space-y-1.5">
-                    <pre className="bg-slate-50 text-slate-900 font-mono text-[11px] p-3.5 rounded-xl whitespace-pre-wrap leading-relaxed border border-slate-200 shadow-sm">
+                    <pre className="bg-[#fbfbfa] dark:bg-[#1c1d1f] text-[#111111] dark:text-[#f3f3f3] font-technical text-[10px] p-3.5 rounded-[6px] whitespace-pre-wrap leading-relaxed border border-[#eaeaea] dark:border-slate-800">
                       {labelText}
                     </pre>
                   </div>
 
                   {/* Product Summary */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
-                    <div className="flex justify-between font-bold text-slate-900">
+                  <div className="p-3 bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-xs space-y-1 font-technical">
+                    <div className="flex justify-between font-semibold text-[#111111] dark:text-white">
                       <span>Rincian Produk ({o.products.length} Tas):</span>
-                      <span className="font-mono text-blue-700">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
+                      <span className="font-bold">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
                     </div>
                     <div className="flex flex-wrap gap-1 pt-1">
                       {o.products.map((p) => (
-                        <span key={p.id} className="bg-blue-50 text-blue-900 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200">
-                          #{p.id}
+                        <span key={p.id} className="bg-[#E1F3FE] text-[#1F6C9F] border border-[#d2ecfc] font-technical text-[9px] font-bold px-2 py-0.5 rounded-full">
+                          #{p.id.toUpperCase()}
                         </span>
                       ))}
                     </div>
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-[#eaeaea] dark:border-slate-800/80">
                     <button
                       onClick={() => handleCopyTemplate(o)}
-                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition-colors border border-slate-300 flex items-center justify-center gap-1"
+                      className="flex-1 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <span>Salin Label</span>
                     </button>
 
                     <button
                       onClick={() => handleSendWhatsApp(o)}
-                      className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center justify-center gap-1"
+                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold text-xs rounded-[6px] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     >
-                      <span>Kirim WA ke Customer</span>
+                      <span>Kirim WA</span>
                     </button>
 
                     <button
@@ -279,7 +273,7 @@ export default function ReadyToShipPage() {
                         setEditingResiOrder(o);
                         setTrackingNoInput(o.trackingNo || "");
                       }}
-                      className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs rounded-lg transition-colors border border-blue-200"
+                      className="w-full py-2 bg-[#EDF3EC] hover:bg-[#dbecdb] text-[#346538] dark:bg-[#182319] dark:text-emerald-300 dark:hover:bg-[#203021] font-bold text-xs rounded-[6px] transition-colors border border-[#cbe1cc] dark:border-emerald-950/60 cursor-pointer"
                     >
                       + Input Resi & Tandai Dikirim
                     </button>
@@ -293,21 +287,21 @@ export default function ReadyToShipPage() {
 
       {/* Modal Input Resi */}
       {editingResiOrder && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
-              Input Resi & Tandai Pesanan Dikirim
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up font-ui">
+            <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
+              Input Resi & Tandai Dikirim
             </h3>
 
-            <form onSubmit={handleSaveResiAndShip} className="space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 font-mono">
-                <p className="font-bold text-blue-700">Order ID: #{editingResiOrder.id.slice(0, 8)}</p>
-                <p className="text-slate-700">Pelanggan: {editingResiOrder.customer?.name}</p>
-                <p className="text-slate-500 text-[11px]">Ekspedisi: {editingResiOrder.shippingCourier || "JNE"}</p>
+            <form onSubmit={handleSaveResiAndShip} className="space-y-4 text-xs font-ui">
+              <div className="p-3 bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] space-y-1 font-technical">
+                <p className="font-bold text-[#111111] dark:text-white">Order ID: #{editingResiOrder.id.slice(0, 8).toUpperCase()}</p>
+                <p className="text-slate-700 dark:text-slate-300">Pelanggan: {editingResiOrder.customer?.name}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px]">Ekspedisi: {editingResiOrder.shippingCourier || "JNE"}</p>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Nomor Resi Pengiriman *</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nomor Resi Pengiriman *</label>
                 <input
                   type="text"
                   value={trackingNoInput}
@@ -315,22 +309,22 @@ export default function ReadyToShipPage() {
                   placeholder="Contoh: JNE1234567890"
                   required
                   autoFocus
-                  className="w-full bg-slate-50 text-slate-900 p-2.5 rounded-lg border border-slate-300 font-mono text-sm font-bold focus:border-blue-600 focus:outline-none"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-sm font-semibold focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
                   type="button"
                   onClick={() => setEditingResiOrder(null)}
-                  className="w-1/2 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors border border-slate-200"
+                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingResi}
-                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {savingResi ? "Menyimpan..." : "Tandai Dikirim"}
                 </button>

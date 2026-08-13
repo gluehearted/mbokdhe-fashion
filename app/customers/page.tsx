@@ -57,7 +57,6 @@ function CustomersPageContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-  // Initial values set to empty ("") / null by default
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [domisili, setDomisili] = useState("");
@@ -136,10 +135,8 @@ function CustomersPageContent() {
     setErrorMessage(null);
 
     try {
-      // 1. Bersihkan semua karakter selain angka (spasi, strip, +, dll hilang)
       let cleanWa = whatsapp.trim().replace(/[^0-9]/g, "");
       
-      // 2. Ubah angka '0' di depan menjadi '62' standar internasional WA
       if (cleanWa.startsWith("0")) {
         cleanWa = "62" + cleanWa.substring(1);
       }
@@ -203,46 +200,51 @@ function CustomersPageContent() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">CRM Database Pelanggan</h1>
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            CRM Database Pelanggan
+          </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Customer Records ]
+          </span>
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
         >
           Tambah Pelanggan Baru
         </button>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Search Bar */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <input
             type="text"
             placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
+            className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
           />
         </div>
 
         {/* Customers Data Table */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading database pelanggan...</div>
+            <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading database pelanggan... ]</div>
           ) : customers.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
               Tidak ada data pelanggan yang ditemukan.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
                     <th className="p-4 text-center">CUST ID</th>
                     <th className="p-4 text-center">Nama Pelanggan</th>
@@ -255,61 +257,61 @@ function CustomersPageContent() {
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {customers.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 text-center font-mono font-extrabold text-blue-600">#{c.id}</td>
+                    <tr key={c.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
+                      <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">#{c.id.toUpperCase()}</td>
                       
-                      <td className="p-4 text-center font-bold text-slate-900 text-sm">{c.name}</td>
+                      <td className="p-4 text-center font-semibold text-[#111111] dark:text-[#f3f3f3] text-xs">{c.name}</td>
                       
-                      <td className="p-4 text-center font-mono text-blue-600">
+                      <td className="p-4 text-center font-bold text-slate-900 dark:text-slate-100">
                         <a
                           href={`https://wa.me/${c.whatsapp}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="hover:underline font-bold"
+                          className="hover:underline"
                         >
                           {c.whatsapp}
                         </a>
                       </td>
 
-                      <td className="p-4 text-center max-w-xs">
-                        <span className="font-bold text-slate-800 block truncate">{c.domisili || "-"}</span>
-                        <span className="text-[11px] text-slate-500 block truncate mt-0.5">{c.addressDetail}</span>
+                      <td className="p-4 text-center max-w-xs font-ui">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">{c.domisili || "-"}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate mt-0.5">{c.addressDetail}</span>
                       </td>
 
-                      <td className="p-4 text-center font-mono">
-                        <span className="font-bold text-slate-900 block">Rp {(c.shippingCost || 0).toLocaleString("id-ID")}</span>
-                        <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold inline-block mt-0.5">
+                      <td className="p-4 text-center">
+                        <span className="font-semibold text-[#111111] dark:text-[#f3f3f3] block">Rp {(c.shippingCost || 0).toLocaleString("id-ID")}</span>
+                        <span className="text-[9px] bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#1c2c35] dark:text-[#6cb6e4] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5 uppercase tracking-wider">
                           {c.courier || "JNE"}
                         </span>
                       </td>
 
-                      <td className="p-4 text-center">
-                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-bold block mb-1">
+                      <td className="p-4 text-center space-y-1">
+                        <span className="bg-[#EDF3EC] text-[#346538] dark:bg-[#182319] dark:text-[#a2e8aa] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
                           {c.consumerType || "Value Seeker"}
                         </span>
-                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 text-[10px] font-bold block">
+                        <span className="bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#1c2c35] dark:text-[#6cb6e4] px-2.5 py-0.5 rounded-full text-[9px] font-bold block mx-auto max-w-[120px] truncate uppercase tracking-wider">
                           {c.behavioral || "Pelanggan Setia"}
                         </span>
                       </td>
 
-                      <td className="p-4 text-center max-w-xs">
-                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold block mb-1">
+                      <td className="p-4 text-center max-w-xs space-y-1">
+                        <span className="bg-[#FBF3DB] text-[#956400] dark:bg-[#282115] dark:text-[#f8d484] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
                           {c.relationshipStatus || "New Customer"}
                         </span>
                         {c.crisisStatus ? (
-                          <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200 text-[10px] font-medium block truncate" title={c.crisisStatus}>
+                          <span className="bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] dark:bg-[#2c1c1d] dark:text-[#fca5a5] dark:border-red-955/40 px-2 py-0.5 rounded-[4px] text-[9px] font-medium block truncate max-w-[140px] mx-auto uppercase tracking-wide" title={c.crisisStatus}>
                             Catatan: {c.crisisStatus}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-400 block font-normal">-</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-normal">-</span>
                         )}
                       </td>
 
-                      <td className="p-4 text-center font-mono">
-                        <span className="font-bold text-slate-900 block">Rp {(c.totalSpending || 0).toLocaleString("id-ID")}</span>
-                        <span className="text-[10px] text-slate-500 font-bold block mt-0.5">
+                      <td className="p-4 text-center">
+                        <span className="font-semibold text-slate-900 dark:text-slate-200 block">Rp {(c.totalSpending || 0).toLocaleString("id-ID")}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
                           {c.totalTransactions || 0} Transaksi
                         </span>
                       </td>
@@ -343,92 +345,92 @@ function CustomersPageContent() {
 
       {/* Modal Form Tambah/Edit Pelanggan */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh] transition-colors">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up">
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
                 {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan Baru"}
               </h3>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-bold">
+              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical">
                 {errorMessage}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-ui">
               
               {/* CUST ID Badge */}
               {editingCustomer ? (
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-bold text-blue-700 dark:text-blue-400 flex justify-between items-center">
+                <div className="p-2.5 bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-xs font-technical font-bold text-[#111111] dark:text-[#f3f3f3] flex justify-between items-center">
                   <span>CUST ID:</span>
                   <span>#{editingCustomer.id}</span>
                 </div>
               ) : (
-                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-lg text-xs font-medium text-blue-800 dark:text-blue-300">
+                <div className="p-2.5 bg-[#E1F3FE] text-[#1F6C9F] rounded-[6px] text-[10px] font-technical uppercase">
                   CUST ID akan dibuat otomatis (Format: CST-YYMMDD-XX)
                 </div>
               )}
 
               {/* Row 1: Nama & WhatsApp */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Nama Pelanggan *</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nama Pelanggan *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Siti Rahma"
                     required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">No. WhatsApp *</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">No. WhatsApp *</label>
                   <input
                     type="text"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="Contoh: 081234567890"
                     required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
                   />
                 </div>
               </div>
 
               {/* Row 2: Domisili, Ongkir, Ekspedisi */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Domisili *</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Domisili *</label>
                   <input
                     type="text"
                     value={domisili}
                     onChange={(e) => setDomisili(e.target.value)}
                     placeholder="Contoh: Kab. Bogor, Jawa Barat"
                     required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Ongkir Default (Rp)</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Ongkir Default (Rp)</label>
                   <input
                     type="number"
                     value={shippingCostInput}
                     onChange={(e) => setShippingCostInput(e.target.value)}
                     placeholder="Contoh: 15000"
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Ekspedisi Preferred</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Ekspedisi Preferred</label>
                   <select
                     value={courier}
                     onChange={(e) => setCourier(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium cursor-pointer"
                   >
                     <option value="">-- Pilih Ekspedisi --</option>
                     {COURIER_OPTIONS.map((opt) => (
@@ -441,26 +443,26 @@ function CustomersPageContent() {
               </div>
 
               {/* Row 3: Detail Alamat */}
-              <div>
-                <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Detail Alamat Jalan & Patokan *</label>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Detail Alamat Jalan & Patokan *</label>
                 <textarea
                   rows={2}
                   value={addressDetail}
                   onChange={(e) => setAddressDetail(e.target.value)}
                   placeholder="Contoh: Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
                   required
-                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                 />
               </div>
 
               {/* Row 4: Behavioral & Tipe Konsumen */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Behavioral</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Behavioral</label>
                   <select
                     value={behavioral}
                     onChange={(e) => setBehavioral(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium cursor-pointer"
                   >
                     <option value="">-- Pilih Behavioral --</option>
                     {BEHAVIORAL_OPTIONS.map((opt) => (
@@ -471,26 +473,26 @@ function CustomersPageContent() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Tipe Konsumen (Teks)</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Tipe Konsumen (Teks)</label>
                   <input
                     type="text"
                     value={consumerType}
                     onChange={(e) => setConsumerType(e.target.value)}
-                    placeholder="Contoh: Value Seeker, Price Sensitive, Design Oriented, Convenience Seeker, Eceran"
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
+                    placeholder="Contoh: Value Seeker, Price Sensitive"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium"
                   />
                 </div>
               </div>
 
               {/* Row 5: Status Hubungan & Catatan Status Krisis (Optional) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Status Hubungan</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Status Hubungan</label>
                   <select
                     value={relationshipStatus}
                     onChange={(e) => setRelationshipStatus(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium cursor-pointer"
                   >
                     <option value="">-- Pilih Status Hubungan --</option>
                     {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
@@ -501,30 +503,30 @@ function CustomersPageContent() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Status Krisis (Catatan Opsional Teks)</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Status Krisis (Catatan Opsional)</label>
                   <input
                     type="text"
                     value={crisisStatus}
                     onChange={(e) => setCrisisStatus(e.target.value)}
                     placeholder="Contoh: Sering komplain, Pernah cancel DP"
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? "Menyimpan..." : "Simpan Data Pelanggan"}
                 </button>
@@ -539,7 +541,7 @@ function CustomersPageContent() {
 
 export default function CustomersPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-slate-500 text-sm">Loading pelanggan...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-slate-400 font-technical text-xs uppercase">[ Loading pelanggan... ]</div>}>
       <CustomersPageContent />
     </Suspense>
   );

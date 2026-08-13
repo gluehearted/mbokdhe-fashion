@@ -117,142 +117,163 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
+      
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">Dashboard Overview</h1>
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            Dashboard Overview
+          </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ System Telemetry ]
+          </span>
         </div>
         <Link
           href="/orders/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors active:scale-95 shadow-sm"
+          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-semibold px-4 py-2 rounded-[6px] text-xs uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm cursor-pointer"
         >
           Buat Pesanan Baru
         </Link>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-12 space-y-6">
         
         {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Card 1: Total Tas Tersedia */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Total Tas Tersedia
+          <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <h3 className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+              [01 // STOK TAS TERSEDIA]
             </h3>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
-                {totalAvailableBags}
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-semibold text-[#111111] dark:text-[#f3f3f3] font-technical">
+                {totalAvailableBags} Units
               </span>
             </div>
           </div>
 
-                    {/* Card 3: Total Order Hari Ini */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Total Order Hari Ini
+          {/* Card 2: Total Order Hari Ini */}
+          <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <h3 className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+              [02 // PESANAN HARI INI]
             </h3>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-extrabold text-blue-700 dark:text-blue-400 font-mono">
-                {todayOrderCount}
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-semibold text-[#111111] dark:text-[#f3f3f3] font-technical">
+                {todayOrderCount} Orders
               </span>
             </div>
           </div>
 
-          {/* Card 4: Perlu Dikirim */}
-          <Link href="/ready-to-ship" className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-              Perlu Dikirim
+          {/* Card 3: Perlu Dikirim */}
+          <Link 
+            href="/ready-to-ship" 
+            className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 hover:border-[#111111] dark:hover:border-slate-500 transition-all group cursor-pointer"
+          >
+            <h3 className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical group-hover:text-[#111111] dark:group-hover:text-[#f3f3f3]">
+              [03 // PIPELINE PENGIRIMAN]
             </h3>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
-                {readyToShipCount}
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-semibold text-[#111111] dark:text-[#f3f3f3] font-technical">
+                {readyToShipCount} Tas
+              </span>
+              <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-wider group-hover:underline">
+                Kirim →
               </span>
             </div>
           </Link>
 
-          {/* Card 2: Total Keuntungan */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-blue-200 dark:border-blue-800/80 shadow-sm flex flex-col gap-2 bg-gradient-to-br from-white dark:from-slate-900 to-blue-50/30 dark:to-blue-950/30 transition-colors">
-            <h3 className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-              Total Keuntungan
+          {/* Card 4: Total Keuntungan (Accent Background) */}
+          <div className="bg-[#EDF3EC] dark:bg-[#182319] rounded-[8px] p-6 border border-[#cbe1cc] dark:border-emerald-950/60 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <h3 className="text-[10px] font-bold text-[#346538] dark:text-emerald-400 uppercase tracking-widest font-technical">
+              [04 // REKAP LABA BERSIH]
             </h3>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-extrabold text-blue-900 dark:text-blue-300 font-mono">
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-xl font-bold text-[#346538] dark:text-emerald-300 font-technical">
                 Rp {totalProfit.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-              Profit bersih toko
+            <span className="text-[9px] text-slate-500 dark:text-emerald-400/85 uppercase">
+              Perolehan Bersih Sesi Berjalan
             </span>
           </div>
 
         </div>
 
         {/* DATA TABLE 1: Recent Orders Tracking Table */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/80">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          <div className="p-5 border-b border-[#eaeaea] dark:border-slate-800/80 flex justify-between items-center bg-[#F9F9F8] dark:bg-slate-900/40 px-6">
+            <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
               Daftar Pesanan Terbaru
             </h2>
             <Link
               href="/orders"
-              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-[10px] font-bold text-[#787774] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#f3f3f3] uppercase font-technical"
             >
-              Lihat Semua Orders →
+              Lihat Semua →
             </Link>
           </div>
 
           {recentOrders.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">Belum ada pesanan terdaftar.</div>
+            <div className="p-12 text-center text-slate-400 dark:text-slate-500 font-technical text-xs uppercase">[ Belum ada transaksi terdaftar ]</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
-                    <th className="p-4 text-center">Order ID</th>
-                    <th className="p-4 text-center">Pelanggan</th>
-                    <th className="p-4 text-center">Tas Dibeli</th>
-                    <th className="p-4 text-center">Ekspedisi</th>
-                    <th className="p-4 text-center">No. Resi</th>
-                    <th className="p-4 text-center">DP / Status</th>
-                    <th className="p-4 text-center">Total Tagihan</th>
-                    <th className="p-4 text-center">Tanggal</th>
+                    <th className="p-4 text-center">ORDER_ID</th>
+                    <th className="p-4 text-center">PELANGGAN</th>
+                    <th className="p-4 text-center">TAS_ID</th>
+                    <th className="p-4 text-center">KURIR</th>
+                    <th className="p-4 text-center">NO_RESI</th>
+                    <th className="p-4 text-center">STATUS</th>
+                    <th className="p-4 text-center">TOTAL</th>
+                    <th className="p-4 text-center">TANGGAL</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                  {recentOrders.map((ord) => (
-                    <tr key={ord.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">
-                        #{ord.id.slice(0, 8)}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="font-bold text-slate-900 dark:text-white block">{ord.customer?.name}</span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{ord.customer?.whatsapp}</span>
-                      </td>
-                      <td className="p-4 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
-                        {ord.products.map((p) => p.id).join(", ")}
-                      </td>
-                      <td className="p-4 text-center text-slate-600 dark:text-slate-400">
-                        {ord.shippingCourier} ({ord.shippingService})
-                      </td>
-                      <td className="p-4 text-center font-mono text-blue-700 dark:text-blue-400 font-bold">
-                        {ord.trackingNo || "-"}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="px-2.5 py-1 rounded font-bold uppercase text-[10px] bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60">
-                          {ord.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
-                        Rp {ord.totalPrice.toLocaleString("id-ID")}
-                      </td>
-                      <td className="p-4 text-center text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-                        {new Date(ord.createdAt).toLocaleDateString("id-ID")}
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
+                  {recentOrders.map((ord) => {
+                    let statusBg = "bg-[#E1F3FE] text-[#1F6C9F]"; // Default blue
+                    if (ord.status === "Siap Kirim" || ord.status === "Siap Packing" || ord.status === "Siap_Kirim") {
+                      statusBg = "bg-[#FDEBEC] text-[#9F2F2D]"; // Pale Red
+                    } else if (ord.status === "Selesai" || ord.status === "Completed") {
+                      statusBg = "bg-[#EDF3EC] text-[#346538]"; // Pale Green
+                    }
+                    
+                    return (
+                      <tr key={ord.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
+                        <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">
+                          #{ord.id.slice(0, 8).toUpperCase()}
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="font-semibold text-[#111111] dark:text-[#f3f3f3] block">{ord.customer?.name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-technical">{ord.customer?.whatsapp}</span>
+                        </td>
+                        <td className="p-4 text-center font-semibold text-slate-800 dark:text-slate-200">
+                          {ord.products.map((p) => `#${p.id}`).join(", ")}
+                        </td>
+                        <td className="p-4 text-center uppercase text-[10px]">
+                          {ord.shippingCourier || "-"} ({ord.shippingService || "-"})
+                        </td>
+                        <td className="p-4 text-center font-semibold uppercase text-[10px]">
+                          {ord.trackingNo || "-"}
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className={`px-3 py-0.5 rounded-full font-bold uppercase text-[9px] ${statusBg} inline-block`}>
+                            {ord.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center font-semibold text-[#111111] dark:text-[#f3f3f3]">
+                          Rp {ord.totalPrice.toLocaleString("id-ID")}
+                        </td>
+                        <td className="p-4 text-center text-slate-400 dark:text-slate-500 text-[10px]">
+                          {new Date(ord.createdAt).toLocaleDateString("id-ID")}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -260,52 +281,52 @@ export default async function DashboardPage() {
         </div>
 
         {/* DATA TABLE 2: Available Products Table */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/80">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          <div className="p-5 border-b border-[#eaeaea] dark:border-slate-800/80 flex justify-between items-center bg-[#F9F9F8] dark:bg-slate-900/40 px-6">
+            <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
               Katalog Tas Tersedia
             </h2>
             <Link
               href="/products"
-              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-[10px] font-bold text-[#787774] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#f3f3f3] uppercase font-technical"
             >
-              Kelola Katalog Tas →
+              Kelola Tas →
             </Link>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+            <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
+              <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="p-4 text-center">Foto</th>
-                  <th className="p-4 text-center">ID Tas</th>
-                  <th className="p-4 text-center">Toko Asal</th>
-                  <th className="p-4 text-center">Harga Modal</th>
-                  <th className="p-4 text-center">Harga Jual</th>
-                  <th className="p-4 text-center">Status</th>
+                  <th className="p-4 text-center w-16">FOTO</th>
+                  <th className="p-4 text-center">TAS_ID</th>
+                  <th className="p-4 text-center">TOKO_ASAL</th>
+                  <th className="p-4 text-center">HARGA_MODAL</th>
+                  <th className="p-4 text-center">HARGA_JUAL</th>
+                  <th className="p-4 text-center">STATUS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+              <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                 {availableProducts.map((prod) => (
-                  <tr key={prod.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr key={prod.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
                     <td className="p-4 text-center">
-                      <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden relative flex items-center justify-center mx-auto">
+                      <div className="w-10 h-10 rounded-[4px] bg-[#fbfbfa] dark:bg-slate-900 border border-[#eaeaea] dark:border-slate-800 overflow-hidden relative flex items-center justify-center mx-auto">
                         {prod.photoUrl && !prod.photoUrl.includes("placeholder") ? (
                           <Image src={prod.photoUrl} alt={prod.id} fill sizes="40px" className="object-cover" />
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-500 text-xs font-bold">Tas</span>
+                          <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">TAS</span>
                         )}
                       </div>
                     </td>
-                    <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">#{prod.id}</td>
-                    <td className="p-4 text-center font-bold text-slate-900 dark:text-white">{prod.shop?.name || "-"}</td>
-                    <td className="p-4 text-center text-slate-600 dark:text-slate-400 font-mono">Rp {(prod.capitalPrice || 0).toLocaleString("id-ID")}</td>
-                    <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
+                    <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">#{prod.id.toUpperCase()}</td>
+                    <td className="p-4 text-center font-semibold text-slate-800 dark:text-slate-200 uppercase">{prod.shop?.name || "-"}</td>
+                    <td className="p-4 text-center font-technical">Rp {(prod.capitalPrice || 0).toLocaleString("id-ID")}</td>
+                    <td className="p-4 text-center font-bold font-technical">
                       Rp {prod.price.toLocaleString("id-ID")}
                     </td>
                     <td className="p-4 text-center">
-                      <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 rounded font-bold uppercase text-[10px]">
-                        {prod.status}
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#EDF3EC] text-[#346538] font-bold uppercase text-[9px] inline-block">
+                        {prod.status.toUpperCase()}
                       </span>
                     </td>
                   </tr>

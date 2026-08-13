@@ -33,7 +33,6 @@ export function Sidebar() {
     loadUser();
   }, [pathname]);
 
-  // Do not render Sidebar on Login Page
   if (pathname === "/login") return null;
 
   const navItems = [
@@ -59,12 +58,15 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex flex-col h-full w-[260px] h-screen fixed left-0 top-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-40 transition-colors">
+      <aside className="flex flex-col h-screen w-[260px] fixed left-0 top-0 bg-white dark:bg-[#141517] border-r border-[#eaeaea] dark:border-slate-800/80 z-40 transition-colors">
         {/* Brand Header with ThemeToggle next to Title */}
-        <div className="px-5 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base font-extrabold text-blue-700 dark:text-blue-400 tracking-tight truncate">
-              Mbokdhe Fashion
+        <div className="px-5 py-5 border-b border-[#eaeaea] dark:border-slate-800/80 flex items-center justify-between">
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-[#111111] dark:text-white tracking-tighter uppercase font-technical">
+              MBOKDHE / FASHION
+            </span>
+            <span className="text-[9px] text-[#787774] dark:text-slate-400 font-technical tracking-wider uppercase mt-0.5">
+              SYS_VER: 2026.8 // ADMIN
             </span>
           </div>
           {/* Theme Toggle Button next to Title */}
@@ -74,7 +76,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto">
+        <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto font-technical">
           {navItems.map((item) => {
             const isActive =
               pathname === item.path || (item.path !== "/dashboard" && pathname.startsWith(item.path));
@@ -82,33 +84,33 @@ export function Sidebar() {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-all duration-150 ${
+                className={`flex items-center gap-3 px-6 py-3 text-xs tracking-tight transition-all duration-150 rounded-none border-y border-transparent ${
                   isActive
-                    ? "bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border-l-4 border-blue-600 dark:border-blue-500 font-bold"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
+                    ? "bg-[#f5f5f5] dark:bg-[#1c1d1f] text-[#111111] dark:text-white border-l-2 border-l-[#111111] dark:border-l-white font-bold"
+                    : "text-slate-500 dark:text-slate-400 hover:bg-[#f5f5f5]/60 dark:hover:bg-slate-800/40 hover:text-[#111111] dark:hover:text-white"
                 }`}
               >
-                <span className={`material-symbols-outlined text-xl ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400"}`}>
+                <span className={`material-symbols-outlined text-sm ${isActive ? "text-[#111111] dark:text-white" : "text-slate-400 dark:text-slate-500"}`}>
                   {item.icon}
                 </span>
-                <span>{item.label}</span>
+                <span>{item.label.toUpperCase()}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Admin User Footer & Logout Button */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 space-y-3">
+        <div className="p-4 border-t border-[#eaeaea] dark:border-slate-800/80 bg-white dark:bg-[#141517] space-y-3 font-technical">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-extrabold text-xs shadow-sm shrink-0">
-                {user?.name ? user.name.slice(0, 1).toUpperCase() : <span className="material-symbols-outlined text-base">person</span>}
+              <div className="w-8 h-8 rounded-[4px] border border-[#eaeaea] dark:border-slate-700 bg-[#f5f5f5] dark:bg-slate-800 text-[#111111] dark:text-white flex items-center justify-center font-extrabold text-xs shrink-0">
+                {user?.name ? user.name.slice(0, 1).toUpperCase() : <span className="material-symbols-outlined text-sm">person</span>}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate uppercase">
                   {user?.name}
                 </p>
-                <p className="text-[10px] text-blue-700 dark:text-blue-400 font-bold truncate">
+                <p className="text-[9px] text-[#787774] dark:text-slate-450 font-bold truncate tracking-wider uppercase">
                   {user?.role}
                 </p>
               </div>
@@ -116,10 +118,10 @@ export function Sidebar() {
 
             <button
               onClick={() => setShowLogoutModal(true)}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              className="p-1.5 rounded-[4px] border border-[#eaeaea] dark:border-slate-700 bg-[#f5f5f5] dark:bg-slate-800 text-slate-500 hover:text-[#9F2F2D] hover:bg-[#FDEBEC] dark:hover:bg-red-950/20 transition-colors cursor-pointer"
               title="Keluar Sesi Admin"
             >
-              <span className="material-symbols-outlined text-lg">logout</span>
+              <span className="material-symbols-outlined text-xs">logout</span>
             </button>
           </div>
         </div>
@@ -127,29 +129,29 @@ export function Sidebar() {
 
       {/* Confirmation Modal Logout */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
-            <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto">
-              <span className="material-symbols-outlined text-2xl">logout</span>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-sm w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] text-center font-ui animate-fade-in-up">
+            <div className="w-12 h-12 rounded-full border border-red-200 dark:border-red-950/50 bg-[#FDEBEC] dark:bg-red-950/20 text-[#9F2F2D] dark:text-red-400 flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-lg">logout</span>
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Keluar dari Admin?</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Anda harus memasukkan email dan kata sandi kembali untuk masuk.
+              <h3 className="text-xs font-bold text-[#111111] dark:text-white uppercase tracking-tighter font-technical">KELUAR DARI ADMIN?</h3>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase font-technical">
+                Anda harus memasukkan email dan kata sandi kembali untuk masuk ke sesi dashboard.
               </p>
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-2 text-xs">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="w-1/2 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs"
+                className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] border border-[#eaeaea] dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer font-technical uppercase"
               >
-                Batal
+                BATAL
               </button>
               <button
                 onClick={handleLogout}
-                className="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-sm text-xs"
+                className="w-1/2 py-2.5 bg-[#9F2F2D] text-white font-bold rounded-[6px] hover:bg-[#852523] transition-colors cursor-pointer font-technical uppercase"
               >
-                Ya, Keluar
+                YA, KELUAR
               </button>
             </div>
           </div>

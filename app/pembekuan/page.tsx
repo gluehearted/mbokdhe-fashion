@@ -182,117 +182,120 @@ export default function PembekuanPage() {
   }, [orders, search]);
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-blue-700 dark:text-blue-400 tracking-tight flex items-center gap-2">
-            Rekapitulasi Keuangan & Laporan Keuntungan
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            Laporan Keuangan & Keuntungan
           </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Financial Ledger ]
+          </span>
         </div>
         <button
           onClick={fetchFinancialOrders}
-          className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
+          className="px-4 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-[6px] border border-[#eaeaea] dark:border-slate-700 transition-colors cursor-pointer font-technical uppercase"
         >
           Refresh Data
         </button>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Financial KPI Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Card 1: Total Profit Bersih */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-              Total Profit Bersih
+          <div className="bg-[#EDF3EC] dark:bg-[#182319] rounded-[8px] p-6 border border-[#cbe1cc] dark:border-emerald-950/60 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <span className="text-[10px] font-bold text-[#346538] dark:text-emerald-400 uppercase tracking-widest font-technical">
+              [01 // TOTAL PROFIT BERSIH]
             </span>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-extrabold text-blue-900 dark:text-blue-300 font-mono">
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-bold text-[#346538] dark:text-emerald-300 font-technical">
                 Rp {metrics.totalNetProfit.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-              Keuntungan bersih (Omset - Modal + DP Hangus)
+            <span className="text-[9px] text-[#346538]/85 dark:text-emerald-400/85 uppercase">
+              Omset - Modal + DP Hangus
             </span>
           </div>
 
           {/* Card 2: Total Omset Penjualan */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Omset Penjualan (Gross)
+          <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+              [02 // OMSET PENJUALAN GROSS]
             </span>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-bold text-[#111111] dark:text-[#f3f3f3] font-technical">
                 Rp {metrics.totalGrossRevenue.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-              Akumulasi {metrics.completedOrderCount} pesanan selesai
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
+              Dari {metrics.completedOrderCount} pesanan selesai
             </span>
           </div>
 
           {/* Card 3: Total Modal Pembelian */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Total Modal Tas
+          <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+              [03 // TOTAL MODAL TAS]
             </span>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-bold text-[#111111] dark:text-[#f3f3f3] font-technical">
                 Rp {metrics.totalCapitalCost.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-              Total modal beli dari supplier
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
+              Total modal dari supplier
             </span>
           </div>
 
           {/* Card 4: DP Hangus */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2 transition-colors">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-              Keuntungan DP Hangus
+          <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+              [04 // KEUNTUNGAN DP HANGUS]
             </span>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-extrabold text-blue-900 dark:text-blue-300 font-mono">
+            <div className="flex items-end justify-between mt-1">
+              <span className="text-2xl font-bold text-[#111111] dark:text-[#f3f3f3] font-technical">
                 Rp {metrics.totalDpForfeited.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-              Dana DP terbekukan yang hangus
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
+              Dana DP hangus terakumulasi
             </span>
           </div>
 
         </div>
 
         {/* SECTION 1: Tabel Ringkasan Keuangan Harian / Periodik */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm p-5 space-y-4 transition-colors">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 space-y-4 transition-colors">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[#eaeaea] dark:border-slate-800 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
                 Tabel Rekapitulasi Laporan Keuangan
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Rekap akumulasi omset, modal, dan profit bersih berdasarkan periode harian, mingguan, atau bulanan.
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                Kalkulasi akumulasi omset, modal, dan profit bersih berdasarkan periode terpililh.
               </p>
             </div>
 
             {/* Timeframe Filter Buttons */}
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
+            <div className="flex flex-wrap items-center gap-1.5 bg-[#f5f5f5] dark:bg-slate-800 p-1 rounded-[6px] border border-[#eaeaea] dark:border-slate-700 text-xs font-semibold">
               {[
-                { label: "Per Hari (Harian)", value: "DAILY" },
-                { label: "Per Minggu (Mingguan)", value: "WEEKLY" },
-                { label: "Per Bulan (Bulanan)", value: "MONTHLY" },
-                { label: "Semua Riwayat", value: "ALL" },
+                { label: "Per Hari", value: "DAILY" },
+                { label: "Per Minggu", value: "WEEKLY" },
+                { label: "Per Bulan", value: "MONTHLY" },
+                { label: "Semua", value: "ALL" },
               ].map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => setTimeframe(tab.value as any)}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                  className={`px-3 py-1 rounded-[4px] transition-all cursor-pointer font-technical uppercase ${
                     timeframe === tab.value
-                      ? "bg-blue-600 dark:bg-blue-500 text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-[#111111] dark:bg-[#f3f3f3] text-white dark:text-[#111111] font-bold"
+                      : "text-slate-500 dark:text-slate-400 hover:text-[#111111] dark:hover:text-white"
                   }`}
                 >
                   {tab.label}
@@ -302,15 +305,15 @@ export default function PembekuanPage() {
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Mengkalkulasi rekapitulasi keuangan...</div>
+            <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Mengkalkulasi rekapitulasi keuangan... ]</div>
           ) : summaries.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
               Belum ada riwayat transaksi selesai untuk dikalkulasi.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-200">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+            <div className="overflow-x-auto font-technical">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-200 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
                     <th className="p-4 text-center">Periode Tanggal</th>
                     <th className="p-4 text-center">Order Selesai</th>
@@ -321,24 +324,24 @@ export default function PembekuanPage() {
                     <th className="p-4 text-center">Profit Bersih</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {summaries.map((s, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
+                    <tr key={idx} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
                       <td className="p-4 text-center font-bold text-slate-900 dark:text-white">{s.date}</td>
-                      <td className="p-4 text-center font-mono font-bold text-blue-600 dark:text-blue-400">{s.orderCount} Pesanan</td>
-                      <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="p-4 text-center font-bold text-slate-600 dark:text-slate-400">{s.orderCount} Pesanan</td>
+                      <td className="p-4 text-center font-bold text-slate-900 dark:text-white">
                         Rp {s.grossRevenue.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-mono text-slate-600 dark:text-slate-300">
+                      <td className="p-4 text-center text-slate-400 dark:text-slate-500">
                         Rp {s.capitalCost.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-mono text-slate-500 dark:text-slate-400">
+                      <td className="p-4 text-center text-slate-400 dark:text-slate-500">
                         Rp {s.shippingCostSum.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-mono font-bold text-blue-700 dark:text-blue-400">
+                      <td className="p-4 text-center font-bold text-[#956400] dark:text-amber-400">
                         +Rp {s.dpForfeitedSum.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-mono font-extrabold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80">
+                      <td className="p-4 text-center font-bold text-[#346538] dark:text-emerald-300 bg-[#EDF3EC] dark:bg-[#182319]/40">
                         +Rp {s.netProfit.toLocaleString("id-ID")}
                       </td>
                     </tr>
@@ -350,10 +353,10 @@ export default function PembekuanPage() {
         </div>
 
         {/* SECTION 2: Rincian Profit Per Transaksi Pesanan */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm p-5 space-y-4 transition-colors">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)] p-5 space-y-4 transition-colors">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#eaeaea] dark:border-slate-800 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
                 Rincian Margin Profit Transaksi Lunas / Selesai
               </h2>
             </div>
@@ -362,18 +365,18 @@ export default function PembekuanPage() {
               placeholder="Cari ID order, nama pelanggan, WA..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-mono"
+              className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
             />
           </div>
 
           {filteredCompletedOrders.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
               Tidak ada rincian transaksi selesai yang cocok.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-200">
-                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+            <div className="overflow-x-auto font-technical">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-200 border-collapse">
+                <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
                     <th className="p-4 text-center">Order ID</th>
                     <th className="p-4 text-center">Pelanggan</th>
@@ -385,14 +388,13 @@ export default function PembekuanPage() {
                     <th className="p-4 text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {filteredCompletedOrders.map((ord) => {
                     const isCompleted = ord.status === "Siap Kirim" || ord.status === "Siap Packing" || ord.status === "Siap_Kirim" || ord.status === "Siap_Packing" || ord.status === "Dikirim" || ord.status === "Shipped";
                     
                     const prodRevenue = ord.totalPrice - ord.shippingCost;
                     const capitalSum = ord.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
                     
-                    // Jika order batal tapi DP hangus, profit = nominal DP
                     const isCancelledDp = ord.dpForfeited && !isCompleted;
                     let profit = prodRevenue - capitalSum;
                     if (isCancelledDp) {
@@ -400,40 +402,38 @@ export default function PembekuanPage() {
                     }
 
                     return (
-                      <tr key={ord.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">
-                          #{ord.id.slice(0, 8)}
+                      <tr key={ord.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
+                        <td className="p-4 text-center font-bold text-red-600 dark:text-emerald-400">
+                          #{ord.id.slice(0, 8).toUpperCase()}
                         </td>
                         <td className="p-4 text-center">
-                          <span className="font-bold text-slate-900 dark:text-white block">{ord.customer?.name}</span>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{ord.customer?.whatsapp}</span>
+                          <span className="font-bold text-slate-900 dark:text-white block uppercase">{ord.customer?.name}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{ord.customer?.whatsapp}</span>
                         </td>
                         
-                        {/* TAMPILAN KONDISIONAL UNTUK DP HANGUS */}
-                        <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
-                          {isCancelledDp ? <span className="text-slate-400">- Batal -</span> : `Rp ${ord.totalPrice.toLocaleString("id-ID")}`}
+                        <td className="p-4 text-center font-bold text-slate-900 dark:text-white">
+                          {isCancelledDp ? <span className="text-slate-400 font-normal">[ Batal ]</span> : `Rp ${ord.totalPrice.toLocaleString("id-ID")}`}
                         </td>
-                        <td className="p-4 text-center font-mono text-slate-500 dark:text-slate-400">
+                        <td className="p-4 text-center text-slate-400">
                           {isCancelledDp ? "-" : `Rp ${ord.shippingCost.toLocaleString("id-ID")}`}
                         </td>
-                        <td className="p-4 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
+                        <td className="p-4 text-center font-semibold text-slate-800 dark:text-slate-200">
                           {isCancelledDp ? "-" : `Rp ${prodRevenue.toLocaleString("id-ID")}`}
                         </td>
-                        <td className="p-4 text-center font-mono text-slate-600 dark:text-slate-300">
-                          {isCancelledDp ? <span className="text-slate-400">Barang Kembali</span> : `Rp ${capitalSum.toLocaleString("id-ID")}`}
+                        <td className="p-4 text-center text-slate-400">
+                          {isCancelledDp ? <span className="text-slate-400">[ Barang Kembali ]</span> : `Rp ${capitalSum.toLocaleString("id-ID")}`}
                         </td>
                         
-                        {/* Profit Bersih tetap muncul */}
-                        <td className="p-4 text-center font-mono font-extrabold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80">
+                        <td className="p-4 text-center font-bold text-[#346538] dark:text-emerald-300 bg-[#EDF3EC] dark:bg-[#182319]/40">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
                         <td className="p-4 text-center">
-                          <span className={`px-2.5 py-1 rounded font-bold uppercase text-[10px] ${
+                          <span className={`px-2.5 py-0.5 rounded-full font-bold uppercase text-[9px] inline-block ${
                             ord.dpForfeited
-                              ? "bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
-                              : "bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                              ? "bg-[#FBF3DB] text-[#956400]"
+                              : "bg-[#E1F3FE] text-[#1F6C9F]"
                           }`}>
-                            {ord.dpForfeited && !isCompleted ? "DP Hangus" : ord.status}
+                            {ord.dpForfeited && !isCompleted ? "DP HANGUS" : ord.status.toUpperCase()}
                           </span>
                         </td>
                       </tr>

@@ -35,15 +35,15 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="h-full font-sans text-slate-900 dark:text-slate-100 bg-[#f7f9fb] dark:bg-slate-950 flex flex-row overflow-hidden">
+      <body className="h-full font-ui text-[#111111] dark:text-[#f3f3f3] bg-[#fbfbfa] dark:bg-[#0c0d0f] flex flex-row overflow-hidden">
         <ThemeProvider>
           <ToastProvider>
             {isPublicPage ? (
-              <div className="min-h-screen w-full bg-white dark:bg-slate-950 font-sans overflow-x-hidden">
+              <div className="min-h-screen w-full bg-[#fbfbfa] dark:bg-[#0c0d0f] font-ui overflow-x-hidden">
                 {children}
               </div>
             ) : (
-              <div className="flex h-screen bg-[#f7f9fb] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden w-full relative">
+              <div className="flex h-screen bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui overflow-hidden w-full relative">
                 <Sidebar />
                 <main className="flex-1 flex flex-col h-screen ml-[260px] relative w-full overflow-hidden">
                   {children}

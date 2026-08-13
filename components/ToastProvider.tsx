@@ -30,25 +30,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast Floating Notification Container */}
-      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+      <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none font-ui">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto p-4 rounded-xl border shadow-xl flex items-center gap-3 transition-all animate-in slide-in-from-bottom-5 duration-200 text-xs font-semibold ${
+            className={`pointer-events-auto p-3.5 rounded-[6px] border shadow-[0_4px_16px_rgba(0,0,0,0.04)] flex items-center gap-3 transition-all animate-in slide-in-from-bottom-5 duration-200 text-xs font-semibold ${
               toast.type === "error"
-                ? "bg-white border-blue-300 text-blue-900 shadow-blue-900/10"
+                ? "bg-[#FDEBEC] border-[#f5c2c2] text-[#9F2F2D]"
                 : toast.type === "info"
-                ? "bg-white border-slate-300 text-slate-800"
-                : "bg-blue-600 border-blue-700 text-white shadow-blue-600/25"
+                ? "bg-[#E1F3FE] border-[#d2ecfc] text-[#1F6C9F]"
+                : "bg-[#EDF3EC] border-[#cbe1cc] text-[#346538]"
             }`}
           >
-            <span className="material-symbols-outlined text-base">
+            <span className="material-symbols-outlined text-sm">
               {toast.type === "error" ? "error" : toast.type === "info" ? "info" : "check_circle"}
             </span>
             <span className="flex-1 leading-snug">{toast.message}</span>
             <button
               onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              className="text-current opacity-70 hover:opacity-100 font-bold ml-2"
+              className="text-current opacity-70 hover:opacity-100 font-bold ml-2 cursor-pointer"
             >
               ✕
             </button>

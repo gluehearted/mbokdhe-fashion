@@ -36,6 +36,7 @@ export async function POST(
         status: "Dibatalkan",
         dpForfeited: true,
         notes: `DP Rp ${existingOrder.dpAmount.toLocaleString("id-ID")} HANGUS/FORFEIT. Alasan: ${reason}`,
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
       .select("*, customer:customers(*), products(*)")

@@ -59,12 +59,13 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm active:scale-95 shrink-0"
+      className="p-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 text-slate-700 dark:text-slate-350 hover:bg-[#eaeaea] dark:hover:bg-slate-700 transition-all border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center shrink-0 cursor-pointer"
       title={theme === "light" ? "Ganti ke Tema Gelap (Dark Mode)" : "Ganti ke Tema Terang (Light Mode)"}
     >
-      <span className="material-symbols-outlined text-lg select-none">
+      <span className="material-symbols-outlined text-sm select-none">
         {theme === "light" ? "dark_mode" : "light_mode"}
       </span>
     </button>
   );
 }
+

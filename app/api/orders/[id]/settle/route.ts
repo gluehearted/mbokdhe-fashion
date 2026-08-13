@@ -33,6 +33,7 @@ export async function POST(
       .update({
         status: "Siap Kirim",
         notes: `Lunas pada ${new Date().toLocaleDateString("id-ID")}`,
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
       .select("*, customer:customers(*), products(*)")

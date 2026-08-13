@@ -89,7 +89,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
         bottom: menuCoords.openUp ? `${window.innerHeight - menuCoords.top}px` : undefined,
         right: `${menuCoords.right}px`,
       }}
-      className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-[9999] py-1.5 overflow-hidden text-left transition-colors"
+      className="w-48 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-850 rounded-[6px] shadow-[0_4px_16px_rgba(0,0,0,0.04)] z-[9999] py-1.5 overflow-hidden text-left transition-colors font-ui"
     >
       {items.map((item, idx) => {
         let iconName = item.icon;
@@ -108,10 +108,10 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
               setIsOpen(false);
               item.onClick();
             }}
-            className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
               item.danger
-                ? "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 font-bold"
-                : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-blue-400"
+                ? "text-[#9F2F2D] dark:text-red-400 hover:bg-[#FDEBEC] dark:hover:bg-red-950/20 font-bold"
+                : "text-slate-700 dark:text-slate-200 hover:bg-[#f5f5f5] dark:hover:bg-slate-800 hover:text-[#111111] dark:hover:text-white"
             }`}
           >
             {iconName && (
@@ -133,7 +133,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
         ref={buttonRef}
         type="button"
         onClick={toggleMenu}
-        className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 flex items-center justify-center transition-colors active:scale-95 border border-blue-200 dark:border-slate-700 mx-auto"
+        className="w-8 h-8 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-400 flex items-center justify-center transition-colors active:scale-95 border border-[#eaeaea] dark:border-slate-700 mx-auto cursor-pointer"
         title="Menu Aksi"
       >
         <span className="material-symbols-outlined text-base">more_vert</span>

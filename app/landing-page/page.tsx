@@ -38,69 +38,79 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors">
+    <div className="min-h-screen bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-300 relative overflow-hidden">
       
-      {/* 1. Header Navbar */}
-      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div>
-            <span className="text-xl font-extrabold tracking-tight text-blue-700 dark:text-blue-400 block">
-              Mbokdhe Fashion
+      {/* Background Ambient Spotlight */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(251,243,219,0.15)_0%,rgba(0,0,0,0)_70%)] dark:bg-[radial-gradient(circle,rgba(243,243,243,0.01)_0%,rgba(0,0,0,0)_70%)] pointer-events-none z-0" />
+
+      {/* Main Content Wrap */}
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 relative z-10">
+        
+        {/* 1. Header Navbar */}
+        <header className="py-8 flex items-center justify-between border-b border-[#eaeaea] dark:border-slate-800/80 mb-16 animate-fade-in-up">
+          <div className="flex flex-col">
+            <span className="text-sm font-bold tracking-tight text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+              Mbokdhe // Fashion
             </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium tracking-widest uppercase block -mt-1">
-              Koleksi Tas Fashion
+            <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+              Koleksi Tas Utilitarian
             </span>
           </div>
 
-          <div className="flex items-center gap-6">
-            <nav className="hidden sm:flex items-center gap-8 text-sm font-semibold text-slate-600 dark:text-slate-300">
-              <a href="#katalog" className="hover:text-blue-700 dark:hover:text-blue-400 transition-colors">Katalog Tas</a>
-              <a href="#keunggulan" className="hover:text-blue-700 dark:hover:text-blue-400 transition-colors">Keunggulan</a>
+          <div className="flex items-center gap-8">
+            <nav className="hidden sm:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-[#787774] dark:text-slate-400">
+              <a href="#katalog" className="hover:text-[#111111] dark:hover:text-[#f3f3f3] transition-colors">Katalog Tas</a>
+              <a href="#keunggulan" className="hover:text-[#111111] dark:hover:text-[#f3f3f3] transition-colors">Layanan</a>
             </nav>
             <ThemeToggle />
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* 2. Hero Section */}
-      <section className="pt-16 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto space-y-6">
+        {/* 2. Hero Section */}
+        <section className="py-8 md:py-16 mb-20 animate-fade-in-up">
+          <div className="max-w-3xl space-y-6">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#EDF3EC] text-[#346538] font-technical">
+              Status // Koleksi Aktif
+            </div>
+            
+            <h1 className="text-5xl sm:text-7xl font-editorial text-[#111111] dark:text-[#f3f3f3] tracking-tight leading-[1.05] font-normal">
+              Koleksi Tas Modern <br />
+              <span className="italic text-slate-500 dark:text-slate-400 font-light">dengan Detail Utilitarian.</span>
+            </h1>
 
-          <h1 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            Koleksi Tas Elegant & <br />
-            <span className="text-blue-700 dark:text-blue-400">Kualitas Terjamin</span>
-          </h1>
-
-          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto">
-            Temukan pilihan tas fashion berkualitas tinggi dengan desain modern, harga transparan, dan jaminan pengiriman langsung ke seluruh wilayah Indonesia.
-          </p>
-
-          <div className="pt-2">
-            <a
-              href="#katalog"
-              className="inline-block px-8 py-3.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/20 transition-all text-center"
-            >
-              Lihat Katalog Tas
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Catalog Section */}
-      <section id="katalog" className="py-16 bg-slate-50 dark:bg-slate-900 border-y border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 lg:px-8 transition-colors">
-        <div className="max-w-7xl mx-auto space-y-10">
-          
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Katalog Tas Terbaru
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-              Pilihan stok tas favorit yang siap untuk dikirimkan hari ini.
+            <p className="text-sm sm:text-base text-[#2F3437] dark:text-slate-300 font-normal leading-relaxed max-w-2xl pt-2">
+              Temukan pilihan tas fashion berkualitas tinggi dengan desain minimalis terstruktur, harga transparan, dan jaminan pengiriman terintegrasi langsung ke seluruh wilayah Indonesia.
             </p>
+
+            <div className="pt-6">
+              <a
+                href="#katalog"
+                className="inline-block px-6 py-3 bg-[#111111] hover:bg-[#2c2c2c] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-semibold text-xs uppercase tracking-wider rounded-[6px] transition-all duration-200 active:scale-98"
+              >
+                Lihat Katalog Tas
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Catalog Section */}
+        <section id="katalog" className="py-12 border-t border-[#eaeaea] dark:border-slate-800/80 mb-20">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical block">
+                [ Katalog Produk ]
+              </span>
+              <h2 className="text-2xl font-editorial font-normal tracking-tight text-[#111111] dark:text-[#f3f3f3]">
+                Katalog Tas Terbaru
+              </h2>
+            </div>
+            <span className="text-[10px] font-bold uppercase font-technical text-slate-400">
+              Menampilkan {availableProducts.length} unit tersedia
+            </span>
           </div>
 
           {availableProducts.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="p-16 text-center text-slate-400 dark:text-slate-500 bg-[#F9F9F8] dark:bg-[#161719] rounded-[8px] border border-[#eaeaea] dark:border-slate-800 text-xs font-technical uppercase tracking-wider">
               Belum ada koleksi tas yang ditampilkan saat ini.
             </div>
           ) : (
@@ -110,59 +120,66 @@ export default async function LandingPage() {
                 return (
                   <div
                     key={p.id}
-                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg transition-all duration-300 flex flex-col group"
+                    className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden hover:shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:hover:shadow-[0_4px_25px_rgba(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col group justify-between"
                   >
-                    {/* Image Box */}
-                    <div className="w-full h-56 bg-slate-100 dark:bg-slate-900 relative overflow-hidden flex items-center justify-center">
+                    {/* Image Container */}
+                    <div className="w-full h-56 bg-[#fbfbfa] dark:bg-slate-900 relative overflow-hidden flex items-center justify-center border-b border-[#eaeaea] dark:border-slate-800/80">
                       {p.photoUrl && !p.photoUrl.includes("placeholder") ? (
                         <Image
                           src={p.photoUrl}
                           alt={p.id}
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                         />
                       ) : (
-                        <span className="text-slate-400 dark:text-slate-500 font-bold text-xs">
+                        <span className="text-slate-300 dark:text-slate-600 font-bold text-xs uppercase font-technical">
                           Foto Tas #{p.id}
                         </span>
                       )}
 
-                      <div className="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">
+                      {/* Code Tag */}
+                      <div className="absolute top-3 left-3 bg-[#E1F3FE] text-[#1F6C9F] px-2.5 py-0.5 rounded-full text-[9px] font-technical uppercase font-semibold">
                         #{p.id}
                       </div>
 
-                      <div className="absolute top-3 right-3 bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">
+                      {/* Status Tag */}
+                      <div className="absolute top-3 right-3 bg-[#EDF3EC] text-[#346538] px-2.5 py-0.5 rounded-full text-[9px] font-technical uppercase font-semibold">
                         Tersedia
                       </div>
                     </div>
 
-                    {/* Info Body */}
-                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                      <div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    {/* Product Metadata & Info */}
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-1">
+                        <span className="text-[9px] text-[#787774] dark:text-slate-400 font-technical uppercase tracking-wider block">
                           Supplier: {p.shop?.name || "-"}
-                        </p>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2 mt-0.5">
+                        </span>
+                        <h3 className="text-xs font-semibold text-[#111111] dark:text-[#f3f3f3] tracking-tight line-clamp-2">
                           {p.description || `Tas Fashion #${p.id}`}
                         </h3>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                        {p.discount && p.discount > 0 ? (
-                          <div>
-                            <span className="text-xs text-slate-400 dark:text-slate-500 line-through block font-mono">
+                      <div className="pt-3 border-t border-[#f1f1f1] dark:border-slate-800/80 flex items-center justify-between">
+                        <div>
+                          {p.discount && p.discount > 0 ? (
+                            <div>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block font-technical">
+                                Rp {p.price.toLocaleString("id-ID")}
+                              </span>
+                              <span className="text-xs font-bold text-[#9F2F2D] dark:text-red-400 font-technical">
+                                Rp {finalPrice.toLocaleString("id-ID")}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] font-technical">
                               Rp {p.price.toLocaleString("id-ID")}
                             </span>
-                            <span className="text-base font-extrabold text-blue-700 dark:text-blue-400 font-mono">
-                              Rp {finalPrice.toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-base font-extrabold text-blue-700 dark:text-blue-400 font-mono">
-                            Rp {p.price.toLocaleString("id-ID")}
-                          </span>
-                        )}
+                          )}
+                        </div>
+                        <span className="text-[9px] font-technical text-slate-400 uppercase">
+                          [ Qty: 1 ]
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -170,51 +187,74 @@ export default async function LandingPage() {
               })}
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* 4. Keunggulan Section */}
-      <section id="keunggulan" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center space-y-2 mb-10">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Keunggulan Mbokdhe Fashion
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-            Komitmen layanan terbaik untuk kepuasan belanja Anda.
+        {/* 4. Keunggulan Section (Bento Grid) */}
+        <section id="keunggulan" className="py-12 border-t border-[#eaeaea] dark:border-slate-800/80 mb-20">
+          <div className="space-y-1 mb-10">
+            <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical block">
+              [ Pelayanan Utama ]
+            </span>
+            <h2 className="text-2xl font-editorial font-normal tracking-tight text-[#111111] dark:text-[#f3f3f3]">
+              Komitmen Kualitas & Kecepatan
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Bento Card 1 */}
+            <div className="p-8 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] space-y-4 hover:shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-shadow">
+              <div className="w-8 h-8 rounded-full bg-[#EDF3EC] text-[#346538] flex items-center justify-center font-technical font-bold text-xs">
+                01
+              </div>
+              <h3 className="text-sm font-semibold tracking-tight text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+                Jaminan Fisik Produk
+              </h3>
+              <p className="text-xs text-[#787774] dark:text-slate-400 leading-relaxed">
+                Setiap produk tas melewati pemeriksaan fisik mendalam sebelum dikemas dan dikirim guna mematikan kesesuaian mutu standar tanpa cacat.
+              </p>
+            </div>
+
+            {/* Bento Card 2 */}
+            <div className="p-8 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] space-y-4 hover:shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-shadow">
+              <div className="w-8 h-8 rounded-full bg-[#E1F3FE] text-[#1F6C9F] flex items-center justify-center font-technical font-bold text-xs">
+                02
+              </div>
+              <h3 className="text-sm font-semibold tracking-tight text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+                Distribusi Efisien
+              </h3>
+              <p className="text-xs text-[#787774] dark:text-slate-400 leading-relaxed">
+                Kalkulasi otomatis kurir pengiriman instan langsung dari lokasi supplier terdekat ke alamat penerima di seluruh wilayah Indonesia.
+              </p>
+            </div>
+
+            {/* Bento Card 3 */}
+            <div className="p-8 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] space-y-4 hover:shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-shadow">
+              <div className="w-8 h-8 rounded-full bg-[#FBF3DB] text-[#956400] flex items-center justify-center font-technical font-bold text-xs">
+                03
+              </div>
+              <h3 className="text-sm font-semibold tracking-tight text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+                Otomasi Komunikasi
+              </h3>
+              <p className="text-xs text-[#787774] dark:text-slate-400 leading-relaxed">
+                Memudahkan admin menyusun pesanan baru dan membagikan tautan rekap secara langsung via Whatsapp kepada pelanggan bersangkutan.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        {/* 5. Footer */}
+        <footer className="py-12 border-t border-[#eaeaea] dark:border-slate-800/80 text-center space-y-2">
+          <p className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical tracking-wider">
+            Mbokdhe Fashion // Rekap Katalog Terintegrasi
           </p>
-        </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-technical uppercase">
+            © 2026 Mbokdhe Fashion. Seluruh hak cipta dilindungi undang-undang.
+          </p>
+        </footer>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-2 shadow-sm">
-            <h3 className="text-base font-extrabold text-blue-700 dark:text-blue-400">Kualitas Terjamin</h3>
-            <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed font-medium">
-              Setiap produk tas diperiksa secara fisik sebelum dikirimkan untuk memastikan kualitas kondisi barang.
-            </p>
-          </div>
-
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-2 shadow-sm">
-            <h3 className="text-base font-extrabold text-blue-700 dark:text-blue-400">Pengiriman Cepat</h3>
-            <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed font-medium">
-              Didukung pengiriman ekspres terintegrasi dengan kurir terpercaya ke seluruh kota di Indonesia.
-            </p>
-          </div>
-
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-2 shadow-sm">
-            <h3 className="text-base font-extrabold text-blue-700 dark:text-blue-400">Pelayanan Ramah</h3>
-            <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed font-medium">
-              Respon cepat dan ramah untuk memberikan kemudahan informasi produk serta update pemesanan.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Footer */}
-      <footer id="kontak" className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-10 px-4 sm:px-6 lg:px-8 text-center space-y-2 transition-colors">
-        <p className="text-base font-extrabold text-blue-700 dark:text-blue-400">Mbokdhe Fashion</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-          © 2026 Mbokdhe Fashion. Seluruh Hak Cipta Dilindungi.
-        </p>
-      </footer>
+      </div>
     </div>
   );
 }

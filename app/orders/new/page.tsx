@@ -43,7 +43,6 @@ export default function NewOrderPage() {
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [individualDiscounts, setIndividualDiscounts] = useState<Record<string, string>>({});
@@ -57,7 +56,6 @@ export default function NewOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Lightbox Zoom Modal State
   const [zoomProduct, setZoomProduct] = useState<Product | null>(null);
 
   const fetchInitialData = useCallback(async () => {
@@ -209,15 +207,12 @@ export default function NewOrderPage() {
 
     try {
       const productsPayload = selectedProducts.map((p) => {
-        // 1. Ambil nilai mentah dari state
         const rawDisc = individualDiscounts[p.id];
         const rawCustomPrice = customPrices[p.id];
 
-        // 2. Parsing dengan aman (Jika input kosong/huruf, jadikan NaN)
         const parsedDisc = parseInt(rawDisc, 10);
         const parsedCustomPrice = parseInt(rawCustomPrice, 10);
 
-        // 3. Fallback logika yang tidak merusak angka 0
         const discVal = isNaN(parsedDisc) ? 0 : parsedDisc;
         const customPriceVal = isNaN(parsedCustomPrice) ? p.price : parsedCustomPrice;
 
@@ -259,45 +254,50 @@ export default function NewOrderPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-slate-950 transition-colors">
+    <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0 shrink-0 transition-colors">
-        <h1 className="text-lg font-bold text-blue-700 dark:text-blue-400 tracking-tight">
-          Buat Pesanan Baru (Checkout)
-        </h1>
+      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+        <div className="flex flex-col">
+          <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
+            Buat Pesanan Baru (Checkout)
+          </h1>
+          <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
+            [ Checkout Terminal ]
+          </span>
+        </div>
         <Link
           href="/orders"
-          className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-lg transition-colors border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-sm"
+          className="px-4 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-[6px] border border-[#eaeaea] dark:border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer uppercase font-technical"
         >
           ← Kembali ke Data Pesanan
         </Link>
       </header>
 
       {/* Main Content Scroll Container */}
-      <div className="flex-1 overflow-auto p-6 bg-[#f8fafc] dark:bg-slate-950 w-full pb-8 transition-colors">
+      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 transition-colors">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-xl text-red-700 dark:text-red-400 text-xs font-semibold">
+          <div className="mb-6 p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical max-w-6xl mx-auto">
             {errorMessage}
           </div>
         )}
 
         {loadingData ? (
-          <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm font-medium">Loading data inventaris & pelanggan...</div>
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading data inventaris & pelanggan... ]</div>
         ) : (
-          <form onSubmit={handleCreateOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto">
+          <form onSubmit={handleCreateOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto font-ui">
             
             {/* LEFT COLUMN (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
 
               {/* Step 1: Select Customer */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm transition-colors">
-                <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
+                <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+                  <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
                     1. Pilih Pelanggan Tujuan
                   </h3>
                   <Link
                     href="/customers?action=new"
-                    className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                    className="text-[10px] text-red-650 dark:text-red-400 font-bold hover:underline uppercase font-technical"
                   >
                     + Tambah Pelanggan Baru
                   </Link>
@@ -308,45 +308,45 @@ export default function NewOrderPage() {
                     value={selectedCustomerId}
                     onChange={(e) => handleCustomerChange(e.target.value)}
                     required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs p-3 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-medium uppercase"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs p-3 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium uppercase cursor-pointer"
                   >
                     <option value="">-- Pilih Pelanggan Terdaftar --</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
-                        #{c.id} - {c.name} ({c.whatsapp}) - {c.domisili || "Domisili"}
+                        #{c.id.toUpperCase()} - {c.name} ({c.whatsapp}) - {c.domisili || "DOMISILI"}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 {selectedCustomer && (
-                  <div className="bg-slate-50 dark:bg-slate-800 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 space-y-1 transition-colors">
+                  <div className="bg-[#f5f5f5] dark:bg-[#1c1d1f] p-3.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 text-xs text-slate-700 dark:text-slate-350 space-y-1 transition-colors">
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-blue-700 dark:text-blue-400">Detail Pelanggan:</span>
-                      <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">#{selectedCustomer.id}</span>
+                      <span className="font-bold text-[#1F6C9F]">Detail Pelanggan:</span>
+                      <span className="font-technical text-xs font-bold text-[#111111] dark:text-white">#{selectedCustomer.id.toUpperCase()}</span>
                     </div>
                     <p className="font-semibold text-slate-900 dark:text-white">{selectedCustomer.name} (WA: {selectedCustomer.whatsapp})</p>
-                    <p className="text-slate-600 dark:text-slate-300">{selectedCustomer.addressDetail}, {selectedCustomer.domisili || "-"}</p>
-                    <div className="pt-1 flex items-center gap-2 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                      <span>Ekspedisi Default: <strong className="text-blue-700 dark:text-blue-400">{selectedCustomer.courier || "JNE"}</strong></span>
+                    <p className="text-slate-500 dark:text-slate-400">{selectedCustomer.addressDetail}, {selectedCustomer.domisili || "-"}</p>
+                    <div className="pt-2 flex items-center gap-3 font-technical text-[10px] text-slate-400 uppercase tracking-tight">
+                      <span>Ekspedisi: <strong className="text-[#1F6C9F]">{selectedCustomer.courier || "JNE"}</strong></span>
                       <span>•</span>
-                      <span>Ongkir Default: <strong className="text-slate-900 dark:text-white">Rp {(selectedCustomer.shippingCost || 0).toLocaleString("id-ID")}</strong></span>
+                      <span>Ongkir Default: <strong className="text-slate-800 dark:text-slate-200">Rp {(selectedCustomer.shippingCost || 0).toLocaleString("id-ID")}</strong></span>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Step 2: Multi-Select Available Products & Per-Bag Individual Discounts */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm transition-colors">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 flex justify-between items-center">
-                  <span>2. Pilih Tas & Atur Diskon Individual per Tas</span>
-                  <span className="text-xs text-blue-600 dark:text-blue-400 font-mono font-bold">
+              <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
+                <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 flex justify-between items-center font-technical uppercase">
+                  <span>2. Pilih Tas & Atur Diskon Individual</span>
+                  <span className="text-[10px] text-[#1F6C9F] font-bold">
                     {selectedProductIds.length} Tas Terpilih
                   </span>
                 </h3>
 
                 {availableProducts.length === 0 ? (
-                  <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center">
+                  <p className="text-slate-400 dark:text-slate-500 text-xs py-4 text-center font-technical uppercase">
                     Tidak ada tas berstatus &apos;Tersedia&apos; saat ini.
                   </p>
                 ) : (
@@ -362,10 +362,10 @@ export default function NewOrderPage() {
                         <div
                           key={p.id}
                           onClick={() => toggleProductSelect(p)}
-                          className={`p-3.5 rounded-xl border cursor-pointer transition-all text-xs ${
+                          className={`p-3.5 rounded-[6px] border cursor-pointer transition-all text-xs ${
                             isSelected
-                              ? "bg-blue-50/70 dark:bg-blue-950/80 border-blue-600 dark:border-blue-500 text-blue-900 dark:text-blue-200 shadow-sm"
-                              : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600"
+                              ? "bg-[#E1F3FE] dark:bg-[#18232c] border-[#1F6C9F] text-[#1F6C9F] dark:text-slate-200 shadow-sm"
+                              : "bg-[#f5f5f5] dark:bg-[#1c1d1f] border-[#eaeaea] dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-650"
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -374,7 +374,7 @@ export default function NewOrderPage() {
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => {}}
-                                className="accent-blue-600 w-4 h-4 shrink-0"
+                                className="accent-[#1F6C9F] w-4 h-4 shrink-0 cursor-pointer"
                               />
 
                               {/* Bag Image Thumbnail & Zoom Trigger */}
@@ -384,32 +384,32 @@ export default function NewOrderPage() {
                                   e.stopPropagation();
                                   setZoomProduct(p);
                                 }}
-                                className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 overflow-hidden relative shrink-0 hover:opacity-85 transition-all shadow-sm group"
-                                title="Klik untuk zoom gambar tas secara jelas"
+                                className="w-12 h-12 rounded-[4px] bg-[#fbfbfa] dark:bg-slate-700 border border-[#eaeaea] dark:border-slate-600 overflow-hidden relative shrink-0 hover:opacity-85 transition-all shadow-sm group cursor-pointer"
+                                title="Klik untuk zoom gambar tas"
                               >
                                 {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
                                   <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                                 ) : (
-                                  <span className="text-slate-400 dark:text-slate-300 font-bold text-[10px]">Foto</span>
+                                  <span className="text-slate-300 dark:text-slate-400 font-bold text-[9px] uppercase font-technical">Foto</span>
                                 )}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
-                                  Zoom
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[9px] font-bold font-technical uppercase">
+                                  ZOOM
                                 </div>
                               </button>
 
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-extrabold text-blue-700 dark:text-blue-400 font-mono text-sm">#{p.id}</span>
+                                  <span className="font-bold text-[#111111] dark:text-white font-technical text-sm">#{p.id.toUpperCase()}</span>
                                 </div>
-                                <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold block">Harga Normal: Rp {p.price.toLocaleString("id-ID")}</span>
+                                <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold block uppercase tracking-wide">Harga Normal: Rp {p.price.toLocaleString("id-ID")}</span>
                                 {p.description && (
-                                  <span className="text-slate-400 dark:text-slate-300 text-[11px] font-medium block truncate max-w-xs">{p.description}</span>
+                                  <span className="text-slate-400 dark:text-slate-400 text-[10px] font-medium block truncate max-w-xs">{p.description}</span>
                                 )}
                               </div>
                             </div>
 
                             {!isSelected && (
-                              <span className="font-bold text-slate-900 dark:text-white font-mono">
+                              <span className="font-bold text-[#111111] dark:text-white font-technical">
                                 Rp {p.price.toLocaleString("id-ID")}
                               </span>
                             )}
@@ -418,38 +418,38 @@ export default function NewOrderPage() {
                           {/* Individual Discount Controls per Bag */}
                           {isSelected && (
                             <div
-                              className="mt-3 pt-3 border-t border-blue-200/80 dark:border-blue-900/60 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                              className="mt-3 pt-3 border-t border-[#1F6C9F]/20 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Input Diskon Individual (Rp) */}
-                              <div>
-                                <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 mb-1">
-                                  Diskon Tas Ini (Rp):
+                              <div className="space-y-1">
+                                <label className="block text-[9px] font-bold text-[#1F6C9F] dark:text-[#a2d8fa] uppercase tracking-wider font-technical">
+                                  Diskon Tas Ini:
                                 </label>
-                                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-blue-400 dark:border-blue-700 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20">
-                                  <span className="font-mono text-xs font-bold text-slate-400">Rp</span>
+                                <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 shadow-sm">
+                                  <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
                                   <input
                                     type="number"
                                     value={currentDiscount}
                                     onChange={(e) => handleDiscountChange(p, e.target.value)}
-                                    className="w-full text-right font-mono font-bold text-xs text-blue-900 dark:text-white focus:outline-none bg-transparent"
+                                    className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
                                     placeholder="Contoh: 10000"
                                   />
                                 </div>
                               </div>
 
                               {/* Input Harga Akhir (Rp) */}
-                              <div>
-                                <label className="block text-[11px] font-bold text-blue-800 dark:text-blue-300 mb-1">
-                                  Harga Akhir Setelah Diskon (Rp):
+                              <div className="space-y-1">
+                                <label className="block text-[9px] font-bold text-[#1F6C9F] dark:text-[#a2d8fa] uppercase tracking-wider font-technical">
+                                  Harga Akhir Setelah Diskon:
                                 </label>
-                                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-blue-400 dark:border-blue-700 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20">
-                                  <span className="font-mono text-xs font-bold text-slate-400">Rp</span>
+                                <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 shadow-sm">
+                                  <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
                                   <input
                                     type="number"
                                     value={currentPrice}
                                     onChange={(e) => handleCustomPriceChange(p, e.target.value)}
-                                    className="w-full text-right font-mono font-bold text-xs text-blue-900 dark:text-white focus:outline-none bg-transparent"
+                                    className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
                                     placeholder={String(p.price)}
                                   />
                                 </div>
@@ -457,7 +457,7 @@ export default function NewOrderPage() {
 
                               {/* Individual Discount Badge Notice */}
                               {discVal > 0 && (
-                                <div className="sm:col-span-2 p-2 bg-blue-100 dark:bg-blue-950/80 border border-blue-300 dark:border-blue-800/60 rounded-lg text-[11px] font-mono font-bold text-blue-900 dark:text-blue-300 flex justify-between items-center">
+                                <div className="sm:col-span-2 p-2 bg-[#E1F3FE] text-[#1F6C9F] border border-[#d2ecfc] rounded-[6px] text-[10px] font-technical font-bold flex justify-between items-center uppercase tracking-wide">
                                   <span>Potongan Diskon Tas:</span>
                                   <span>-Rp {discVal.toLocaleString("id-ID")}</span>
                                 </div>
@@ -472,18 +472,18 @@ export default function NewOrderPage() {
               </div>
 
               {/* Step 3: Input Ekspedisi & Nominal Ongkos Kirim */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm transition-colors">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
+                <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
                   3. Ekspedisi & Nominal Ongkos Kirim
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1.5">Pilih Ekspedisi Pengiriman</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Pilih Ekspedisi Pengiriman</label>
                     <select
                       value={selectedCourier}
                       onChange={(e) => setSelectedCourier(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 font-medium focus:border-blue-600 focus:outline-none"
+                      className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-medium focus:border-[#111111] focus:outline-none cursor-pointer"
                     >
                       <option value="">-- Pilih Ekspedisi --</option>
                       {AVAILABLE_COURIERS.map((c) => (
@@ -494,15 +494,15 @@ export default function NewOrderPage() {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1.5">Nominal Ongkos Kirim (Rp)</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nominal Ongkos Kirim (Rp)</label>
                     <input
                       type="number"
                       value={manualShippingCost}
                       onChange={(e) => setManualShippingCost(e.target.value)}
                       placeholder="Contoh: 15000"
                       required
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 font-mono text-sm font-bold focus:border-blue-600 focus:outline-none"
+                      className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-sm font-semibold focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -514,13 +514,13 @@ export default function NewOrderPage() {
             <div className="lg:col-span-5 space-y-6">
 
               {/* Status & DP */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm text-xs transition-colors">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-xs transition-colors">
+                <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
                   Status Pesanan & DP
                 </h3>
 
-                <div>
-                  <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Status Awal Pesanan</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Status Awal Pesanan</label>
                   <select
                     value={orderStatus}
                     onChange={(e) => {
@@ -530,7 +530,7 @@ export default function NewOrderPage() {
                         setDpAmountInput("");
                       }
                     }}
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 font-semibold"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-semibold focus:outline-none focus:border-[#111111] cursor-pointer"
                   >
                     <option value="">-- Pilih Status Awal Pesanan --</option>
                     <option value="Menunggu">Menunggu Pembayaran</option>
@@ -540,56 +540,56 @@ export default function NewOrderPage() {
                 </div>
 
                 {orderStatus === "DP" && (
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Nominal DP (Rp) *</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nominal DP (Rp) *</label>
                     <input
                       type="number"
                       value={dpAmountInput}
                       onChange={(e) => setDpAmountInput(e.target.value)}
                       placeholder="Contoh: 50000"
                       required
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 font-mono text-sm"
+                      className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-sm focus:outline-none focus:border-[#111111]"
                     />
                   </div>
                 )}
               </div>
 
               {/* Summary Tagihan with Individual Discount Breakdown */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm text-xs transition-colors">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-xs transition-colors">
+                <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
                   Ringkasan Tagihan Order
                 </h3>
 
-                <div className="space-y-3 font-mono">
-                  <div className="flex justify-between items-center text-slate-600 dark:text-slate-300">
-                    <span>Total Normal Barang ({selectedProductIds.length} Tas):</span>
-                    <span className="text-slate-900 dark:text-white font-bold">
+                <div className="space-y-3 font-technical uppercase">
+                  <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                    <span>Total Barang ({selectedProductIds.length} Tas):</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-bold">
                       Rp {totalNormalBarangPrice.toLocaleString("id-ID")}
                     </span>
                   </div>
 
                   {totalIndividualDiscount > 0 && (
-                    <div className="flex justify-between items-center text-blue-700 dark:text-blue-400 font-bold">
+                    <div className="flex justify-between items-center text-[#9F2F2D] font-bold">
                       <span>Total Diskon Barang:</span>
                       <span>-Rp {totalIndividualDiscount.toLocaleString("id-ID")}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-200 font-bold border-t border-slate-100 dark:border-slate-800 pt-2">
-                    <span>Subtotal Barang Setelah Diskon:</span>
+                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-200 font-bold border-t border-[#eaeaea] dark:border-slate-800/80 pt-2">
+                    <span>Subtotal Setelah Diskon:</span>
                     <span>Rp {totalBarangPriceAfterDiscount.toLocaleString("id-ID")}</span>
                   </div>
 
-                  <div className="flex justify-between items-center text-slate-600 dark:text-slate-300">
+                  <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
                     <span>Ongkos Kirim ({selectedCourier || "Ekspedisi"}):</span>
-                    <span className="text-blue-700 dark:text-blue-400 font-bold">
+                    <span className="text-[#1F6C9F] font-bold">
                       Rp {parsedCostNum.toLocaleString("id-ID")}
                     </span>
                   </div>
 
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-center text-sm">
-                    <span className="font-bold text-slate-900 dark:text-white font-sans">Total Tagihan:</span>
-                    <span className="font-bold text-blue-700 dark:text-blue-400 text-xl">
+                  <div className="border-t border-[#eaeaea] dark:border-slate-800/80 pt-3 flex justify-between items-center text-xs">
+                    <span className="font-bold text-[#111111] dark:text-white font-ui uppercase">Total Tagihan:</span>
+                    <span className="font-bold text-red-650 dark:text-emerald-450 text-lg">
                       Rp {totalTagihan.toLocaleString("id-ID")}
                     </span>
                   </div>
@@ -598,7 +598,7 @@ export default function NewOrderPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition-all text-sm disabled:opacity-50"
+                  className="w-full py-3 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] shadow-sm transition-all text-xs uppercase font-technical tracking-wider cursor-pointer"
                 >
                   {submitting ? "Memproses Pesanan..." : "SIMPAN PESANAN"}
                 </button>
@@ -612,49 +612,49 @@ export default function NewOrderPage() {
 
       {/* Lightbox Zoom Modal Gambar Tas */}
       {zoomProduct && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl overflow-hidden transition-colors">
-            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-5 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-hidden transition-colors font-ui animate-fade-in-up">
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-blue-700 dark:text-blue-400 font-mono">
-                  Foto Tas #{zoomProduct.id}
+                <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] font-technical uppercase">
+                  Foto Tas #{zoomProduct.id.toUpperCase()}
                 </h3>
                 {zoomProduct.shop?.name && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Toko Supplier: {zoomProduct.shop.name}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase mt-0.5">Toko Supplier: {zoomProduct.shop.name}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => setZoomProduct(null)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white font-bold text-sm px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
+                className="text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold text-xs px-2.5 py-1 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-[#eaeaea] dark:border-slate-750 cursor-pointer font-technical uppercase tracking-wide"
               >
                 Tutup
               </button>
             </div>
 
             {/* High-res Image Preview */}
-            <div className="w-full h-80 bg-slate-900 rounded-xl overflow-hidden relative border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+            <div className="w-full h-80 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/85 flex items-center justify-center">
               {zoomProduct.photoUrl && zoomProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
                 <Image src={zoomProduct.photoUrl} alt={zoomProduct.id} fill sizes="600px" className="object-contain" />
               ) : (
-                <span className="text-slate-400 font-bold text-sm">Tidak ada foto produk</span>
+                <span className="text-slate-300 dark:text-slate-600 font-bold text-xs uppercase font-technical">[ Tidak ada foto tas ]</span>
               )}
             </div>
 
             {zoomProduct.description && (
-              <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 bg-[#f5f5f5] dark:bg-[#1c1d1f] p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800">
                 <strong>Deskripsi:</strong> {zoomProduct.description}
               </p>
             )}
 
-            <div className="flex justify-between items-center pt-2 text-xs font-mono">
-              <span className="text-slate-600 dark:text-slate-300 font-bold">Harga Normal: Rp {zoomProduct.price.toLocaleString("id-ID")}</span>
+            <div className="flex justify-between items-center pt-2 text-xs font-technical uppercase tracking-tight">
+              <span className="text-slate-500 dark:text-slate-400 font-bold">Harga: Rp {zoomProduct.price.toLocaleString("id-ID")}</span>
               <button
                 type="button"
                 onClick={() => setZoomProduct(null)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all text-xs"
+                className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold px-4 py-2 rounded-[6px] transition-all text-xs cursor-pointer font-technical uppercase"
               >
-                Selesai Melihat
+                Kembali
               </button>
             </div>
           </div>

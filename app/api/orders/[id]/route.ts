@@ -66,6 +66,7 @@ export async function PATCH(
         ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
         ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),
         ...(totalPrice !== undefined && { totalPrice: parseInt(String(totalPrice), 10) }),
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
       .select("*, customer:customers(*), products(*)")
