@@ -163,12 +163,18 @@ export default function ProductsPage() {
         const compressedFile = await imageCompression(originalFile, options);
         const compSizeKB = (compressedFile.size / 1024).toFixed(1);
 
-        setCompressedInfo(`Ukuran Asli: ${origSizeKB} KB ➔ Dikompresi: ${compSizeKB} KB (<300 KB)`);
+        setCompressedInfo(`Ukuran Asli: ${origSizeKB} KB | Dikompresi: ${compSizeKB} KB`);
         setFile(compressedFile);
+        if (previewUrl && previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrl);
+        }
         setPreviewUrl(URL.createObjectURL(compressedFile));
       } catch (err) {
         console.error("Gagal mengompresi foto:", err);
         setFile(originalFile);
+        if (previewUrl && previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrl);
+        }
         setPreviewUrl(URL.createObjectURL(originalFile));
       } finally {
         setCompressing(false);
@@ -189,7 +195,7 @@ export default function ProductsPage() {
     try {
       const formData = new FormData();
       formData.append("shopOrigin", shopOrigin.trim());
-      formData.append("capitalPrice", capitalPriceInput);
+      formData.append("capitalPrice", capitalPriceInput || "0");
       formData.append("price", priceInput);
       formData.append("description", descriptionInput.trim());
 
@@ -552,30 +558,20 @@ export default function ProductsPage() {
               {/* Row 1: Toko Asal (Supplier) */}
               <div>
                 <label className="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Toko Asal / Supplier *</label>
-                {shops.length > 0 ? (
-                  <select
-                    value={shopOrigin}
-                    onChange={(e) => setShopOrigin(e.target.value)}
-                    required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-bold"
-                  >
-                    <option value="">-- Pilih Toko Asal / Supplier --</option>
-                    {shops.map((s) => (
-                      <option key={s.id} value={s.name}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={shopOrigin}
-                    onChange={(e) => setShopOrigin(e.target.value)}
-                    placeholder="Contoh: Sukaraja Store, Supplier Batam"
-                    required
-                    className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-bold"
-                  />
-                )}
+                <input
+                  type="text"
+                  list="shops-options"
+                  value={shopOrigin}
+                  onChange={(e) => setShopOrigin(e.target.value)}
+                  placeholder="Pilih atau ketik nama toko baru..."
+                  required
+                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:outline-none font-bold"
+                />
+                <datalist id="shops-options">
+                  {shops.map((s) => (
+                    <option key={s.id} value={s.name} />
+                  ))}
+                </datalist>
               </div>
 
               {/* Row 2: Harga Modal & Harga Jual */}
