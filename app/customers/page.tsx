@@ -109,13 +109,7 @@ function CustomersPageContent() {
   }, []);
 
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      (window.location.search.includes("action=new") ||
-        window.location.search.includes("new=true") ||
-        searchParams.get("action") === "new" ||
-        searchParams.get("new") === "true")
-    ) {
+    if (searchParams.get("action") === "new" || searchParams.get("new") === "true") {
       openCreateModal();
     }
   }, [searchParams, openCreateModal]);
@@ -142,9 +136,17 @@ function CustomersPageContent() {
     setErrorMessage(null);
 
     try {
+      // 1. Bersihkan semua karakter selain angka (spasi, strip, +, dll hilang)
+      let cleanWa = whatsapp.trim().replace(/[^0-9]/g, "");
+      
+      // 2. Ubah angka '0' di depan menjadi '62' standar internasional WA
+      if (cleanWa.startsWith("0")) {
+        cleanWa = "62" + cleanWa.substring(1);
+      }
+
       const payload = {
         name: name.trim(),
-        whatsapp: whatsapp.trim(),
+        whatsapp: cleanWa,
         domisili: domisili.trim(),
         shippingCost: parseInt(shippingCostInput, 10) || 0,
         courier: courier.trim(),
