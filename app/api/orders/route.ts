@@ -8,221 +8,131 @@ export async function GET(request: Request) {
     const status = searchParams.get("status");
     const customerId = searchParams.get("customerId");
 
-    const whereClause: any = {};
-    if (status) {
-      if (status === "Keep") whereClause.status = "Menunggu";
-      else if (status === "Siap_Packing") whereClause.status = "Siap Packing";
-      else if (status === "Shipped") whereClause.status = "Dikirim";
-      else if (status === "Cancelled") whereClause.status = "Dibatalkan";
-      else whereClause.status = status;
-    }
-    if (customerId) whereClause.customerId = customerId;
-
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient(cookieStore); 
 
     let query = supabase
       .from("orders")
       .select("*, customer:customers(*), products(*)")
       .order("createdAt", { ascending: false });
 
-    if (whereClause.status) {
-      query = query.eq("status", whereClause.status);
+    if (status && status !== "ALL") {
+      let checkStatus = status;
+      if (status === "Keep") checkStatus = "Menunggu";
+      else if (status === "Siap_Packing" || status === "Siap Packing") checkStatus = "Siap Kirim";
+      else if (status === "Shipped") checkStatus = "Dikirim";
+      else if (status === "Cancelled") checkStatus = "Dibatalkan";
+
+      query = query.eq("status", checkStatus);
     }
-    if (whereClause.customerId) {
-      query = query.eq("customerId", whereClause.customerId);
+
+    if (customerId) {
+      query = query.eq("customerId", customerId);
     }
 
     const { data: orders, error } = await query;
-
     if (error) throw error;
 
+    // Normalisasi format data dari array tunggal
     const mapped = (orders || []).map((o: any) => ({
       ...o,
       customer: Array.isArray(o.customer) ? o.customer[0] : o.customer || null,
       products: o.products || [],
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: mapped,
-    });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, data: mapped });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    let {
-      customerId,
-      customerData,
-      productIds,
-      customPrices,
-      status = "Menunggu",
-      shippingCourier,
-      shippingService,
-      shippingCost = 0,
-      totalWeightGram = 1000,
-      dpAmount = 0,
-      trackingNo,
-      notes,
-    } = body;
-
-    // Map legacy status strings to Indonesian equivalents
-    if (status === "Keep") status = "Menunggu";
-    if (status === "Siap_Packing" || status === "Siap_Kirim" || status === "Siap Packing") status = "Siap Kirim";
-    if (status === "Shipped") status = "Dikirim";
-    if (status === "Cancelled") status = "Dibatalkan";
-
-    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Pilih minimal 1 produk untuk membuat order." },
-        { status: 400 }
-      );
-    }
-
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
+    
+    // 1. Ambil payload dan paskan dengan variabel kiriman Frontend
+    const body = await request.json().catch(() => null);
+    if (!body) throw new Error("Format data tidak valid");
 
-    let finalCustomerId = customerId;
+    const {
+      customerId,
+      productIds,
+      products, // Frontend mengirim array of object {productId, discount, customPrice}
+      shippingCost = 0,
+      courier, 
+      status = "Menunggu",
+      dpAmount = 0
+    } = body;
 
-    if (!finalCustomerId && customerData) {
-      const cleanWa = String(customerData.whatsapp).trim().replace(/[^0-9]/g, "");
-      
-      const { data: existingCustomer, error: findCustError } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("whatsapp", cleanWa)
-        .maybeSingle();
+    let orderStatus = status;
+    if (orderStatus === "Keep") orderStatus = "Menunggu";
+    if (orderStatus === "Siap_Packing" || orderStatus === "Siap_Kirim" || orderStatus === "Siap Packing") orderStatus = "Siap Kirim";
+    if (orderStatus === "Shipped") orderStatus = "Dikirim";
+    if (orderStatus === "Cancelled") orderStatus = "Dibatalkan";
 
-      if (findCustError) throw findCustError;
+    if (!customerId) throw new Error("Pelanggan (Customer) wajib dipilih.");
+    if (!productIds || productIds.length === 0) throw new Error("Pilih minimal 1 tas.");
 
-      if (existingCustomer) {
-        const { data: updatedCustomer, error: updateCustError } = await supabase
-          .from("customers")
-          .update({
-            name: customerData.name,
-            addressDetail: customerData.addressDetail,
-            domisili: customerData.domisili || null,
-          })
-          .eq("id", existingCustomer.id)
-          .select()
-          .single();
-
-        if (updateCustError) throw updateCustError;
-        finalCustomerId = existingCustomer.id;
-      } else {
-        const newCustId = customerData.id || `CST-${Date.now()}`;
-        const { data: newCustomer, error: createCustError } = await supabase
-          .from("customers")
-          .insert({
-            id: newCustId,
-            name: customerData.name,
-            whatsapp: cleanWa,
-            addressDetail: customerData.addressDetail,
-            domisili: customerData.domisili || null,
-          })
-          .select()
-          .single();
-
-        if (createCustError) throw createCustError;
-        finalCustomerId = newCustId;
-      }
-    }
-
-    if (!finalCustomerId) {
-      return NextResponse.json(
-        { success: false, error: "Pelanggan (Customer) wajib dipilih atau diisi datanya." },
-        { status: 400 }
-      );
-    }
-
-    if (customPrices && typeof customPrices === "object") {
-      for (const pId of productIds) {
-        if (customPrices[pId] !== undefined) {
-          const newPrice = parseInt(String(customPrices[pId]), 10);
-          if (!isNaN(newPrice) && newPrice >= 0) {
-            const { data: pOrig, error: pOrigError } = await supabase
-              .from("products")
-              .select("price")
-              .eq("id", pId)
-              .maybeSingle();
-            if (pOrigError) throw pOrigError;
-            const discAmount = pOrig ? Math.max(0, pOrig.price - newPrice) : 0;
-            const { error: pUpdateError } = await supabase
-              .from("products")
-              .update({
-                price: newPrice,
-                discount: discAmount,
-              })
-              .eq("id", pId);
-            if (pUpdateError) throw pUpdateError;
-          }
-        }
-      }
-    }
-
-    const { data: productsToBook, error: fetchProductsError } = await supabase
+    // 2. Cek ketersediaan produk di database (Pastikan tas belum keduluan dibeli orang)
+    const { data: dbProducts, error: fetchError } = await supabase
       .from("products")
-      .select("*")
+      .select("id, price, status")
       .in("id", productIds);
 
-    if (fetchProductsError) throw fetchProductsError;
+    if (fetchError) throw fetchError;
 
-    const unavailable = (productsToBook || []).filter((p) => p.status !== "Tersedia" && p.status !== "Available");
+    const unavailable = dbProducts?.filter(p => p.status !== "Tersedia" && p.status !== "Available") || [];
     if (unavailable.length > 0) {
-      return NextResponse.json(
-        { success: false, error: `Produk [${unavailable.map((p) => p.id).join(", ")}] sedang tidak tersedia.` },
-        { status: 400 }
-      );
+      const unavailableIds = unavailable.map(p => p.id).join(", ");
+      throw new Error(`Tas [${unavailableIds}] sudah tidak tersedia (mungkin sudah terjual).`);
     }
 
-    const productsPriceSum = (productsToBook || []).reduce((acc, p) => acc + p.price, 0);
-    const finalTotalPrice = productsPriceSum + parseInt(String(shippingCost), 10);
-    const parsedDp = parseInt(String(dpAmount), 10);
-
-    let initialStatus = status;
-    if (parsedDp > 0 && (initialStatus === "Menunggu" || initialStatus === "Keep")) {
-      initialStatus = "DP";
+    // 3. Hitung total harga sesuai diskon individual dari Frontend
+    let totalBarang = 0;
+    for (const dbProduct of dbProducts || []) {
+      const userProduct = products?.find((p: any) => p.productId === dbProduct.id);
+      const finalPrice = userProduct?.customPrice !== undefined ? userProduct.customPrice : dbProduct.price;
+      totalBarang += finalPrice;
     }
 
-    const { data: newOrder, error: createOrderError } = await supabase
+    const totalTagihan = totalBarang + Number(shippingCost);
+
+    // 4. Buat Order baru di database
+    const { data: newOrder, error: orderError } = await supabase
       .from("orders")
-      .insert({
-        customerId: finalCustomerId,
-        status: initialStatus,
-        shippingCourier,
-        shippingService,
-        shippingCost: parseInt(String(shippingCost), 10),
-        totalWeightGram: parseInt(String(totalWeightGram), 10) || 1000,
-        dpAmount: parsedDp,
-        dpDate: parsedDp > 0 ? new Date().toISOString() : null,
-        totalPrice: finalTotalPrice,
-        trackingNo: trackingNo || null,
-        notes: notes || null,
-      })
+      .insert([{
+        customerId,
+        status: orderStatus,
+        shippingCourier: courier || "JNE",
+        shippingCost: Number(shippingCost),
+        totalPrice: totalTagihan,
+        dpAmount: Number(dpAmount),
+        dpDate: Number(dpAmount) > 0 ? new Date().toISOString() : null,
+      }])
       .select()
       .single();
 
-    if (createOrderError) throw createOrderError;
+    if (orderError) throw orderError;
 
-    // Update products status to "Dibooking" and link orderId
-    const { error: updateProductsError } = await supabase
-      .from("products")
-      .update({
-        status: "Dibooking",
-        orderId: newOrder.id,
-      })
-      .in("id", productIds);
+    // 5. Update status tas menjadi Dibooking & ubah harganya jika ada diskon
+    for (const dbProduct of dbProducts || []) {
+      const userProduct = products?.find((p: any) => p.productId === dbProduct.id);
+      
+      const { error: updateProductError } = await supabase
+        .from("products")
+        .update({
+          status: "Dibooking",
+          orderId: newOrder.id, // Sambungkan tas ini ke order yang baru dibuat
+          price: userProduct?.customPrice !== undefined ? userProduct.customPrice : dbProduct.price,
+          discount: userProduct?.discount || 0
+        })
+        .eq("id", dbProduct.id);
 
-    if (updateProductsError) throw updateProductsError;
+      if (updateProductError) throw updateProductError;
+    }
 
+    // Ambil order lengkap yang baru dibuat untuk dikembalikan ke frontend
     const { data: result, error: fetchOrderError } = await supabase
       .from("orders")
       .select("*, customer:customers(*), products(*)")
@@ -237,18 +147,10 @@ export async function POST(request: Request) {
       products: result.products || [],
     };
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: normalized,
-      },
-      { status: 201 }
-    );
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 400 }
-    );
+    return NextResponse.json({ success: true, data: normalized }, { status: 201 });
+
+  } catch (err: any) {
+    console.error("API Orders POST Error:", err.message);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
