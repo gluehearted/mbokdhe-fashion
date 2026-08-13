@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import imageCompression from "browser-image-compression";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 
 interface AdminAccount {
   email: string;
@@ -75,8 +75,10 @@ export async function POST(request: Request) {
     }
 
     // 3. Fallback to Supabase Auth if configured and still not matched
-    if (!matchedAccount && supabase) {
+    if (!matchedAccount) {
       try {
+        const cookieStore = await cookies();
+        const supabase = createClient(cookieStore);
         const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password: cleanPassword,
