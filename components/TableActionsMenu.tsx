@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 export interface ActionMenuItem {
@@ -15,6 +15,8 @@ interface TableActionsMenuProps {
   items: ActionMenuItem[];
 }
 
+const emptySubscribe = () => () => {};
+
 export function TableActionsMenu({ items }: TableActionsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{ top: number; right: number; openUp: boolean }>({
@@ -25,11 +27,11 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   const toggleMenu = () => {
     if (!isOpen && buttonRef.current) {
@@ -87,7 +89,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
         bottom: menuCoords.openUp ? `${window.innerHeight - menuCoords.top}px` : undefined,
         right: `${menuCoords.right}px`,
       }}
-      className="w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-[9999] py-1.5 overflow-hidden text-left"
+      className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-[9999] py-1.5 overflow-hidden text-left transition-colors"
     >
       {items.map((item, idx) => {
         let iconName = item.icon;
@@ -108,8 +110,8 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
             }}
             className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               item.danger
-                ? "text-blue-900 hover:bg-slate-100 font-bold"
-                : "text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                ? "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 font-bold"
+                : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-700 dark:hover:text-blue-400"
             }`}
           >
             {iconName && (
@@ -131,7 +133,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
         ref={buttonRef}
         type="button"
         onClick={toggleMenu}
-        className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 flex items-center justify-center transition-colors active:scale-95 border border-blue-200 mx-auto"
+        className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 flex items-center justify-center transition-colors active:scale-95 border border-blue-200 dark:border-slate-700 mx-auto"
         title="Menu Aksi"
       >
         <span className="material-symbols-outlined text-base">more_vert</span>

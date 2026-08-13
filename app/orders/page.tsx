@@ -411,10 +411,10 @@ export default function OrdersPage() {
           </div>
         ) : (
           /* TABLE VIEW LAYOUT */
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4 text-center">Order ID</th>
                     <th className="p-4 text-center">Pelanggan</th>
@@ -426,10 +426,10 @@ export default function OrdersPage() {
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {filteredOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 text-center font-mono font-extrabold text-blue-600">
+                    <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">
                         #{o.id.slice(0, 8)}
                       </td>
 

@@ -303,7 +303,7 @@ export default function ProductsPage() {
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                   statusFilter === tab.value
                     ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
                 }`}
               >
                 {tab.label}
@@ -316,22 +316,22 @@ export default function ProductsPage() {
             placeholder="Cari ID produk, toko, pembeli..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-slate-50 text-slate-800 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:border-blue-600 focus:outline-none font-mono"
+            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:border-blue-600 dark:focus:border-blue-500 focus:outline-none font-mono"
           />
         </div>
 
         {/* Products Table View */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm transition-colors">
           {loading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">Loading produk...</div>
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 text-sm">Loading produk...</div>
           ) : filteredProducts.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 text-sm">
               Tidak ada produk yang ditemukan.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+              <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4 text-center">Foto</th>
                     <th className="p-4 text-center">ID Tas</th>
@@ -345,27 +345,27 @@ export default function ProductsPage() {
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {filteredProducts.map((p) => {
                     const profit = p.price - (p.capitalPrice || 0);
 
                     return (
-                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="p-4 text-center">
                           <button
                             type="button"
                             onClick={() => setViewingPhotoProduct(p)}
-                            className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative flex items-center justify-center mx-auto hover:opacity-85 transition-all shadow-sm"
+                            className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden relative flex items-center justify-center mx-auto hover:opacity-85 transition-all shadow-sm"
                             title="Klik untuk lihat foto detail"
                           >
                             {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
                               <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                             ) : (
-                              <span className="text-slate-400 font-bold text-xs">Tas</span>
+                              <span className="text-slate-400 dark:text-slate-500 font-bold text-xs">Tas</span>
                             )}
                           </button>
                         </td>
-                        <td className="p-4 text-center font-mono font-extrabold text-blue-600">
+                        <td className="p-4 text-center font-mono font-extrabold text-blue-600 dark:text-blue-400">
                           <button
                             type="button"
                             onClick={() => setViewingPhotoProduct(p)}
@@ -374,27 +374,27 @@ export default function ProductsPage() {
                             #{p.id}
                           </button>
                         </td>
-                        <td className="p-4 text-center max-w-[150px] truncate text-slate-600 font-medium" title={p.description || "-"}>
+                        <td className="p-4 text-center max-w-[150px] truncate text-slate-600 dark:text-slate-300 font-medium" title={p.description || "-"}>
                           {p.description || "-"}
                         </td>
-                        <td className="p-4 text-center font-bold text-slate-900">
+                        <td className="p-4 text-center font-bold text-slate-900 dark:text-white">
                           {p.shop?.name || "-"}
                         </td>
-                        <td className="p-4 text-center font-mono text-slate-600">
+                        <td className="p-4 text-center font-mono text-slate-600 dark:text-slate-400">
                           Rp {(p.capitalPrice || 0).toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-center font-mono font-bold text-slate-900">
+                        <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
                           Rp {p.price.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-center font-mono font-bold text-blue-700">
+                        <td className="p-4 text-center font-mono font-bold text-blue-700 dark:text-blue-400">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
                         <td className="p-4 text-center">
                           <span
                             className={`px-2.5 py-1 rounded text-[10px] font-extrabold uppercase shadow-sm inline-block ${
                               p.status === "Tersedia" || p.status === "Available"
-                                ? "bg-blue-600 text-white"
-                                : "bg-slate-100 text-slate-700 border border-slate-200"
+                                ? "bg-blue-600 text-white dark:bg-blue-600 dark:text-white"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
                             }`}
                           >
                             {p.status === "Available" ? "Tersedia" : p.status === "Booked" ? "Dibooking" : p.status === "Sold" ? "Terjual" : p.status}
@@ -404,18 +404,18 @@ export default function ProductsPage() {
                         {/* Keterangan Pembeli / Pembook */}
                         <td className="p-4 text-center">
                           {p.status === "Tersedia" || p.status === "Available" || !p.order?.customer ? (
-                            <span className="text-slate-400 font-normal">-</span>
+                            <span className="text-slate-400 dark:text-slate-500 font-normal">-</span>
                           ) : p.status === "Dibooking" || p.status === "Booked" || p.status === "DP" || p.status === "Menunggu" ? (
                             <div>
-                              <span className="text-[10px] text-blue-700 font-bold block uppercase">Dibooking oleh:</span>
-                              <span className="font-bold text-slate-900">{p.order.customer.name}</span>
-                              <span className="text-[11px] text-slate-500 block font-mono">{p.order.customer.whatsapp}</span>
+                              <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold block uppercase">Dibooking oleh:</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{p.order.customer.name}</span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">{p.order.customer.whatsapp}</span>
                             </div>
                           ) : (
                             <div>
-                              <span className="text-[10px] text-blue-800 font-bold block uppercase">Dibeli oleh:</span>
-                              <span className="font-bold text-slate-900">{p.order.customer.name}</span>
-                              <span className="text-[11px] text-slate-500 block font-mono">{p.order.customer.whatsapp}</span>
+                              <span className="text-[10px] text-blue-800 dark:text-blue-400 font-bold block uppercase">Dibeli oleh:</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{p.order.customer.name}</span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">{p.order.customer.whatsapp}</span>
                             </div>
                           )}
                         </td>
@@ -455,38 +455,38 @@ export default function ProductsPage() {
       {/* Modal Detail Foto Product Lightbox */}
       {viewingPhotoProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-hidden">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-hidden transition-colors">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-blue-700 font-mono">
+                <h3 className="text-base font-extrabold text-blue-700 dark:text-blue-400 font-mono">
                   Detail Foto Produk #{viewingPhotoProduct.id}
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">Supplier Toko: {viewingPhotoProduct.shop?.name || "-"}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Supplier Toko: {viewingPhotoProduct.shop?.name || "-"}</p>
               </div>
               <button
                 onClick={() => setViewingPhotoProduct(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm px-2 py-1"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 font-bold text-sm px-2 py-1"
               >
                 Tutup
               </button>
             </div>
 
             {/* High-res Image Preview */}
-            <div className="w-full h-72 bg-slate-100 rounded-xl overflow-hidden relative border border-slate-200 flex items-center justify-center">
+            <div className="w-full h-72 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative border border-slate-200 dark:border-slate-700 flex items-center justify-center">
               {viewingPhotoProduct.photoUrl && viewingPhotoProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
                 <Image src={viewingPhotoProduct.photoUrl} alt={viewingPhotoProduct.id} fill sizes="600px" className="object-contain" />
               ) : (
-                <span className="text-slate-400 font-bold text-sm">Tidak ada foto produk</span>
+                <span className="text-slate-400 dark:text-slate-500 font-bold text-sm">Tidak ada foto produk</span>
               )}
             </div>
 
             {/* Customer Buyer Notice in Lightbox */}
             {viewingPhotoProduct.order?.customer && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs flex justify-between items-center">
-                <span className="text-blue-700 font-bold uppercase">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs flex justify-between items-center">
+                <span className="text-blue-700 dark:text-blue-400 font-bold uppercase">
                   {viewingPhotoProduct.status === "Terjual" ? "Dibeli Oleh:" : "Dibooking Oleh:"}
                 </span>
-                <span className="font-bold text-slate-900">
+                <span className="font-bold text-slate-900 dark:text-white">
                   {viewingPhotoProduct.order.customer.name} ({viewingPhotoProduct.order.customer.whatsapp})
                 </span>
               </div>
@@ -494,21 +494,21 @@ export default function ProductsPage() {
 
             {/* Price Details Grid */}
             <div className="grid grid-cols-3 gap-3 text-xs font-mono text-center pt-2">
-              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                <span className="text-[10px] text-slate-500 font-bold block uppercase">Harga Modal</span>
-                <span className="font-bold text-slate-700">Rp {(viewingPhotoProduct.capitalPrice || 0).toLocaleString("id-ID")}</span>
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block uppercase">Harga Modal</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300">Rp {(viewingPhotoProduct.capitalPrice || 0).toLocaleString("id-ID")}</span>
               </div>
-              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                <span className="text-[10px] text-slate-500 font-bold block uppercase">Harga Jual</span>
-                <span className="font-extrabold text-slate-900">Rp {viewingPhotoProduct.price.toLocaleString("id-ID")}</span>
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block uppercase">Harga Jual</span>
+                <span className="font-extrabold text-slate-900 dark:text-white">Rp {viewingPhotoProduct.price.toLocaleString("id-ID")}</span>
               </div>
-              <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-                <span className="text-[10px] text-blue-700 font-bold block uppercase">Profit Margin</span>
-                <span className="font-extrabold text-blue-700">+Rp {(viewingPhotoProduct.price - (viewingPhotoProduct.capitalPrice || 0)).toLocaleString("id-ID")}</span>
+              <div className="p-2.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/60 rounded-lg">
+                <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold block uppercase">Profit Margin</span>
+                <span className="font-extrabold text-blue-700 dark:text-blue-400">+Rp {(viewingPhotoProduct.price - (viewingPhotoProduct.capitalPrice || 0)).toLocaleString("id-ID")}</span>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
