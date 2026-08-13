@@ -1,9 +1,47 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public routes accessible without authentication
+  // 1. Create a response that Next.js will return
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // 2. Initialize Supabase Client in middleware
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // 3. Get currently logged in user from Supabase Auth
+  // getUser() is secure and verifies the token on the server
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // 4. Define public routes
   const isPublicRoute =
     pathname === "/" ||
     pathname === "/landing-page" ||
@@ -13,8 +51,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/uploads") ||
     pathname === "/favicon.ico";
 
-  const sessionCookie = request.cookies.get("mbokdhe_session")?.value;
-  const isAuthenticated = Boolean(sessionCookie && sessionCookie === "active_admin_session");
+  const isAuthenticated = Boolean(user);
 
   // Redirect authenticated user away from login page to admin dashboard
   if (pathname === "/login" && isAuthenticated) {
@@ -28,7 +65,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

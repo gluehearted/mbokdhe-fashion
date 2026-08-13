@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("mbokdhe_session")?.value;
+    const supabase = createClient(cookieStore);
 
-    if (!sessionToken || sessionToken !== "active_admin_session") {
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
       return NextResponse.json(
         { success: false, error: "Belum terautentikasi" },
         { status: 401 }
       );
     }
 
-    const email = cookieStore.get("mbokdhe_admin_email")?.value || "admin@mbokdhe.com";
-    const name = cookieStore.get("mbokdhe_admin_name")?.value || "Admin Mbokdhe";
-    const role = cookieStore.get("mbokdhe_admin_role")?.value || "Admin";
+    const email = user.email || "";
+    const name = user.user_metadata?.name || email.split("@")[0];
+    const role = user.user_metadata?.role || "Admin";
 
     return NextResponse.json({
       success: true,

@@ -52,7 +52,6 @@ export default function ProductsPage() {
 
   const [viewingPhotoProduct, setViewingPhotoProduct] = useState<Product | null>(null);
 
-  const [id, setId] = useState("");
   const [shopOrigin, setShopOrigin] = useState("");
   const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
   const [priceInput, setPriceInput] = useState<string>("");
@@ -124,7 +123,6 @@ export default function ProductsPage() {
 
   const openCreateModal = () => {
     setEditingProduct(null);
-    setId("");
     setShopOrigin("");
     setCapitalPriceInput("");
     setPriceInput("");
@@ -138,7 +136,6 @@ export default function ProductsPage() {
 
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
-    setId(p.id);
     setShopOrigin(p.shop?.name || "");
     setCapitalPriceInput(String(p.capitalPrice || 0));
     setPriceInput(String(p.price));

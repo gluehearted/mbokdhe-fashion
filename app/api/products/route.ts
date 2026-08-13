@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    const mapped = (products || []).map((p: any) => {
+    const mapped = (products || []).map((p: Record<string, unknown>) => {
       const shop = Array.isArray(p.shop) ? p.shop[0] : p.shop;
       const order = Array.isArray(p.order) ? p.order[0] : p.order;
       return {
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   }
 }
 
-async function generateAutoProductId(supabase: any, shopOrigin: string): Promise<string> {
+async function generateAutoProductId(supabase: ReturnType<typeof createClient>, shopOrigin: string): Promise<string> {
   const cleanShop = shopOrigin.trim().replace(/[()]/g, "");
   const words = cleanShop.split(/\s+/).filter(Boolean);
   let prefix = "TAS";
@@ -149,13 +149,15 @@ export async function POST(request: Request) {
     }
 
     // Find or create Shop to link shopId
-    let { data: shopObj, error: shopFindError } = await supabase
+    let shopObj;
+    const { data: foundShop, error: shopFindError } = await supabase
       .from("shops")
       .select("*")
       .eq("name", shopOrigin)
       .maybeSingle();
 
     if (shopFindError) throw shopFindError;
+    shopObj = foundShop;
 
     if (!shopObj) {
       const { data: newShop, error: shopCreateError } = await supabase

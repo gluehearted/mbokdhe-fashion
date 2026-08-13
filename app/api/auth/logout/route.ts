@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 
 export async function POST() {
   try {
     const cookieStore = await cookies();
-    cookieStore.delete("mbokdhe_session");
+    const supabase = createClient(cookieStore);
+
+    // Sign out from Supabase (clears Supabase cookies)
+    await supabase.auth.signOut();
+
+    // Delete companion metadata cookies
     cookieStore.delete("mbokdhe_admin_email");
+    cookieStore.delete("mbokdhe_admin_name");
+    cookieStore.delete("mbokdhe_admin_role");
 
     return NextResponse.json({
       success: true,
