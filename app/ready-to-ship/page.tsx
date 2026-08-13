@@ -38,9 +38,15 @@ interface Order {
 
 function formatWhatsAppNumber(phone: string): string {
   let cleaned = phone.replace(/[^0-9]/g, "");
+  
   if (cleaned.startsWith("0")) {
+    // Jika diawali 0, ganti jadi 62
     cleaned = "62" + cleaned.slice(1);
+  } else if (cleaned.startsWith("8")) {
+    // Jika admin lupa ketik 0 dan langsung angka 8, tambahkan 62 di depan
+    cleaned = "62" + cleaned;
   }
+  
   return cleaned;
 }
 

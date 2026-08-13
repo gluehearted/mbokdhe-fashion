@@ -387,11 +387,15 @@ export default function PembekuanPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {filteredCompletedOrders.map((ord) => {
+                    const isCompleted = ord.status === "Siap Kirim" || ord.status === "Siap Packing" || ord.status === "Siap_Kirim" || ord.status === "Siap_Packing" || ord.status === "Dikirim" || ord.status === "Shipped";
+                    
                     const prodRevenue = ord.totalPrice - ord.shippingCost;
                     const capitalSum = ord.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
+                    
+                    // Jika order batal tapi DP hangus, profit = nominal DP
+                    const isCancelledDp = ord.dpForfeited && !isCompleted;
                     let profit = prodRevenue - capitalSum;
-
-                    if (ord.dpForfeited && ord.dpAmount > 0) {
+                    if (isCancelledDp) {
                       profit = ord.dpAmount;
                     }
 
@@ -404,18 +408,22 @@ export default function PembekuanPage() {
                           <span className="font-bold text-slate-900 dark:text-white block">{ord.customer?.name}</span>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{ord.customer?.whatsapp}</span>
                         </td>
+                        
+                        {/* TAMPILAN KONDISIONAL UNTUK DP HANGUS */}
                         <td className="p-4 text-center font-mono font-bold text-slate-900 dark:text-white">
-                          Rp {ord.totalPrice.toLocaleString("id-ID")}
+                          {isCancelledDp ? <span className="text-slate-400">- Batal -</span> : `Rp ${ord.totalPrice.toLocaleString("id-ID")}`}
                         </td>
                         <td className="p-4 text-center font-mono text-slate-500 dark:text-slate-400">
-                          Rp {ord.shippingCost.toLocaleString("id-ID")}
+                          {isCancelledDp ? "-" : `Rp ${ord.shippingCost.toLocaleString("id-ID")}`}
                         </td>
                         <td className="p-4 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
-                          Rp {prodRevenue.toLocaleString("id-ID")}
+                          {isCancelledDp ? "-" : `Rp ${prodRevenue.toLocaleString("id-ID")}`}
                         </td>
                         <td className="p-4 text-center font-mono text-slate-600 dark:text-slate-300">
-                          Rp {capitalSum.toLocaleString("id-ID")}
+                          {isCancelledDp ? <span className="text-slate-400">Barang Kembali</span> : `Rp ${capitalSum.toLocaleString("id-ID")}`}
                         </td>
+                        
+                        {/* Profit Bersih tetap muncul */}
                         <td className="p-4 text-center font-mono font-extrabold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
@@ -425,7 +433,7 @@ export default function PembekuanPage() {
                               ? "bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
                               : "bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
                           }`}>
-                            {ord.dpForfeited ? "DP Hangus" : ord.status}
+                            {ord.dpForfeited && !isCompleted ? "DP Hangus" : ord.status}
                           </span>
                         </td>
                       </tr>
