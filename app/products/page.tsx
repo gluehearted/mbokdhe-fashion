@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/utils/supabase/client";
@@ -45,7 +45,19 @@ export default function ProductsPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -65,6 +77,8 @@ export default function ProductsPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -154,21 +168,26 @@ export default function ProductsPage() {
 
       try {
         const options = {
-          maxSizeMB: 0.3, 
-          maxWidthOrHeight: 1200, 
+          maxSizeMB: 0.15, // Turunkan maksimal jadi 150 KB
+          maxWidthOrHeight: 1000, 
           useWebWorker: true,
+          fileType: "image/webp",
         };
 
         const origSizeKB = (originalFile.size / 1024).toFixed(1);
-        const compressedFile = await imageCompression(originalFile, options);
-        const compSizeKB = (compressedFile.size / 1024).toFixed(1);
+        const compressedBlob = await imageCompression(originalFile, options);
+        
+        const dotIdx = originalFile.name.lastIndexOf('.');
+        const baseName = dotIdx !== -1 ? originalFile.name.substring(0, dotIdx) : originalFile.name;
+        const webpFile = new File([compressedBlob], `${baseName}.webp`, { type: "image/webp" });
+        const compSizeKB = (webpFile.size / 1024).toFixed(1);
 
         setCompressedInfo(`Ukuran Asli: ${origSizeKB} KB | Dikompresi: ${compSizeKB} KB`);
-        setFile(compressedFile);
+        setFile(webpFile);
         if (previewUrl && previewUrl.startsWith("blob:")) {
           URL.revokeObjectURL(previewUrl);
         }
-        setPreviewUrl(URL.createObjectURL(compressedFile));
+        setPreviewUrl(URL.createObjectURL(webpFile));
       } catch (err) {
         console.error("Gagal mengompresi foto:", err);
         setFile(originalFile);
@@ -179,6 +198,41 @@ export default function ProductsPage() {
       } finally {
         setCompressing(false);
       }
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setFile(null);
+    setCompressedInfo(null);
+    
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    setPreviewUrl(editingProduct ? editingProduct.photoUrl : null);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; 
+    }
+  };
+
+  const handleCleanupStorage = async () => {
+    if (!confirm("Apakah Anda yakin ingin membersihkan storage? Tindakan ini akan menghapus semua file foto fisik produk berstatus 'Terjual' yang berumur lebih dari 3 bulan dari Storage, lalu mengganti URL-nya dengan gambar placeholder.")) return;
+    
+    setCleaning(true);
+    try {
+      const res = await fetch("/api/products/cleanup", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || "Pembersihan storage selesai.", "success");
+        fetchProducts();
+      } else {
+        showToast(data.error || "Gagal membersihkan storage.", "error");
+      }
+    } catch {
+      showToast("Terjadi kesalahan koneksi saat membersihkan storage.", "error");
+    } finally {
+      setCleaning(false);
     }
   };
 
@@ -270,10 +324,14 @@ export default function ProductsPage() {
   };
 
   const filteredProducts = products.filter((p) =>
-    p.id.toLowerCase().includes(search.toLowerCase()) ||
-    (p.shop?.name && p.shop.name.toLowerCase().includes(search.toLowerCase())) ||
-    (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(search.toLowerCase()))
+    p.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    (p.shop?.name && p.shop.name.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+    (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
   );
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentTableData = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -287,12 +345,21 @@ export default function ProductsPage() {
             [ Product Catalog ]
           </span>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
-        >
-          Tambah Produk Baru
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCleanupStorage}
+            disabled={cleaning}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer disabled:opacity-50"
+          >
+            {cleaning ? "Membersihkan..." : "Bersihkan Storage"}
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
+          >
+            Tambah Produk Baru
+          </button>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -309,7 +376,10 @@ export default function ProductsPage() {
             ].map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
+                onClick={() => {
+                  setStatusFilter(tab.value);
+                  setCurrentPage(1);
+                }}
                 className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                   statusFilter === tab.value
                     ? "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111] font-bold"
@@ -324,8 +394,8 @@ export default function ProductsPage() {
           <input
             type="text"
             placeholder="Cari ID produk, toko, pembeli..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
           />
         </div>
@@ -339,7 +409,8 @@ export default function ProductsPage() {
               Tidak ada produk yang ditemukan.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
+              <div className="overflow-x-auto">
               <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
                 <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
@@ -356,7 +427,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
-                  {filteredProducts.map((p) => {
+                  {currentTableData.map((p) => {
                     const profit = p.price - (p.capitalPrice || 0);
                     let statusBg = "bg-[#f5f5f5] text-slate-700 dark:bg-slate-800 dark:text-slate-300"; // default
                     
@@ -460,6 +531,42 @@ export default function ProductsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Navigasi Pagination */}
+            {filteredProducts.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fbfbfa] dark:bg-slate-900/60 p-4 border-t border-[#eaeaea] dark:border-slate-800 font-technical uppercase">
+                <span className="text-[10px] text-slate-500 dark:text-slate-450">
+                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{startIndex + 1}</span> -{" "}
+                  <span className="font-bold text-[#111111] dark:text-white">
+                    {Math.min(startIndex + itemsPerPage, filteredProducts.length)}
+                  </span>{" "}
+                  dari total <span className="font-bold text-[#111111] dark:text-white">{filteredProducts.length}</span> produk
+                </span>
+
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
+                  >
+                    PREV
+                  </button>
+
+                  <span className="px-3 py-1.5 bg-white dark:bg-[#141517] text-slate-700 dark:text-slate-300 border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-[10px]">
+                    HAL {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
+                  >
+                    NEXT
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           )}
         </div>
       </div>
@@ -638,13 +745,14 @@ export default function ProductsPage() {
                 <input
                   type="file"
                   accept="image/*"
+                  ref={fileInputRef}
                   onChange={handleFileChange}
                   disabled={compressing}
                   className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-[4px] file:border file:border-[#eaeaea] dark:file:border-slate-700 file:text-xs file:font-semibold file:bg-white dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-[#f5f5f5] disabled:opacity-50"
                 />
                 {compressing && (
                   <p className="text-xs text-slate-500 font-bold mt-1.5 animate-pulse font-technical">
-                    ⚡ MENGOMPRESI FOTO DI BROWSER (&lt; 300 KB)...
+                    ⚡ MENGOMPRESI FOTO DI BROWSER (&lt; 150 KB, WEBP)...
                   </p>
                 )}
                 {compressedInfo && !compressing && (
@@ -658,6 +766,17 @@ export default function ProductsPage() {
               {previewUrl && (
                 <div className="w-24 h-24 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden border border-[#eaeaea] dark:border-slate-800/80 relative mx-auto">
                   <Image src={previewUrl} alt="Preview" fill sizes="96px" className="object-cover" />
+                  {/* Tombol Hapus/Batal Silang Merah (Hanya muncul jika file baru dipilih) */}
+                  {file && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-750 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-sm transition-all cursor-pointer"
+                      title="Batal pilih foto ini"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               )}
 

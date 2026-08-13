@@ -191,13 +191,25 @@ export async function DELETE(
       );
     }
 
-    // Unlink photo file if local upload
-    if (existing.photoUrl && existing.photoUrl.startsWith("/uploads/") && !existing.photoUrl.includes("placeholder")) {
-      try {
-        const localPath = path.join(process.cwd(), "public", existing.photoUrl);
-        await unlink(localPath);
-      } catch {
-        // Ignore file removal errors
+    // Unlink photo file if local upload or Supabase Storage upload
+    if (existing.photoUrl && !existing.photoUrl.includes("placeholder")) {
+      if (existing.photoUrl.includes("supabase.co")) {
+        try {
+          const urlParts = existing.photoUrl.split("/products/");
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage.from("products").remove([filePath]);
+          }
+        } catch {
+          // Ignore storage removal errors
+        }
+      } else if (existing.photoUrl.startsWith("/uploads/")) {
+        try {
+          const localPath = path.join(process.cwd(), "public", existing.photoUrl);
+          await unlink(localPath);
+        } catch {
+          // Ignore file removal errors
+        }
       }
     }
 

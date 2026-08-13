@@ -52,8 +52,6 @@ function CustomersPageContent() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
@@ -70,6 +68,11 @@ function CustomersPageContent() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchCustomers = useCallback(async (q = "") => {
     setLoading(true);
@@ -88,8 +91,16 @@ function CustomersPageContent() {
   }, []);
 
   useEffect(() => {
-    fetchCustomers(search);
-  }, [search, fetchCustomers]);
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  useEffect(() => {
+    fetchCustomers(debouncedSearch);
+  }, [debouncedSearch, fetchCustomers]);
 
   const openCreateModal = useCallback(() => {
     setEditingCustomer(null);
@@ -171,7 +182,7 @@ function CustomersPageContent() {
         const msg = editingCustomer ? `Data pelanggan ${name} berhasil diperbarui.` : `Pelanggan baru ${name} berhasil ditambahkan.`;
         showToast(msg, "success");
         setIsModalOpen(false);
-        fetchCustomers(search);
+        fetchCustomers(debouncedSearch);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
@@ -192,12 +203,16 @@ function CustomersPageContent() {
         showToast(data.error || "Gagal menghapus pelanggan.", "error");
       } else {
         showToast(`Pelanggan '${c.name}' berhasil dihapus.`, "success");
-        fetchCustomers(search);
+        fetchCustomers(debouncedSearch);
       }
     } catch {
       showToast("Terjadi kesalahan koneksi saat menghapus pelanggan.", "error");
     }
   };
+
+  const totalPages = Math.ceil(customers.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentTableData = customers.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -227,8 +242,8 @@ function CustomersPageContent() {
           <input
             type="text"
             placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
           />
         </div>
@@ -242,7 +257,8 @@ function CustomersPageContent() {
               Tidak ada data pelanggan yang ditemukan.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
               <table className="w-full text-center text-xs text-slate-700 dark:text-slate-300 border-collapse">
                 <thead className="bg-[#F9F9F8] dark:bg-slate-900/60 border-b border-[#eaeaea] dark:border-slate-800 text-[10px] text-[#787774] dark:text-slate-400 font-bold uppercase tracking-wider">
                   <tr>
@@ -258,7 +274,7 @@ function CustomersPageContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
-                  {customers.map((c) => (
+                  {currentTableData.map((c) => (
                     <tr key={c.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
                       <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">#{c.id.toUpperCase()}</td>
                       
@@ -338,6 +354,42 @@ function CustomersPageContent() {
                 </tbody>
               </table>
             </div>
+
+            {/* Navigasi Pagination */}
+            {customers.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fbfbfa] dark:bg-slate-900/60 p-4 border-t border-[#eaeaea] dark:border-slate-800 font-technical uppercase">
+                <span className="text-[10px] text-slate-500 dark:text-slate-450">
+                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{startIndex + 1}</span> -{" "}
+                  <span className="font-bold text-[#111111] dark:text-white">
+                    {Math.min(startIndex + itemsPerPage, customers.length)}
+                  </span>{" "}
+                  dari total <span className="font-bold text-[#111111] dark:text-white">{customers.length}</span> pelanggan
+                </span>
+
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
+                  >
+                    PREV
+                  </button>
+
+                  <span className="px-3 py-1.5 bg-white dark:bg-[#141517] text-slate-700 dark:text-slate-300 border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-[10px]">
+                    HAL {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
+                  >
+                    NEXT
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
           )}
         </div>
 

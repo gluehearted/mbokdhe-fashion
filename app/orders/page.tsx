@@ -23,6 +23,7 @@ interface Product {
   price: number;
   discount?: number;
   status: string;
+  description?: string;
 }
 
 interface Order {
@@ -49,7 +50,18 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
@@ -177,7 +189,8 @@ export default function OrdersPage() {
 
     const productList = o.products
       .map((p, idx) => {
-        let itemStr = `${idx + 1}. #${p.id.toUpperCase()} - Rp ${p.price.toLocaleString("id-ID")}`;
+        const itemDesc = p.description ? p.description.trim() : `#${p.id.toUpperCase()}`;
+        let itemStr = `${idx + 1}. ${itemDesc} - Rp ${p.price.toLocaleString("id-ID")}`;
         if (p.discount && p.discount > 0) {
           itemStr += ` (Diskon: Rp ${p.discount.toLocaleString("id-ID")})`;
         }
@@ -196,7 +209,7 @@ export default function OrdersPage() {
 
     let resiLine = "";
     if (o.trackingNo) {
-      resiLine = `\n\n📦 *NO. RESI (${(o.shippingCourier || "EKSPEDISI").toUpperCase()})*:\n*${o.trackingNo}*`;
+      resiLine = `\n\n*NO. RESI (${(o.shippingCourier || "EKSPEDISI").toUpperCase()})*:\n*${o.trackingNo}*`;
     }
 
     return `Halo *${customerName}*, berikut rekap pesanan Anda dari *Mbokdhe Fashion*:
@@ -245,11 +258,15 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = statusFilter === "ALL" || o.status === statusFilter;
     const matchesSearch =
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer?.whatsapp.includes(search);
+      o.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      o.customer?.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      o.customer?.whatsapp.includes(debouncedSearch);
     return matchesStatus && matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentTableData = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -290,7 +307,10 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
             ].map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => setStatusFilter(tab.value)}
+                onClick={() => {
+                  setStatusFilter(tab.value);
+                  setCurrentPage(1);
+                }}
                 className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                   statusFilter === tab.value
                     ? "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111] font-bold"
@@ -305,8 +325,8 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
           <input
             type="text"
             placeholder="Cari ID pesanan, nama, WA..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
           />
         </div>
@@ -336,7 +356,7 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
-                  {filteredOrders.map((o) => (
+                  {currentTableData.map((o) => (
                     <tr key={o.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-bold text-red-600 dark:text-emerald-400">
                         #{o.id.slice(0, 8).toUpperCase()}
@@ -454,6 +474,41 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                 </tbody>
               </table>
             </div>
+
+            {/* Navigasi Pagination */}
+            {filteredOrders.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fbfbfa] dark:bg-slate-900/60 p-4 border-t border-[#eaeaea] dark:border-slate-800 font-technical uppercase">
+                <span className="text-[10px] text-slate-500 dark:text-slate-450">
+                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{startIndex + 1}</span> -{" "}
+                  <span className="font-bold text-[#111111] dark:text-white">
+                    {Math.min(startIndex + itemsPerPage, filteredOrders.length)}
+                  </span>{" "}
+                  dari total <span className="font-bold text-[#111111] dark:text-white">{filteredOrders.length}</span> order
+                </span>
+
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
+                  >
+                    PREV
+                  </button>
+
+                  <span className="px-3 py-1.5 bg-white dark:bg-[#141517] text-slate-700 dark:text-slate-300 border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-[10px]">
+                    HAL {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
+                  >
+                    NEXT
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
