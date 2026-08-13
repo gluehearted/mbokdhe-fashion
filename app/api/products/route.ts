@@ -173,18 +173,29 @@ export async function POST(request: Request) {
     let photoUrl = clientPhotoUrl || "/uploads/placeholder.jpg";
 
     if (!clientPhotoUrl && file && file.size > 0) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
+      try {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
-      const fileExt = path.extname(file.name) || ".jpg";
-      const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}${fileExt}`;
-      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        const fileExt = path.extname(file.name) || ".jpg";
+        const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}${fileExt}`;
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
 
-      await mkdir(uploadsDir, { recursive: true });
-      const filePath = path.join(uploadsDir, fileName);
+        await mkdir(uploadsDir, { recursive: true });
+        const filePath = path.join(uploadsDir, fileName);
 
-      await writeFile(filePath, buffer);
-      photoUrl = `/uploads/${fileName}`;
+        await writeFile(filePath, buffer);
+        photoUrl = `/uploads/${fileName}`;
+      } catch (fsError: any) {
+        console.error("Local upload failed (expected on serverless):", fsError.message);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "Lingkungan serverless (Vercel) bersifat Read-Only. Harap pastikan Storage Bucket bernama 'products' sudah dibuat di dashboard Supabase Anda dengan akses Public agar foto bisa diunggah langsung ke Cloud Storage." 
+          },
+          { status: 500 }
+        );
+      }
     }
 
     const { data: product, error: productCreateError } = await supabase
