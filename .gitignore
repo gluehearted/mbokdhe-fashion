@@ -40,3 +40,7 @@ dev.db
 
 # vercel
 .vercel
+
+# Editor directories and files
+.vscode/
+.idea/
