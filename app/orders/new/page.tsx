@@ -209,8 +209,18 @@ export default function NewOrderPage() {
 
     try {
       const productsPayload = selectedProducts.map((p) => {
-        const discVal = parseInt(individualDiscounts[p.id] || "0", 10) || 0;
-        const customPriceVal = parseInt(customPrices[p.id] || String(p.price), 10) || p.price;
+        // 1. Ambil nilai mentah dari state
+        const rawDisc = individualDiscounts[p.id];
+        const rawCustomPrice = customPrices[p.id];
+
+        // 2. Parsing dengan aman (Jika input kosong/huruf, jadikan NaN)
+        const parsedDisc = parseInt(rawDisc, 10);
+        const parsedCustomPrice = parseInt(rawCustomPrice, 10);
+
+        // 3. Fallback logika yang tidak merusak angka 0
+        const discVal = isNaN(parsedDisc) ? 0 : parsedDisc;
+        const customPriceVal = isNaN(parsedCustomPrice) ? p.price : parsedCustomPrice;
+
         return {
           productId: p.id,
           discount: discVal,

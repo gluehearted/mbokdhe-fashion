@@ -199,7 +199,8 @@ export default function ProductsPage() {
       formData.append("price", priceInput);
       formData.append("description", descriptionInput.trim());
 
-      // If Supabase Storage is configured, upload directly to Supabase
+      // JIKA ADA FILE BARU: Upload langsung ke Supabase Storage
+      let uploadedToSupabase = false;
       if (supabase && file) {
         try {
           const fileExt = file.name.split(".").pop() || "jpg";
@@ -210,6 +211,7 @@ export default function ProductsPage() {
             const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(filePath);
             if (publicUrlData?.publicUrl) {
               formData.append("photoUrl", publicUrlData.publicUrl);
+              uploadedToSupabase = true;
             }
           }
         } catch (sErr) {
@@ -217,7 +219,13 @@ export default function ProductsPage() {
         }
       }
 
-      if (file) {
+      // JIKA SEDANG EDIT & TIDAK GANTI FOTO: Tetap kirim URL lama agar tidak terhapus
+      if (!file && editingProduct && editingProduct.photoUrl) {
+        formData.append("photoUrl", editingProduct.photoUrl);
+      }
+
+      // Kirim file mentah ke backend hanya jika TIDAK berhasil terunggah ke Supabase (sebagai fallback lokal)
+      if (file && !uploadedToSupabase) {
         formData.append("file", file);
       }
 
