@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useToast } from "@/components/ToastProvider";
 
 interface Customer {
@@ -19,6 +19,7 @@ interface Product {
   } | null;
   capitalPrice?: number;
   price: number;
+  description?: string | null;
 }
 
 interface Order {
@@ -69,6 +70,7 @@ export default function ReadyToShipPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [courierFilter, setCourierFilter] = useState("ALL");
 
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
@@ -145,12 +147,22 @@ export default function ReadyToShipPage() {
     }
   };
 
-  const filteredOrders = orders.filter(
-    (o) =>
+  const availableCouriers = useMemo(() => {
+    const list = Array.from(new Set(orders.map((o) => o.shippingCourier || "JNE"))).filter(Boolean);
+    return list;
+  }, [orders]);
+
+  const filteredOrders = orders.filter((o) => {
+    const matchesSearch =
       o.id.toLowerCase().includes(search.toLowerCase()) ||
       o.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer?.whatsapp.includes(search)
-  );
+      o.customer?.whatsapp.includes(search);
+
+    const courier = o.shippingCourier || "JNE";
+    const matchesCourier = courierFilter === "ALL" || courier.toLowerCase() === courierFilter.toLowerCase();
+
+    return matchesSearch && matchesCourier;
+  });
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -169,23 +181,51 @@ export default function ReadyToShipPage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
-        {/* Search Bar & Banner */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-          <div className="space-y-0.5">
-            <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase tracking-wider font-technical">
-              Rekapitulasi Pesanan Belum Dikirim (Sudah DP / Lunas)
-            </h2>
-            <p className="text-[#787774] dark:text-slate-400 text-[10px]">
-              Klik &quot;Salin Label&quot; atau &quot;Kirim WA&quot; untuk mengirimkan detail alamat pengiriman ke pelanggan.
-            </p>
+        {/* Filter Ekspedisi & Search Bar */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          {/* Ekspedisi Tabs */}
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <button
+              onClick={() => setCourierFilter("ALL")}
+              className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                courierFilter === "ALL"
+                  ? "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111] font-bold"
+                  : "bg-[#f5f5f5] dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-[#eaeaea] dark:border-slate-800"
+              }`}
+            >
+              <span>Semua Ekspedisi</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-technical ${courierFilter === "ALL" ? "bg-white/20 text-white dark:bg-black/20 dark:text-[#111111]" : "bg-black/5 dark:bg-white/10"}`}>
+                {orders.length}
+              </span>
+            </button>
+
+            {availableCouriers.map((c) => {
+              const count = orders.filter((o) => (o.shippingCourier || "JNE").toLowerCase() === c.toLowerCase()).length;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setCourierFilter(c)}
+                  className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    courierFilter.toLowerCase() === c.toLowerCase()
+                      ? "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111] font-bold"
+                      : "bg-[#f5f5f5] dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-[#eaeaea] dark:border-slate-800"
+                  }`}
+                >
+                  <span>{c}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-technical ${courierFilter.toLowerCase() === c.toLowerCase() ? "bg-white/20 text-white dark:bg-black/20 dark:text-[#111111]" : "bg-black/5 dark:bg-white/10"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <input
             type="text"
-            placeholder="Cari nama, WA, ID order..."
+            placeholder="Cari ID pesanan, nama, WA..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
+            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
           />
         </div>
 
@@ -235,12 +275,20 @@ export default function ReadyToShipPage() {
                       <span>Rincian Produk ({o.products.length} Tas):</span>
                       <span className="font-bold">Rp {o.totalPrice.toLocaleString("id-ID")}</span>
                     </div>
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {o.products.map((p) => (
-                        <span key={p.id} className="bg-[#E1F3FE] text-[#1F6C9F] border border-[#d2ecfc] font-technical text-[9px] font-bold px-2 py-0.5 rounded-full">
-                          #{p.id.toUpperCase()}
-                        </span>
-                      ))}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {o.products.map((p) => {
+                        const desc = p.description?.trim();
+                        const displayText = desc || `#${p.id.toUpperCase()}`;
+                        return (
+                          <span
+                            key={p.id}
+                            className="bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4] border border-[#d2ecfc] dark:border-slate-700 font-technical text-[9px] font-bold px-2 py-0.5 rounded-full"
+                            title={`ID: #${p.id.toUpperCase()}${p.shop?.name ? ` | Toko: ${p.shop.name}` : ""}`}
+                          >
+                            {displayText}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
 

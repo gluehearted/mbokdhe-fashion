@@ -440,13 +440,12 @@ function CustomersPageContent() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">No. WhatsApp *</label>
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">No. WhatsApp</label>
                   <input
                     type="text"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
-                    placeholder="Contoh: 081234567890"
-                    required
+                    placeholder="Contoh: 081234567890 (Opsional)"
                     className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
                   />
                 </div>
@@ -455,13 +454,12 @@ function CustomersPageContent() {
               {/* Row 2: Domisili, Ongkir, Ekspedisi */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Domisili *</label>
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Domisili</label>
                   <input
                     type="text"
                     value={domisili}
                     onChange={(e) => setDomisili(e.target.value)}
-                    placeholder="Contoh: Kab. Bogor, Jawa Barat"
-                    required
+                    placeholder="Contoh: Kab. Bogor, Jawa Barat (Opsional)"
                     className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                   />
                 </div>
@@ -496,13 +494,12 @@ function CustomersPageContent() {
 
               {/* Row 3: Detail Alamat */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Detail Alamat Jalan & Patokan *</label>
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Detail Alamat Jalan & Patokan</label>
                 <textarea
                   rows={2}
                   value={addressDetail}
                   onChange={(e) => setAddressDetail(e.target.value)}
-                  placeholder="Contoh: Jl. Jendral Sudirman No. 45, RT 02/RW 05..."
-                  required
+                  placeholder="Contoh: Jl. Jendral Sudirman No. 45, RT 02/RW 05... (Opsional)"
                   className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
                 />
               </div>

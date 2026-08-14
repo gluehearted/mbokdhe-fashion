@@ -104,31 +104,33 @@ export async function POST(request: Request) {
       crisisStatus,
     } = body;
 
-    if (!name || !whatsapp || !addressDetail) {
+    if (!name || !String(name).trim()) {
       return NextResponse.json(
-        { success: false, error: "Nama, WhatsApp, dan Detail Alamat wajib diisi." },
+        { success: false, error: "Nama pelanggan wajib diisi." },
         { status: 400 }
       );
     }
 
-    const cleanWhatsapp = String(whatsapp).trim().replace(/[^0-9]/g, "");
+    const cleanWhatsapp = whatsapp ? String(whatsapp).trim().replace(/[^0-9]/g, "") : "";
 
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
-    const { data: existing, error: checkError } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("whatsapp", cleanWhatsapp)
-      .maybeSingle();
+    if (cleanWhatsapp) {
+      const { data: existing, error: checkError } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("whatsapp", cleanWhatsapp)
+        .maybeSingle();
 
-    if (checkError) throw checkError;
+      if (checkError) throw checkError;
 
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: `Pelanggan dengan nomor WhatsApp ${cleanWhatsapp} sudah terdaftar.` },
-        { status: 400 }
-      );
+      if (existing) {
+        return NextResponse.json(
+          { success: false, error: `Pelanggan dengan nomor WhatsApp ${cleanWhatsapp} sudah terdaftar.` },
+          { status: 400 }
+        );
+      }
     }
 
     const customId = await generateAutoCustomerId(supabase);
@@ -138,11 +140,11 @@ export async function POST(request: Request) {
       .insert({
         id: customId,
         name: name.trim(),
-        whatsapp: cleanWhatsapp,
+        whatsapp: cleanWhatsapp || "-",
         domisili: domisili ? domisili.trim() : null,
         shippingCost: parseInt(String(shippingCost), 10) || 0,
         courier: courier ? courier.trim() : "JNE",
-        addressDetail: addressDetail.trim(),
+        addressDetail: addressDetail ? addressDetail.trim() : "-",
         behavioral: behavioral ? behavioral.trim() : "Loyal",
         consumerType: consumerType ? consumerType.trim() : "Retail",
         relationshipStatus: relationshipStatus ? relationshipStatus.trim() : "Active",

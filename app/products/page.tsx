@@ -45,6 +45,7 @@ export default function ProductsPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [shopFilter, setShopFilter] = useState("ALL");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -323,11 +324,17 @@ export default function ProductsPage() {
     }
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    (p.shop?.name && p.shop.name.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
-    (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(debouncedSearch.toLowerCase()))
-  );
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch =
+      p.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (p.description && p.description.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+      (p.shop?.name && p.shop.name.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+      (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
+
+    const matchesShop = shopFilter === "ALL" || p.shop?.name === shopFilter || p.shop?.id === shopFilter;
+
+    return matchesSearch && matchesShop;
+  });
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -366,8 +373,8 @@ export default function ProductsPage() {
       <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             {[
               { label: "Semua Produk", value: "ALL" },
               { label: "Tersedia", value: "Tersedia" },
@@ -391,13 +398,33 @@ export default function ProductsPage() {
             ))}
           </div>
 
-          <input
-            type="text"
-            placeholder="Cari ID produk, toko, pembeli..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
-          />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+            {/* Dropdown Filter Toko */}
+            <select
+              value={shopFilter}
+              onChange={(e) => {
+                setShopFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical font-medium cursor-pointer"
+            >
+              <option value="ALL">Semua Toko / Supplier</option>
+              {shops.map((s) => (
+                <option key={s.id} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Search Input */}
+            <input
+              type="text"
+              placeholder="Cari ID, deskripsi, toko, pembeli..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full sm:w-60 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
+            />
+          </div>
         </div>
 
         {/* Products Table View */}

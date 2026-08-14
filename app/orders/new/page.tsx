@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -57,7 +57,46 @@ export default function NewOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // --- State Modal Tambah Pelanggan Baru ---
+  const [isNewCustModalOpen, setIsNewCustModalOpen] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustWA, setNewCustWA] = useState("");
+  const [newCustDomisili, setNewCustDomisili] = useState("");
+  const [newCustAddress, setNewCustAddress] = useState("");
+  const [newCustCourier, setNewCustCourier] = useState("JNE");
+  const [newCustShippingCost, setNewCustShippingCost] = useState("");
+  const [newCustError, setNewCustError] = useState<string | null>(null);
+  const [savingNewCust, setSavingNewCust] = useState(false);
+
   const [zoomProduct, setZoomProduct] = useState<Product | null>(null);
+
+  // --- State Autocomplete Pencarian Pelanggan ---
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearchQuery.trim().toLowerCase();
+    if (!q) return customers.slice(0, 10);
+    return customers.filter((c) => {
+      const matchName = c.name.toLowerCase().includes(q);
+      const matchWA = c.whatsapp.includes(q);
+      const matchDom = c.domisili?.toLowerCase().includes(q) ?? false;
+      const matchId = c.id.toLowerCase().includes(q);
+      return matchName || matchWA || matchDom || matchId;
+    });
+  }, [customers, customerSearchQuery]);
 
   useEffect(() => {
     let isMounted = true;
@@ -120,7 +159,7 @@ export default function NewOrderPage() {
       setSelectedProductIds((prev) => [...prev, product.id]);
       setIndividualDiscounts((prev) => ({
         ...prev,
-        [product.id]: "0",
+        [product.id]: "",
       }));
       setCustomPrices((prev) => ({
         ...prev,
@@ -278,9 +317,186 @@ export default function NewOrderPage() {
     }
   };
 
+  const handleCreateNewCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewCustError(null);
+    setSavingNewCust(true);
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCustName,
+          whatsapp: newCustWA,
+          domisili: newCustDomisili,
+          addressDetail: newCustAddress,
+          courier: newCustCourier,
+          shippingCost: parseInt(newCustShippingCost, 10) || 0,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      const created: Customer = data.data;
+      // Tambahkan ke list lokal dan langsung pilih pelanggan baru ini
+      setCustomers((prev) => [created, ...prev]);
+      handleCustomerChange(created.id);
+
+      // Reset form & tutup modal
+      setIsNewCustModalOpen(false);
+      setNewCustName("");
+      setNewCustWA("");
+      setNewCustDomisili("");
+      setNewCustAddress("");
+      setNewCustCourier("JNE");
+      setNewCustShippingCost("");
+      setNewCustError(null);
+    } catch (err: any) {
+      setNewCustError(err.message || "Gagal menyimpan pelanggan baru.");
+    } finally {
+      setSavingNewCust(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
-      {/* Top Header Bar */}
+
+      {/* Modal Tambah Pelanggan Baru */}
+      {isNewCustModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4" onClick={() => setIsNewCustModalOpen(false)}>
+          <div
+            className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] w-full max-w-md p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.08)] animate-fade-in-up font-ui"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical tracking-tight">
+                Tambah Pelanggan Baru
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewCustModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Error */}
+            {newCustError && (
+              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold font-technical">
+                {newCustError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNewCustomer} className="space-y-3 text-xs">
+              {/* Nama */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nama Pelanggan *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCustName}
+                  onChange={(e) => setNewCustName(e.target.value)}
+                  placeholder="Contoh: Siti Nurhaliza"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
+                />
+              </div>
+
+              {/* WhatsApp */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">No. WhatsApp</label>
+                <input
+                  type="text"
+                  value={newCustWA}
+                  onChange={(e) => setNewCustWA(e.target.value)}
+                  placeholder="Contoh: 081234567890 (Opsional)"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors font-technical"
+                />
+              </div>
+
+              {/* Detail Alamat */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Detail Alamat</label>
+                <input
+                  type="text"
+                  value={newCustAddress}
+                  onChange={(e) => setNewCustAddress(e.target.value)}
+                  placeholder="Contoh: Jl. Mawar No.5, Kel. Sukamaju (Opsional)"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
+                />
+              </div>
+
+              {/* Domisili & Ekspedisi row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Kota / Domisili</label>
+                  <input
+                    type="text"
+                    value={newCustDomisili}
+                    onChange={(e) => setNewCustDomisili(e.target.value)}
+                    placeholder="Contoh: Bandung"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Ekspedisi</label>
+                  <select
+                    value={newCustCourier}
+                    onChange={(e) => setNewCustCourier(e.target.value)}
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors cursor-pointer"
+                  >
+                    {AVAILABLE_COURIERS.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Ongkir */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Ongkos Kirim Default (Rp)</label>
+                <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800">
+                  <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
+                  <input
+                    type="number"
+                    value={newCustShippingCost}
+                    onChange={(e) => setNewCustShippingCost(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Info note */}
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-technical bg-[#f5f5f5] dark:bg-[#1c1d1f] p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800">
+                Setelah disimpan, pelanggan akan otomatis terpilih. Data profil lanjutan (tipe, behavioral, dsb.) dapat dilengkapi di halaman CRM Customer cuk1.
+              </p>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsNewCustModalOpen(false)}
+                  className="w-1/3 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-xs font-technical uppercase"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingNewCust}
+                  className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer text-xs font-technical uppercase"
+                >
+                  {savingNewCust ? "Menyimpan..." : "Simpan & Pilih Pelanggan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
@@ -320,28 +536,138 @@ export default function NewOrderPage() {
                   <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
                     1. Pilih Pelanggan Tujuan
                   </h3>
-                  <Link
-                    href="/customers?action=new"
-                    className="text-[10px] text-red-650 dark:text-red-400 font-bold hover:underline uppercase font-technical"
+                  <button
+                    type="button"
+                    onClick={() => setIsNewCustModalOpen(true)}
+                    className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:underline uppercase font-technical cursor-pointer flex items-center gap-1"
                   >
-                    + Tambah Pelanggan Baru
-                  </Link>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    Pelanggan Baru
+                  </button>
                 </div>
 
-                <div>
-                  <select
-                    value={selectedCustomerId}
-                    onChange={(e) => handleCustomerChange(e.target.value)}
-                    required
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs p-3 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium uppercase cursor-pointer"
-                  >
-                    <option value="">-- Pilih Pelanggan Terdaftar --</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        #{c.id.toUpperCase()} - {c.name} ({c.whatsapp}) - {c.domisili || "DOMISILI"}
-                      </option>
-                    ))}
-                  </select>
+                {/* Autocomplete Customer Picker */}
+                <div ref={customerDropdownRef} className="relative">
+                  {selectedCustomer ? (
+                    /* Selected Customer View with Change Button */
+                    <div className="p-3 bg-[#E1F3FE] dark:bg-[#18232c] border border-[#1F6C9F]/40 dark:border-[#1F6C9F]/60 rounded-[6px] flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-[#1F6C9F] text-white flex items-center justify-center font-bold text-xs shrink-0 font-technical">
+                          {selectedCustomer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-[#111111] dark:text-white truncate">
+                              {selectedCustomer.name}
+                            </span>
+                            <span className="text-[10px] font-technical text-[#1F6C9F] dark:text-[#6cb6e4] font-bold">
+                              #{selectedCustomer.id.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-technical">
+                            WA: {selectedCustomer.whatsapp || "-"} • {selectedCustomer.domisili || selectedCustomer.addressDetail || "Tanpa domisili"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCustomerId("");
+                          setCustomerSearchQuery("");
+                          setIsCustomerDropdownOpen(true);
+                        }}
+                        className="px-2.5 py-1.5 bg-white dark:bg-[#1c1d1f] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-[4px] border border-[#eaeaea] dark:border-slate-700 text-[10px] font-bold uppercase font-technical transition-colors cursor-pointer shrink-0"
+                      >
+                        Ganti Pelanggan
+                      </button>
+                    </div>
+                  ) : (
+                    /* Search Input & Suggestions Dropdown */
+                    <div className="relative">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                          </svg>
+                        </span>
+                        <input
+                          type="text"
+                          value={customerSearchQuery}
+                          onFocus={() => setIsCustomerDropdownOpen(true)}
+                          onChange={(e) => {
+                            setCustomerSearchQuery(e.target.value);
+                            setIsCustomerDropdownOpen(true);
+                          }}
+                          placeholder="Ketik nama pelanggan, nomor WA, atau domisili..."
+                          className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
+                        />
+                        {customerSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomerSearchQuery("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 6 6 18M6 6l12 12"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Dropdown Suggestions */}
+                      {isCustomerDropdownOpen && (
+                        <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800 rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] max-h-64 overflow-y-auto divide-y divide-[#f1f1f1] dark:divide-slate-800/80 animate-fade-in-up">
+                          {filteredCustomers.length === 0 ? (
+                            <div className="p-4 text-center space-y-2">
+                              <p className="text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
+                                Customer tidak ditemukan
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsCustomerDropdownOpen(false);
+                                  setIsNewCustModalOpen(true);
+                                }}
+                                className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:underline font-technical uppercase cursor-pointer"
+                              >
+                                Buat Customer Baru Sekarang
+                              </button>
+                            </div>
+                          ) : (
+                            filteredCustomers.map((c) => (
+                              <div
+                                key={c.id}
+                                onClick={() => {
+                                  handleCustomerChange(c.id);
+                                  setIsCustomerDropdownOpen(false);
+                                  setCustomerSearchQuery("");
+                                }}
+                                className="p-3 hover:bg-[#F9F9F8] dark:hover:bg-[#1c1d1f] cursor-pointer transition-colors flex items-center justify-between text-xs"
+                              >
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 dark:text-white truncate">
+                                      {c.name}
+                                    </span>
+                                    <span className="font-technical text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-semibold">
+                                      #{c.id.toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-technical">
+                                    WA: {c.whatsapp || "-"} {c.domisili ? `• ${c.domisili}` : ""} {c.courier ? `• ${c.courier}` : ""}
+                                  </p>
+                                </div>
+                                <span className="text-[10px] font-technical uppercase font-bold text-slate-400 shrink-0 ml-2">
+                                  PILIH →
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {selectedCustomer && (

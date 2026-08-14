@@ -350,6 +350,7 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                   <tr>
                     <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Order ID</th>
                     <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Pelanggan</th>
+                    <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Tanggal</th>
                     <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Produk Tas & Toko</th>
                     <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">Ekspedisi</th>
                     <th className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">No. Resi</th>
@@ -373,6 +374,28 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                           </div>
                         ) : (
                           <span className="text-slate-400">Pelanggan terhapus</span>
+                        )}
+                      </td>
+
+                      <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono whitespace-nowrap">
+                        {o.createdAt ? (
+                          <>
+                            <span className="font-semibold text-slate-900 dark:text-slate-200 block text-[11px]">
+                              {new Date(o.createdAt).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                              {new Date(o.createdAt).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-slate-400">-</span>
                         )}
                       </td>
 
