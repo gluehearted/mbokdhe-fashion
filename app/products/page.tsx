@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 const supabase = createClient();
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Product {
   id: string;
@@ -81,6 +82,11 @@ export default function ProductsPage() {
   const [cleaning, setCleaning] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- State Confirm Modal ---
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
 
   // --- State Modal Tambah Toko Cepat (Task 9) ---
   const [isNewShopModalOpen, setIsNewShopModalOpen] = useState(false);
@@ -280,15 +286,18 @@ export default function ProductsPage() {
     }
   };
 
-  const handleCleanupStorage = async () => {
-    if (!confirm("Apakah Anda yakin ingin membersihkan storage? Tindakan ini akan menghapus semua file foto fisik produk berstatus 'Terjual' yang berumur lebih dari 3 bulan dari Storage, lalu mengganti URL-nya dengan gambar placeholder.")) return;
-    
+  const handleCleanupStorage = () => {
+    setIsCleanupModalOpen(true);
+  };
+
+  const confirmCleanupStorage = async () => {
     setCleaning(true);
     try {
       const res = await fetch("/api/products/cleanup", { method: "POST" });
       const data = await res.json();
       if (data.success) {
         showToast(data.message || "Pembersihan storage selesai.", "success");
+        setIsCleanupModalOpen(false);
         fetchProducts();
       } else {
         showToast(data.error || "Gagal membersihkan storage.", "error");
@@ -387,20 +396,27 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDelete = async (p: Product) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus produk tas ID #${p.id}?`)) return;
+  const handleDelete = (p: Product) => {
+    setProductToDelete(p);
+  };
 
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setIsDeletingProduct(true);
     try {
-      const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/${productToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
         showToast(data.error || "Gagal menghapus produk.", "error");
       } else {
-        showToast(`Produk ID #${p.id} berhasil dihapus.`, "success");
+        showToast(`Produk ID #${productToDelete.id} berhasil dihapus.`, "success");
+        setProductToDelete(null);
         fetchProducts();
       }
     } catch {
       showToast("Terjadi kesalahan koneksi saat menghapus produk.", "error");
+    } finally {
+      setIsDeletingProduct(false);
     }
   };
 
@@ -1047,6 +1063,58 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal Hapus Produk */}
+      <ConfirmModal
+        isOpen={Boolean(productToDelete)}
+        onClose={() => setProductToDelete(null)}
+        onConfirm={confirmDeleteProduct}
+        title="Hapus Produk Tas"
+        message={
+          productToDelete ? (
+            <div className="space-y-2">
+              <p>
+                Apakah Anda yakin ingin menghapus produk tas{" "}
+                <span className="font-bold text-[#111111] dark:text-white font-technical">
+                  #{productToDelete.id.toUpperCase()}
+                </span>
+                {productToDelete.description ? ` (${productToDelete.description})` : ""}?
+              </p>
+              <p className="text-[11px] text-[#9F2F2D] dark:text-red-400 font-semibold">
+                Produk ini akan dihapus permanen dari inventaris dan etalase toko.
+              </p>
+            </div>
+          ) : ""
+        }
+        confirmText="Ya, Hapus Produk"
+        cancelText="Batal"
+        isLoading={isDeletingProduct}
+      />
+
+      {/* Confirm Modal Bersihkan Storage */}
+      <ConfirmModal
+        isOpen={isCleanupModalOpen}
+        onClose={() => setIsCleanupModalOpen(false)}
+        onConfirm={confirmCleanupStorage}
+        title="Bersihkan Storage Foto"
+        message={
+          <div className="space-y-2">
+            <p>
+              Tindakan ini akan menghapus semua file foto fisik produk berstatus{" "}
+              <span className="font-bold text-[#111111] dark:text-white font-technical">
+                &quot;Terjual&quot;
+              </span>{" "}
+              yang berumur lebih dari 3 bulan dari Storage Supabase.
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              URL foto pada riwayat order lama akan digantikan dengan gambar arsip agar menghemat kuota penyimpanan.
+            </p>
+          </div>
+        }
+        confirmText="Bersihkan Sekarang"
+        cancelText="Batal"
+        isLoading={cleaning}
+      />
     </div>
   );
 }

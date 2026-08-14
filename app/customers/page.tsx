@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Customer {
   id: string;
@@ -68,6 +69,9 @@ function CustomersPageContent() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
 
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -193,20 +197,27 @@ function CustomersPageContent() {
     }
   };
 
-  const handleDelete = async (c: Customer) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus pelanggan '${c.name}'? Seluruh pesanan terkait akan ikut terhapus, tetapi produk akan kembali ke etalase Tersedia.`)) return;
+  const handleDelete = (c: Customer) => {
+    setCustomerToDelete(c);
+  };
 
+  const confirmDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    setIsDeletingCustomer(true);
     try {
-      const res = await fetch(`/api/customers/${c.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/customers/${customerToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
         showToast(data.error || "Gagal menghapus pelanggan.", "error");
       } else {
-        showToast(`Pelanggan '${c.name}' berhasil dihapus.`, "success");
+        showToast(`Pelanggan '${customerToDelete.name}' berhasil dihapus.`, "success");
+        setCustomerToDelete(null);
         fetchCustomers(debouncedSearch);
       }
     } catch {
       showToast("Terjadi kesalahan koneksi saat menghapus pelanggan.", "error");
+    } finally {
+      setIsDeletingCustomer(false);
     }
   };
 
@@ -584,6 +595,33 @@ function CustomersPageContent() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal Hapus Pelanggan */}
+      <ConfirmModal
+        isOpen={Boolean(customerToDelete)}
+        onClose={() => setCustomerToDelete(null)}
+        onConfirm={confirmDeleteCustomer}
+        title="Hapus Data Pelanggan"
+        message={
+          customerToDelete ? (
+            <div className="space-y-2">
+              <p>
+                Apakah Anda yakin ingin menghapus data pelanggan{" "}
+                <span className="font-bold text-[#111111] dark:text-white font-technical">
+                  &quot;{customerToDelete.name}&quot;
+                </span>{" "}
+                (#{customerToDelete.id.toUpperCase()})?
+              </p>
+              <p className="text-[11px] text-[#9F2F2D] dark:text-red-400 font-semibold">
+                Seluruh pesanan terkait pelanggan ini akan ikut terhapus, namun tas/produk yang belum terjual akan otomatis kembali ke etalase Tersedia.
+              </p>
+            </div>
+          ) : ""
+        }
+        confirmText="Ya, Hapus Pelanggan"
+        cancelText="Batal"
+        isLoading={isDeletingCustomer}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Customer {
   id: string;
@@ -68,6 +69,9 @@ export default function OrdersPage() {
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
   const [savingResi, setSavingResi] = useState(false);
+
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
 
   // Floating Hover Tooltip state (prevents table overflow clipping)
   const [hoveredPreview, setHoveredPreview] = useState<{
@@ -139,20 +143,27 @@ export default function OrdersPage() {
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus order #${orderId.slice(0, 8)}?`)) return;
+  const handleDeleteOrder = (order: Order) => {
+    setOrderToDelete(order);
+  };
 
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    setIsDeletingOrder(true);
     try {
-      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      const res = await fetch(`/api/orders/${orderToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        showToast(`Pesanan #${orderId.slice(0, 8)} berhasil dihapus.`, "success");
+        showToast(`Pesanan #${orderToDelete.id.slice(0, 8)} berhasil dihapus.`, "success");
+        setOrderToDelete(null);
         fetchOrders();
       } else {
-        showToast(data.error || "Gagal menghapus order.", "error");
+        showToast(data.error || "Gagal menghapus pesanan.", "error");
       }
     } catch {
-      showToast("Terjadi kesalahan koneksi saat menghapus order.", "error");
+      showToast("Terjadi kesalahan koneksi saat menghapus pesanan.", "error");
+    } finally {
+      setIsDeletingOrder(false);
     }
   };
 
@@ -522,7 +533,7 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                               label: "Hapus Order",
                               icon: "delete",
                               danger: true,
-                              onClick: () => handleDeleteOrder(o.id),
+                              onClick: () => handleDeleteOrder(o),
                             },
                           ]}
                         />
@@ -680,6 +691,32 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
         </div>
       )}
 
+      {/* Confirm Modal Hapus Order */}
+      <ConfirmModal
+        isOpen={Boolean(orderToDelete)}
+        onClose={() => setOrderToDelete(null)}
+        onConfirm={confirmDeleteOrder}
+        title="Hapus Pesanan Order"
+        message={
+          orderToDelete ? (
+            <div className="space-y-2">
+              <p>
+                Apakah Anda yakin ingin menghapus pesanan{" "}
+                <span className="font-bold text-[#111111] dark:text-white font-technical">
+                  #{orderToDelete.id.slice(0, 8).toUpperCase()}
+                </span>
+                {orderToDelete.customer ? ` untuk pelanggan "${orderToDelete.customer.name}"` : ""}?
+              </p>
+              <p className="text-[11px] text-[#9F2F2D] dark:text-red-400 font-semibold">
+                Seluruh tas dalam pesanan ini akan otomatis dikembalikan ke etalase &quot;Tersedia&quot;.
+              </p>
+            </div>
+          ) : ""
+        }
+        confirmText="Ya, Hapus Pesanan"
+        cancelText="Batal"
+        isLoading={isDeletingOrder}
+      />
     </div>
   );
 }

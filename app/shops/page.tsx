@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Shop {
   id: string;
@@ -25,6 +26,9 @@ export default function ShopsPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [shopToDelete, setShopToDelete] = useState<Shop | null>(null);
+  const [isDeletingShop, setIsDeletingShop] = useState(false);
 
   const fetchShops = useCallback(async () => {
     setLoading(true);
@@ -106,20 +110,27 @@ export default function ShopsPage() {
     }
   };
 
-  const handleDelete = async (shop: Shop) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus toko '${shop.name}'?`)) return;
+  const handleDelete = (shop: Shop) => {
+    setShopToDelete(shop);
+  };
 
+  const confirmDeleteShop = async () => {
+    if (!shopToDelete) return;
+    setIsDeletingShop(true);
     try {
-      const res = await fetch(`/api/shops/${shop.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/shops/${shopToDelete.id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || !data.success) {
         showToast(data.error || "Gagal menghapus toko.", "error");
       } else {
-        showToast(`Toko '${shop.name}' berhasil dihapus.`, "success");
+        showToast(`Toko '${shopToDelete.name}' berhasil dihapus.`, "success");
+        setShopToDelete(null);
         fetchShops();
       }
     } catch {
       showToast("Terjadi kesalahan koneksi saat menghapus toko.", "error");
+    } finally {
+      setIsDeletingShop(false);
     }
   };
 
@@ -284,6 +295,33 @@ export default function ShopsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal Hapus Toko */}
+      <ConfirmModal
+        isOpen={Boolean(shopToDelete)}
+        onClose={() => setShopToDelete(null)}
+        onConfirm={confirmDeleteShop}
+        title="Hapus Toko / Supplier"
+        message={
+          shopToDelete ? (
+            <div className="space-y-2">
+              <p>
+                Apakah Anda yakin ingin menghapus data toko{" "}
+                <span className="font-bold text-[#111111] dark:text-white font-technical">
+                  &quot;{shopToDelete.name}&quot;
+                </span>
+                ?
+              </p>
+              <p className="text-[11px] text-[#9F2F2D] dark:text-red-400 font-semibold">
+                Toko ini akan dihapus dari daftar supplier. Seluruh produk terkait akan kehilangan asosiasi nama toko ini.
+              </p>
+            </div>
+          ) : ""
+        }
+        confirmText="Ya, Hapus Toko"
+        cancelText="Batal"
+        isLoading={isDeletingShop}
+      />
     </div>
   );
 }
