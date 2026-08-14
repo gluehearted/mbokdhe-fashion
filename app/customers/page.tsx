@@ -217,7 +217,7 @@ function CustomersPageContent() {
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+      <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
             CRM Database Pelanggan
@@ -230,7 +230,7 @@ function CustomersPageContent() {
           onClick={openCreateModal}
           className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
         >
-          Tambah Pelanggan Baru
+          Tambah Pelanggan
         </button>
       </header>
 
@@ -401,7 +401,7 @@ function CustomersPageContent() {
           <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up">
             <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
-                {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan Baru"}
+                {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan"}
               </h3>
             </div>
 

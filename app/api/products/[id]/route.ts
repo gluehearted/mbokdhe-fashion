@@ -100,6 +100,7 @@ export async function PATCH(
       const priceVal = formData.get("price") as string;
       const descVal = formData.get("description") as string;
       const statusVal = formData.get("status") as string;
+      const photoUrlVal = formData.get("photoUrl") as string;
       const file = formData.get("file") as File | null;
 
       if (originVal) shopOrigin = originVal;
@@ -107,6 +108,7 @@ export async function PATCH(
       if (priceVal) price = parseInt(priceVal, 10);
       if (descVal !== null && descVal !== undefined) description = descVal.trim();
       if (statusVal) status = statusVal;
+      if (photoUrlVal) photoUrl = photoUrlVal;
 
       if (file && file.size > 0) {
         const bytes = await file.arrayBuffer();
@@ -130,6 +132,49 @@ export async function PATCH(
       photoUrl = body.photoUrl;
     }
 
+    // Resolusi shopId jika shopOrigin disediakan
+    let shopId: string | undefined;
+    if (shopOrigin) {
+      const cleanShop = shopOrigin.trim();
+      const { data: foundShop } = await supabase
+        .from("shops")
+        .select("id")
+        .eq("name", cleanShop)
+        .maybeSingle();
+
+      if (foundShop) {
+        shopId = foundShop.id;
+      } else {
+        const { data: newShop } = await supabase
+          .from("shops")
+          .insert({ name: cleanShop })
+          .select("id")
+          .single();
+        if (newShop) shopId = newShop.id;
+      }
+    }
+
+    // Jika foto baru disediakan dan berbeda dari foto lama, hapus foto lama (jika bukan placeholder)
+    if (photoUrl && existing.photoUrl && existing.photoUrl !== photoUrl && !existing.photoUrl.includes("placeholder")) {
+      if (existing.photoUrl.includes("supabase.co")) {
+        try {
+          const urlParts = existing.photoUrl.split("/products/");
+          if (urlParts.length > 1) {
+            await supabase.storage.from("products").remove([urlParts[1]]);
+          }
+        } catch {
+          // Abaikan kesalahan penghapusan storage lama
+        }
+      } else if (existing.photoUrl.startsWith("/uploads/")) {
+        try {
+          const localPath = path.join(process.cwd(), "public", existing.photoUrl);
+          await unlink(localPath);
+        } catch {
+          // Abaikan kesalahan penghapusan file lokal lama
+        }
+      }
+    }
+
     const { data: updated, error: updateError } = await supabase
       .from("products")
       .update({
@@ -138,9 +183,10 @@ export async function PATCH(
         ...(description !== undefined && { description }),
         ...(status && { status }),
         ...(photoUrl && { photoUrl }),
+        ...(shopId && { shopId }),
       })
       .eq("id", id)
-      .select()
+      .select("*, shop:shops(*)")
       .single();
 
     if (updateError) throw updateError;

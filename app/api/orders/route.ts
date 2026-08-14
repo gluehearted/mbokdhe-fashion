@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("orders")
-      .select("*, customer:customers(*), products(*)")
+      .select("*, customer:customers(*), products(*, shop:shops(*))")
       .order("createdAt", { ascending: false });
 
     if (status && status !== "ALL") {
@@ -33,11 +33,14 @@ export async function GET(request: Request) {
     const { data: orders, error } = await query;
     if (error) throw error;
 
-    // Normalisasi format data dari array tunggal
+    // Normalisasi format data dari array relasi Supabase
     const mapped = (orders || []).map((o: any) => ({
       ...o,
       customer: Array.isArray(o.customer) ? o.customer[0] : o.customer || null,
-      products: o.products || [],
+      products: (o.products || []).map((p: any) => ({
+        ...p,
+        shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
+      })),
     }));
 
     return NextResponse.json({ success: true, data: mapped });

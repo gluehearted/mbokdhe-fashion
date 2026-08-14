@@ -16,6 +16,7 @@ export function Sidebar() {
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     if (pathname === "/login") return;
@@ -31,6 +32,11 @@ export function Sidebar() {
       }
     }
     loadUser();
+  }, [pathname]);
+
+  // Otomatis tutup sidebar mobile saat rute halaman berpindah
+  useEffect(() => {
+    setIsMobileOpen(false);
   }, [pathname]);
 
   if (pathname === "/login") return null;
@@ -58,8 +64,33 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex flex-col h-screen w-[260px] fixed left-0 top-0 bg-white dark:bg-[#141517] border-r border-[#eaeaea] dark:border-slate-800/80 z-40 transition-colors">
-        {/* Brand Header with ThemeToggle next to Title */}
+      {/* Mobile Hamburger Toggle Button (Hanya tampil di layar HP/Tablet < md) */}
+      <button
+        type="button"
+        onClick={() => setIsMobileOpen(true)}
+        className="fixed top-3.5 left-3.5 z-40 md:hidden p-2 rounded-[6px] bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-sm flex items-center justify-center cursor-pointer active:scale-95 transition-all"
+        title="Buka Menu Navigasi"
+        aria-label="Buka Menu"
+      >
+        <span className="material-symbols-outlined text-lg">menu</span>
+      </button>
+
+      {/* Backdrop Overlay Gelap di Layar Mobile saat Sidebar Terbuka */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] md:hidden transition-opacity duration-200"
+          onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Aside Sidebar Drawer */}
+      <aside
+        className={`flex flex-col h-screen w-[260px] fixed left-0 top-0 bg-white dark:bg-[#141517] border-r border-[#eaeaea] dark:border-slate-800/80 z-50 transition-transform duration-200 ease-in-out ${
+          isMobileOpen ? "translate-x-0 shadow-[0_0_40px_rgba(0,0,0,0.3)]" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
+        {/* Brand Header with ThemeToggle & Close Button on Mobile */}
         <div className="px-5 py-5 border-b border-[#eaeaea] dark:border-slate-800/80 flex items-center justify-between">
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-bold text-[#111111] dark:text-white tracking-tighter uppercase font-technical">
@@ -69,9 +100,17 @@ export function Sidebar() {
               SYS_VER: 2026.8 // ADMIN
             </span>
           </div>
-          {/* Theme Toggle Button next to Title */}
-          <div className="shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <ThemeToggle />
+            {/* Tombol Tutup Khusus Mobile */}
+            <button
+              type="button"
+              onClick={() => setIsMobileOpen(false)}
+              className="md:hidden p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer ml-1"
+              title="Tutup Menu"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
           </div>
         </div>
 
@@ -84,6 +123,7 @@ export function Sidebar() {
               <Link
                 key={item.path}
                 href={item.path}
+                onClick={() => setIsMobileOpen(false)}
                 className={`flex items-center gap-3 px-6 py-3 text-xs tracking-tight transition-all duration-150 rounded-none border-y border-transparent ${
                   isActive
                     ? "bg-[#f5f5f5] dark:bg-[#1c1d1f] text-[#111111] dark:text-white border-l-2 border-l-[#111111] dark:border-l-white font-bold"

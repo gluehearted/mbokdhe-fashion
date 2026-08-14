@@ -371,7 +371,7 @@ export default function NewOrderPage() {
             {/* Header */}
             <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical tracking-tight">
-                Tambah Pelanggan Baru
+                Tambah Pelanggan
               </h3>
               <button
                 type="button"
@@ -497,10 +497,10 @@ export default function NewOrderPage() {
         </div>
       )}
 
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+      <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
-            Buat Pesanan Baru (Checkout)
+            Buat Pesanan (Checkout)
           </h1>
           <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
             [ Checkout Terminal ]
@@ -542,7 +542,7 @@ export default function NewOrderPage() {
                     className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:underline uppercase font-technical cursor-pointer flex items-center gap-1"
                   >
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                    Pelanggan Baru
+                    + Pelanggan
                   </button>
                 </div>
 

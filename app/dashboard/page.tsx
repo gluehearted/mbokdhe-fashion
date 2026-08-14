@@ -120,7 +120,7 @@ export default async function DashboardPage() {
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+      <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
             Dashboard Overview
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
           href="/orders/new"
           className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-semibold px-4 py-2 rounded-[6px] text-xs uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm cursor-pointer"
         >
-          Buat Pesanan Baru
+          Buat Pesanan
         </Link>
       </header>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
@@ -23,7 +24,8 @@ interface Product {
   price: number;
   discount?: number;
   status: string;
-  description?: string;
+  description?: string | null;
+  photoUrl?: string | null;
 }
 
 interface Order {
@@ -66,6 +68,29 @@ export default function OrdersPage() {
   const [editingResiOrder, setEditingResiOrder] = useState<Order | null>(null);
   const [trackingNoInput, setTrackingNoInput] = useState("");
   const [savingResi, setSavingResi] = useState(false);
+
+  // Floating Hover Tooltip state (prevents table overflow clipping)
+  const [hoveredPreview, setHoveredPreview] = useState<{
+    product: Product;
+    x: number;
+    y: number;
+    showBelow: boolean;
+  } | null>(null);
+
+  const handleBadgeMouseEnter = (e: React.MouseEvent, p: Product) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const showBelow = rect.top < 240; // if too close to top of viewport, flip below badge
+    setHoveredPreview({
+      product: p,
+      x: rect.left + rect.width / 2,
+      y: showBelow ? rect.bottom + 8 : rect.top - 8,
+      showBelow,
+    });
+  };
+
+  const handleBadgeMouseLeave = () => {
+    setHoveredPreview(null);
+  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -274,7 +299,7 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+      <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
             Pipeline & Rekap Pesanan
@@ -289,7 +314,7 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
             href="/orders/new"
             className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
           >
-            Buat Pesanan Baru
+            Buat Pesanan
           </Link>
         </div>
       </header>
@@ -400,16 +425,21 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                       </td>
 
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">
-                        <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
+                        <div className="flex flex-wrap gap-1.5 justify-center max-w-xs mx-auto">
                           {o.products && o.products.length > 0 ? (
                             o.products.map((p) => (
-                              <span
-                                key={p.id}
-                                className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#1c2c35] dark:text-[#6cb6e4] rounded-full font-bold text-[9px] uppercase tracking-wider"
-                                title={`Supplier: ${p.shop?.name || "-"}`}
-                              >
-                                #{p.id.toUpperCase()} {p.shop?.name ? `(${p.shop.name})` : ""}
-                              </span>
+                              <div key={p.id} className="inline-block">
+                                <span
+                                  onMouseEnter={(e) => handleBadgeMouseEnter(e, p)}
+                                  onMouseLeave={handleBadgeMouseLeave}
+                                  className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4] border border-[#d2ecfc] dark:border-slate-700 rounded-full font-bold text-[9px] uppercase tracking-wider inline-flex items-center gap-1 cursor-help transition-all hover:scale-105 hover:shadow-sm select-none"
+                                >
+                                  {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1F6C9F] dark:bg-[#6cb6e4] inline-block animate-pulse" />
+                                  )}
+                                  #{p.id.toUpperCase()} {p.shop?.name ? `(${p.shop.name})` : ""}
+                                </span>
+                              </div>
                             ))
                           ) : (
                             <span className="text-slate-400">-</span>
@@ -585,6 +615,65 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Global Floating Hover Preview (Never Clipped by Table Overflow) */}
+      {hoveredPreview && (
+        <div
+          className={`fixed z-[9999] pointer-events-none w-60 p-3 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800 rounded-[8px] shadow-[0_16px_48px_rgba(0,0,0,0.28)] font-ui -translate-x-1/2 ${
+            hoveredPreview.showBelow ? "" : "-translate-y-full"
+          }`}
+          style={{
+            left: `${Math.max(130, Math.min(typeof window !== "undefined" ? window.innerWidth - 130 : 500, hoveredPreview.x))}px`,
+            top: `${hoveredPreview.y}px`,
+          }}
+        >
+          {/* Photo preview container */}
+          <div className="w-full h-32 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/80 mb-2.5 flex items-center justify-center">
+            {hoveredPreview.product.photoUrl && hoveredPreview.product.photoUrl !== "/uploads/placeholder.jpg" ? (
+              <Image
+                src={hoveredPreview.product.photoUrl}
+                alt={hoveredPreview.product.id}
+                fill
+                sizes="240px"
+                className="object-contain"
+              />
+            ) : (
+              <span className="text-slate-400 dark:text-slate-500 text-[10px] uppercase font-technical text-center px-2">
+                [ Foto tidak tersedia ]
+              </span>
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-xs text-[#111111] dark:text-white font-technical">
+                #{hoveredPreview.product.id.toUpperCase()}
+              </span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4]">
+                {hoveredPreview.product.status || "Tersedia"}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Supplier: <strong className="text-slate-800 dark:text-slate-200">{hoveredPreview.product.shop?.name || "-"}</strong>
+            </p>
+
+            {hoveredPreview.product.description && (
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 italic">
+                &quot;{hoveredPreview.product.description}&quot;
+              </p>
+            )}
+
+            <div className="pt-1.5 border-t border-[#f1f1f1] dark:border-slate-800 flex justify-between items-center text-[11px] font-technical">
+              <span className="text-slate-400 font-medium">Harga:</span>
+              <span className="font-bold text-[#111111] dark:text-white">
+                Rp {hoveredPreview.product.price?.toLocaleString("id-ID") || 0}
+              </span>
+            </div>
           </div>
         </div>
       )}

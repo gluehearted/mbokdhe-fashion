@@ -45,7 +45,7 @@ export default function RootLayout({
             ) : (
               <div className="flex h-screen bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui overflow-hidden w-full relative">
                 <Sidebar />
-                <main className="flex-1 flex flex-col h-screen ml-[260px] relative w-full overflow-hidden">
+                <main className="flex-1 flex flex-col h-screen ml-0 md:ml-[260px] relative w-full overflow-hidden transition-all duration-200">
                   {children}
                 </main>
                 <FloatingNewOrderButton />

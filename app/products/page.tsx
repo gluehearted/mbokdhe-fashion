@@ -396,7 +396,7 @@ export default function ProductsPage() {
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+      <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
             Katalog Inventaris Produk Tas
@@ -422,13 +422,13 @@ export default function ProductsPage() {
             }}
             className="h-9 px-4 bg-[#f5f5f5] hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-all border border-[#eaeaea] dark:border-slate-700 active:scale-95 shadow-sm cursor-pointer flex items-center justify-center font-technical"
           >
-            Buat Toko Baru
+            Buat Toko
           </button>
           <button
             onClick={openCreateModal}
             className="h-9 px-4 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm cursor-pointer font-technical flex items-center justify-center"
           >
-            Tambah Produk Baru
+            Tambah Produk
           </button>
         </div>
       </header>
@@ -780,7 +780,7 @@ export default function ProductsPage() {
                     }}
                     className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:bg-[#d2ecfc] dark:hover:bg-[#1f303d] uppercase font-technical cursor-pointer flex items-center gap-1 bg-[#E1F3FE] dark:bg-[#18232c] px-2 py-0.5 rounded-[4px] border border-[#c5e6fb] dark:border-slate-700 transition-all"
                   >
-                    <span>Buat Toko Baru</span>
+                    <span>+ Toko</span>
                   </button>
                 </div>
                 <input
@@ -927,7 +927,7 @@ export default function ProductsPage() {
           >
             <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
-                Tambah Toko / Supplier Baru
+                Tambah Toko / Supplier
               </h3>
               <button
                 type="button"

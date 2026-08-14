@@ -130,7 +130,7 @@ export default function ShopsPage() {
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       {/* Top Header Bar */}
-      <header className="flex justify-between items-center w-full px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
+      <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
           <h1 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] tracking-tight uppercase font-technical">
             Kelola Toko & Supplier
@@ -143,7 +143,7 @@ export default function ShopsPage() {
           onClick={openCreateModal}
           className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
         >
-          Tambah Toko Baru
+          Tambah Toko
         </button>
       </header>
 
@@ -170,7 +170,7 @@ export default function ShopsPage() {
             <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading toko... ]</div>
           ) : filteredShops.length === 0 ? (
             <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
-              Belum ada toko yang terdaftar. Klik &quot;Tambah Toko Baru&quot; untuk menambahkan.
+              Belum ada toko yang terdaftar. Klik &quot;Tambah Toko&quot; untuk menambahkan.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -239,7 +239,7 @@ export default function ShopsPage() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-6 space-y-5 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up">
             <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
-              {editingShop ? "Edit Nama Toko" : "Tambah Toko Baru"}
+              {editingShop ? "Edit Nama Toko" : "Tambah Toko"}
             </h3>
 
             {errorMessage && (

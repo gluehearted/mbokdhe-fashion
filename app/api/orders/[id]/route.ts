@@ -136,3 +136,60 @@ export async function GET(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: existingOrder, error: checkError } = await supabase
+      .from("orders")
+      .select("*, products(*)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (!existingOrder) {
+      return NextResponse.json(
+        { success: false, error: "Pesanan tidak ditemukan." },
+        { status: 404 }
+      );
+    }
+
+    // Kembalikan seluruh tas/produk yang terkait dengan pesanan ini ke status 'Tersedia'
+    const { error: prodError } = await supabase
+      .from("products")
+      .update({
+        status: "Tersedia",
+        orderId: null,
+      })
+      .eq("orderId", id);
+
+    if (prodError) throw prodError;
+
+    // Hapus data pesanan dari database
+    const { error: deleteError } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) throw deleteError;
+
+    return NextResponse.json({
+      success: true,
+      message: `Pesanan #${id.slice(0, 8)} berhasil dihapus dan produk terkait telah dikembalikan ke status 'Tersedia'.`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500 }
+    );
+  }
+}
