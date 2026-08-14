@@ -125,16 +125,31 @@ export default function NewOrderPage() {
     return () => { isMounted = false; };
   }, []);
 
-  const handleCustomerChange = (customerId: string) => {
+  const handleCustomerChange = (customerId: string, customList?: Customer[]) => {
     setSelectedCustomerId(customerId);
-    const found = customers.find((c) => c.id === customerId);
+    const list = customList || customers;
+    const found = list.find((c) => c.id === customerId);
     if (found) {
-      if (found.shippingCost !== undefined && found.shippingCost !== null) {
+      // 1. Reset otomatis & sinkronisasi shippingCost
+      if (found.shippingCost !== undefined && found.shippingCost !== null && !isNaN(Number(found.shippingCost))) {
         setManualShippingCost(String(found.shippingCost));
+      } else {
+        setManualShippingCost("");
       }
+
+      // 2. Samakan format huruf agar cocok dengan <select> options AVAILABLE_COURIERS
+      let matchedCourier = "";
       if (found.courier) {
-        setSelectedCourier(found.courier);
+        const cleanCourier = found.courier.trim().toLowerCase();
+        const exactCourier = AVAILABLE_COURIERS.find(
+          (c) => c.code.toLowerCase() === cleanCourier || c.label.toLowerCase() === cleanCourier
+        );
+        matchedCourier = exactCourier ? exactCourier.code : found.courier;
       }
+      setSelectedCourier(matchedCourier);
+    } else {
+      setSelectedCourier("");
+      setManualShippingCost("");
     }
   };
 
@@ -338,9 +353,10 @@ export default function NewOrderPage() {
       if (!data.success) throw new Error(data.error);
 
       const created: Customer = data.data;
-      // Tambahkan ke list lokal dan langsung pilih pelanggan baru ini
-      setCustomers((prev) => [created, ...prev]);
-      handleCustomerChange(created.id);
+      // Tambahkan ke list lokal dan langsung sinkronisasi pelanggan baru ini tanpa race condition
+      const updatedCustomers = [created, ...customers];
+      setCustomers(updatedCustomers);
+      handleCustomerChange(created.id, updatedCustomers);
 
       // Reset form & tutup modal
       setIsNewCustModalOpen(false);

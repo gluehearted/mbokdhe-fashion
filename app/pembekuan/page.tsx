@@ -36,6 +36,21 @@ interface DailySummary {
   netProfit: number;
 }
 
+const isSettledOrder = (status: string) => {
+  const s = (status || "").toLowerCase().trim();
+  return (
+    s === "siap kirim" ||
+    s === "siap packing" ||
+    s === "siap_kirim" ||
+    s === "siap_packing" ||
+    s === "dikirim" ||
+    s === "shipped" ||
+    s === "selesai" ||
+    s === "lunas" ||
+    s === "completed"
+  );
+};
+
 export default function PembekuanPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,17 +93,15 @@ export default function PembekuanPage() {
     let completedOrderCount = 0;
 
     orders.forEach((o) => {
-      const isCompleted = o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
+      const isCompleted = isSettledOrder(o.status);
       
       if (isCompleted) {
         completedOrderCount++;
-        totalGrossRevenue += o.totalPrice;
-        totalShippingCost += o.shippingCost;
-        const capitalSum = o.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
+        totalGrossRevenue += (o.totalPrice || 0);
+        totalShippingCost += (o.shippingCost || 0);
+        const capitalSum = (o.products || []).reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
         totalCapitalCost += capitalSum;
-      }
-
-      if (o.dpForfeited && o.dpAmount > 0) {
+      } else if (o.dpForfeited && o.dpAmount > 0) {
         totalDpForfeited += o.dpAmount;
       }
     });
@@ -110,8 +123,8 @@ export default function PembekuanPage() {
     const map: Record<string, DailySummary> = {};
 
     orders.forEach((o) => {
-      const isCompleted = o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped";
-      const isForfeited = o.dpForfeited && o.dpAmount > 0;
+      const isCompleted = isSettledOrder(o.status);
+      const isForfeited = o.dpForfeited && o.dpAmount > 0 && !isCompleted;
 
       if (!isCompleted && !isForfeited) return;
 
@@ -147,13 +160,11 @@ export default function PembekuanPage() {
 
       if (isCompleted) {
         map[groupKey].orderCount += 1;
-        map[groupKey].grossRevenue += o.totalPrice;
-        map[groupKey].shippingCostSum += o.shippingCost;
-        const capitalSum = o.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
+        map[groupKey].grossRevenue += (o.totalPrice || 0);
+        map[groupKey].shippingCostSum += (o.shippingCost || 0);
+        const capitalSum = (o.products || []).reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
         map[groupKey].capitalCost += capitalSum;
-      }
-
-      if (isForfeited) {
+      } else if (isForfeited) {
         map[groupKey].dpForfeitedSum += o.dpAmount;
       }
     });
@@ -171,13 +182,17 @@ export default function PembekuanPage() {
   }, [orders, timeframe]);
 
   const filteredCompletedOrders = useMemo(() => {
+    const q = search.toLowerCase().trim();
     return orders.filter((o) => {
-      const isCompleted = o.status === "Siap Kirim" || o.status === "Siap Packing" || o.status === "Siap_Kirim" || o.status === "Siap_Packing" || o.status === "Dikirim" || o.status === "Shipped" || o.dpForfeited;
-      const matchesSearch =
-        o.id.toLowerCase().includes(search.toLowerCase()) ||
-        o.customer?.name.toLowerCase().includes(search.toLowerCase()) ||
-        o.customer?.whatsapp.includes(search);
-      return isCompleted && matchesSearch;
+      const isCompleted = isSettledOrder(o.status);
+      const isForfeited = o.dpForfeited && o.dpAmount > 0 && !isCompleted;
+      if (!isCompleted && !isForfeited) return false;
+
+      if (!q) return true;
+      const matchId = o.id.toLowerCase().includes(q);
+      const matchName = o.customer?.name?.toLowerCase().includes(q) ?? false;
+      const matchWA = o.customer?.whatsapp?.includes(q) ?? false;
+      return matchId || matchName || matchWA;
     });
   }, [orders, search]);
 
@@ -390,10 +405,10 @@ export default function PembekuanPage() {
                 </thead>
                 <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {filteredCompletedOrders.map((ord) => {
-                    const isCompleted = ord.status === "Siap Kirim" || ord.status === "Siap Packing" || ord.status === "Siap_Kirim" || ord.status === "Siap_Packing" || ord.status === "Dikirim" || ord.status === "Shipped";
+                    const isCompleted = isSettledOrder(ord.status);
                     
-                    const prodRevenue = ord.totalPrice - ord.shippingCost;
-                    const capitalSum = ord.products.reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
+                    const prodRevenue = (ord.totalPrice || 0) - (ord.shippingCost || 0);
+                    const capitalSum = (ord.products || []).reduce((acc, p) => acc + (p.capitalPrice || 0), 0);
                     
                     const isCancelledDp = ord.dpForfeited && !isCompleted;
                     let profit = prodRevenue - capitalSum;

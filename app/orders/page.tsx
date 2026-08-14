@@ -249,11 +249,6 @@ export default function OrdersPage() {
 *Tanggal*: ${formattedDate}
 *Status*: *${statusDesc}*
 
-*DATA PELANGGAN*:
-• Nama: ${customerName}
-• No. WA: ${o.customer?.whatsapp || "-"}
-• Alamat: ${o.customer?.addressDetail || "-"}${o.customer?.domisili ? `, ${o.customer.domisili}` : ""}
-
 *RINCIAN BARANG DIPESAN*:
 ${productList}
 
@@ -262,6 +257,13 @@ ${financialLines}
 ----------------------------------
 *TOTAL TAGIHAN*: *Rp ${o.totalPrice.toLocaleString("id-ID")}*
 ----------------------------------${resiLine}
+
+Pembayaran bisa lewat rek. berikut ya kakk 
+BCA 1671403539
+A/N ALRON EBENHAEZER C
+
+BRI 8017 0101 8680 504
+A/N ALRON EBENHAEZER C
 
 Terima kasih telah berbelanja di Mbokdhe Fashion!`;
   };
