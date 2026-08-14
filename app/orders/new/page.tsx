@@ -45,6 +45,7 @@ export default function NewOrderPage() {
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [productSearch, setProductSearch] = useState<string>("");
   const [individualDiscounts, setIndividualDiscounts] = useState<Record<string, string>>({});
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
 
@@ -159,6 +160,33 @@ export default function NewOrderPage() {
   const selectedProducts = useMemo(() => {
     return availableProducts.filter((p) => selectedProductIds.includes(p.id));
   }, [availableProducts, selectedProductIds]);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return availableProducts;
+    return availableProducts.filter((p) => {
+      const matchId = p.id.toLowerCase().includes(q);
+      const matchDesc = p.description?.toLowerCase().includes(q) ?? false;
+      const matchShop = p.shop?.name?.toLowerCase().includes(q) ?? false;
+      return matchId || matchDesc || matchShop;
+    });
+  }, [availableProducts, productSearch]);
+
+  // Produk yang ditampilkan: yang dipilih selalu di atas, sisanya hasil filter
+  const displayedProducts = useMemo(() => {
+    const selected = filteredProducts.filter((p) => selectedProductIds.includes(p.id));
+    const unselected = filteredProducts.filter((p) => !selectedProductIds.includes(p.id));
+    // Jika ada search aktif, tampilkan juga produk terpilih yang tidak match
+    const pinnedSelected = productSearch.trim()
+      ? availableProducts.filter(
+          (p) =>
+            selectedProductIds.includes(p.id) &&
+            !filteredProducts.find((fp) => fp.id === p.id)
+        )
+      : [];
+    return [...pinnedSelected, ...selected, ...unselected];
+  }, [filteredProducts, selectedProductIds, availableProducts, productSearch]);
+
 
   const totalNormalBarangPrice = useMemo(() => {
     return selectedProducts.reduce((acc, p) => acc + p.price, 0);
@@ -347,8 +375,55 @@ export default function NewOrderPage() {
                     Tidak ada tas berstatus &apos;Tersedia&apos; saat ini.
                   </p>
                 ) : (
-                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                    {availableProducts.map((p) => {
+                  <div className="space-y-3">
+                    {/* Search Bar Tas */}
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                        </svg>
+                      </span>
+                      <input
+                        type="text"
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        placeholder="Cari ID, deskripsi, atau nama toko..."
+                        className="w-full pl-9 pr-9 py-2 text-xs bg-[#f5f5f5] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-[#111111] dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#1F6C9F] dark:focus:border-[#6cb6e4] font-technical transition-colors"
+                      />
+                      {productSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setProductSearch("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Counter hasil filter */}
+                    <div className="flex items-center justify-between text-[10px] font-technical text-slate-400 dark:text-slate-500 uppercase tracking-wider px-0.5">
+                      <span>
+                        {productSearch.trim()
+                          ? `${filteredProducts.length} dari ${availableProducts.length} tas ditemukan`
+                          : `${availableProducts.length} tas tersedia`}
+                      </span>
+                      {selectedProductIds.length > 0 && (
+                        <span className="text-[#1F6C9F] font-bold">
+                          {selectedProductIds.length} terpilih
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Daftar Tas */}
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    {displayedProducts.length === 0 ? (
+                      <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">
+                        Tidak ada tas yang cocok dengan pencarian.
+                      </div>
+                    ) : displayedProducts.map((p) => {
                       const isSelected = selectedProductIds.includes(p.id);
                       const currentDiscount = individualDiscounts[p.id] !== undefined ? individualDiscounts[p.id] : "";
                       const currentPrice = customPrices[p.id] !== undefined ? customPrices[p.id] : String(p.price);
@@ -464,6 +539,7 @@ export default function NewOrderPage() {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 )}
               </div>
