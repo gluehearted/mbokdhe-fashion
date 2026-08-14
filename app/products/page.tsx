@@ -79,6 +79,7 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cleaning, setCleaning] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- State Modal Tambah Toko Cepat (Task 9) ---
@@ -197,59 +198,85 @@ export default function ProductsPage() {
     setIsModalOpen(true);
   };
 
+  const processSelectedImage = async (selectedFile: File) => {
+    if (!selectedFile.type.startsWith("image/")) {
+      showToast("Hanya file gambar (JPEG, PNG, WebP) yang diperbolehkan.", "error");
+      return;
+    }
+
+    setCompressing(true);
+    setCompressedInfo(null);
+
+    try {
+      const options = {
+        maxSizeMB: 0.15, // Maksimal 150 KB
+        maxWidthOrHeight: 1000,
+        useWebWorker: true,
+        fileType: "image/webp",
+      };
+
+      const origSizeKB = (selectedFile.size / 1024).toFixed(1);
+      const compressedBlob = await imageCompression(selectedFile, options);
+
+      const dotIdx = selectedFile.name.lastIndexOf(".");
+      const baseName = dotIdx !== -1 ? selectedFile.name.substring(0, dotIdx) : selectedFile.name;
+      const webpFile = new File([compressedBlob], `${baseName}.webp`, { type: "image/webp" });
+      const compSizeKB = (webpFile.size / 1024).toFixed(1);
+
+      setCompressedInfo(`Asli: ${origSizeKB} KB → WebP: ${compSizeKB} KB`);
+      setFile(webpFile);
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewUrl(URL.createObjectURL(webpFile));
+    } catch (err) {
+      console.error("Gagal mengompresi foto:", err);
+      setFile(selectedFile);
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewUrl(URL.createObjectURL(selectedFile));
+    } finally {
+      setCompressing(false);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const originalFile = e.target.files[0];
-      setCompressing(true);
-      setCompressedInfo(null);
+      await processSelectedImage(e.target.files[0]);
+    }
+  };
 
-      try {
-        const options = {
-          maxSizeMB: 0.15, // Turunkan maksimal jadi 150 KB
-          maxWidthOrHeight: 1000, 
-          useWebWorker: true,
-          fileType: "image/webp",
-        };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-        const origSizeKB = (originalFile.size / 1024).toFixed(1);
-        const compressedBlob = await imageCompression(originalFile, options);
-        
-        const dotIdx = originalFile.name.lastIndexOf('.');
-        const baseName = dotIdx !== -1 ? originalFile.name.substring(0, dotIdx) : originalFile.name;
-        const webpFile = new File([compressedBlob], `${baseName}.webp`, { type: "image/webp" });
-        const compSizeKB = (webpFile.size / 1024).toFixed(1);
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
 
-        setCompressedInfo(`Ukuran Asli: ${origSizeKB} KB | Dikompresi: ${compSizeKB} KB`);
-        setFile(webpFile);
-        if (previewUrl && previewUrl.startsWith("blob:")) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        setPreviewUrl(URL.createObjectURL(webpFile));
-      } catch (err) {
-        console.error("Gagal mengompresi foto:", err);
-        setFile(originalFile);
-        if (previewUrl && previewUrl.startsWith("blob:")) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        setPreviewUrl(URL.createObjectURL(originalFile));
-      } finally {
-        setCompressing(false);
-      }
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await processSelectedImage(e.dataTransfer.files[0]);
     }
   };
 
   const handleRemovePhoto = () => {
     setFile(null);
     setCompressedInfo(null);
-    
     if (previewUrl && previewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
-    
     setPreviewUrl(editingProduct ? editingProduct.photoUrl : null);
-    
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; 
+      fileInputRef.current.value = "";
     }
   };
 
@@ -845,46 +872,86 @@ export default function ProductsPage() {
                 />
               </div>
 
-              {/* Row 4: Upload Foto Tas */}
+              {/* Row 4: Upload & Drag-and-Drop Foto Tas */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Foto Produk Tas</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  disabled={compressing}
-                  className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-[4px] file:border file:border-[#eaeaea] dark:file:border-slate-700 file:text-xs file:font-semibold file:bg-white dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-[#f5f5f5] disabled:opacity-50"
-                />
-                {compressing && (
-                  <p className="text-xs text-slate-500 font-bold mt-1.5 animate-pulse font-technical">
-                    ⚡ MENGOMPRESI FOTO DI BROWSER (&lt; 150 KB, WEBP)...
-                  </p>
-                )}
-                {compressedInfo && !compressing && (
-                  <p className="text-[10px] text-[#1F6C9F] font-technical font-bold mt-1.5 bg-[#E1F3FE] p-2 rounded-[6px] border border-[#d2ecfc] uppercase tracking-wide">
-                    {compressedInfo}
-                  </p>
-                )}
-              </div>
-
-              {/* Preview Foto */}
-              {previewUrl && (
-                <div className="w-24 h-24 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden border border-[#eaeaea] dark:border-slate-800/80 relative mx-auto">
-                  <Image src={previewUrl} alt="Preview" fill sizes="96px" className="object-cover" />
-                  {/* Tombol Hapus/Batal Silang Merah (Hanya muncul jika file baru dipilih) */}
-                  {file && (
+                <div className="flex justify-between items-center">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                    Foto Produk Tas (Kamera / Galeri / Drag & Drop)
+                  </label>
+                  {previewUrl && (
                     <button
                       type="button"
                       onClick={handleRemovePhoto}
-                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-750 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-sm transition-all cursor-pointer"
-                      title="Batal pilih foto ini"
+                      className="text-[10px] text-red-600 dark:text-red-400 font-bold hover:underline uppercase font-technical cursor-pointer flex items-center gap-0.5"
                     >
-                      ✕
+                      Hapus Foto
                     </button>
                   )}
                 </div>
-              )}
+
+                {/* Drag and Drop Box Dropzone */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-[8px] p-4 text-center cursor-pointer transition-all ${
+                    isDragging
+                      ? "border-[#1F6C9F] bg-[#E1F3FE]/40 dark:bg-[#18232c]/50 scale-[1.01]"
+                      : previewUrl
+                      ? "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517] hover:border-slate-400 dark:hover:border-slate-600"
+                      : "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517] hover:border-[#1F6C9F] hover:bg-[#E1F3FE]/20 dark:hover:bg-[#18232c]/30"
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    disabled={compressing}
+                    className="hidden"
+                  />
+
+                  {previewUrl ? (
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-[6px] overflow-hidden border border-[#eaeaea] dark:border-slate-800 relative shrink-0 shadow-sm">
+                        <Image src={previewUrl} alt="Preview" fill sizes="80px" className="object-cover" />
+                      </div>
+                      <div className="text-left space-y-1 min-w-0">
+                        <p className="text-xs font-bold text-[#111111] dark:text-white font-technical truncate">
+                          {file ? file.name : "Foto Produk Saat Ini"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          Klik kotak ini atau seret (drag & drop) gambar baru untuk mengganti.
+                        </p>
+                        {compressedInfo && (
+                          <span className="inline-block text-[9px] font-bold text-[#1F6C9F] dark:text-[#6cb6e4] bg-[#E1F3FE] dark:bg-[#18232c] px-2 py-0.5 rounded font-technical uppercase">
+                            {compressedInfo}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-2 space-y-1.5 text-slate-500 dark:text-slate-400">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f5f5] dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
+                      </div>
+                      <p className="text-xs font-bold text-[#111111] dark:text-white font-technical uppercase">
+                        Pilih Foto / Seret (Drag & Drop) ke Sini
+                      </p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-technical">
+                        Mendukung Kamera HP, Galeri, JPEG, PNG, WebP (Otomatis Kompres &lt; 150 KB)
+                      </p>
+                    </div>
+                  )}
+
+                  {compressing && (
+                    <p className="text-xs text-[#1F6C9F] dark:text-[#6cb6e4] font-bold mt-2 animate-pulse font-technical">
+                      ⚡ MENGOMPRESI FOTO DI BROWSER (&lt; 150 KB, WEBP)...
+                    </p>
+                  )}
+                </div>
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
