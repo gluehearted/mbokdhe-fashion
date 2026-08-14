@@ -49,7 +49,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/uploads") ||
-    pathname === "/favicon.ico";
+    pathname.startsWith("/icon") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/icon.png";
 
   const isAuthenticated = Boolean(user);
 

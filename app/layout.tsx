@@ -24,6 +24,10 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${inter.variable} h-full antialiased`}>
       <head>
+        <title>Mbokdhe Fashion // Sistem Manajemen Inventaris & Order</title>
+        <meta name="description" content="Sistem Manajemen Katalog Tas, Inventaris, dan Rekap Pesanan Mbokdhe Fashion" />
+        <link rel="icon" href="/icon/icon_mbokdhe.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon/icon_mbokdhe.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
