@@ -313,7 +313,7 @@ export default function ShopsPage() {
                 ?
               </p>
               <p className="text-[11px] text-[#9F2F2D] dark:text-red-400 font-semibold">
-                Toko ini akan dihapus dari daftar supplier. Seluruh produk terkait akan kehilangan asosiasi nama toko ini.
+                Toko ini beserta seluruh produk tas yang terdaftar di bawahnya ({shopToDelete.totalProducts || 0} unit) akan otomatis terhapus permanen dari inventaris.
               </p>
             </div>
           ) : ""
