@@ -8,6 +8,8 @@ interface Shop {
   id: string;
   name: string;
   createdAt: string;
+  totalProducts?: number;
+  availableProducts?: number;
 }
 
 export default function ShopsPage() {
@@ -177,6 +179,7 @@ export default function ShopsPage() {
                   <tr>
                     <th className="p-4 text-center">No</th>
                     <th className="p-4 text-center">Nama Toko / Supplier</th>
+                    <th className="p-4 text-center">Jumlah Produk</th>
                     <th className="p-4 text-center">Tanggal Didaftarkan</th>
                     <th className="p-4 text-center">Aksi</th>
                   </tr>
@@ -187,6 +190,16 @@ export default function ShopsPage() {
                       <td className="p-4 text-center font-bold text-slate-400">{idx + 1}</td>
                       <td className="p-4 text-center font-semibold text-[#111111] dark:text-[#f3f3f3]">
                         {shop.name}
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="inline-flex items-center gap-2 font-technical text-xs justify-center">
+                          <span className="font-bold text-[#111111] dark:text-white px-2.5 py-1 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 border border-[#eaeaea] dark:border-slate-700 shadow-sm">
+                            {shop.totalProducts || 0} Total
+                          </span>
+                          <span className="font-bold text-[#1F6C9F] dark:text-[#6cb6e4] px-2.5 py-1 rounded-[6px] bg-[#E1F3FE] dark:bg-[#18232c] border border-[#c5e6fb] dark:border-[#1F6C9F]/40 shadow-sm">
+                            {shop.availableProducts || 0} Tersedia
+                          </span>
+                        </div>
                       </td>
                       <td className="p-4 text-center text-slate-400 dark:text-slate-500">
                         {new Date(shop.createdAt).toLocaleDateString("id-ID", {

@@ -10,14 +10,30 @@ export async function GET() {
 
     const { data: shops, error } = await supabase
       .from("shops")
-      .select("*")
+      .select("*, products(id, status)")
       .order("createdAt", { ascending: false });
 
     if (error) throw error;
 
+    const mapped = (shops || []).map((s: any) => {
+      const productsList = s.products || [];
+      const totalProducts = productsList.length;
+      const availableProducts = productsList.filter(
+        (p: any) => p.status === "Tersedia" || p.status === "Available"
+      ).length;
+      return {
+        id: s.id,
+        name: s.name,
+        createdAt: s.createdAt,
+        totalProducts,
+        availableProducts,
+        _count: { products: totalProducts },
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data: shops,
+      data: mapped,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";

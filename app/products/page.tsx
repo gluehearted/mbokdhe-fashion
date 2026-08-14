@@ -81,6 +81,42 @@ export default function ProductsPage() {
   const [cleaning, setCleaning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- State Modal Tambah Toko Cepat (Task 9) ---
+  const [isNewShopModalOpen, setIsNewShopModalOpen] = useState(false);
+  const [newShopNameInput, setNewShopNameInput] = useState("");
+  const [savingNewShop, setSavingNewShop] = useState(false);
+  const [newShopError, setNewShopError] = useState<string | null>(null);
+
+  const handleCreateNewShop = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newShopNameInput.trim()) return;
+    setSavingNewShop(true);
+    setNewShopError(null);
+    try {
+      const res = await fetch("/api/shops", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newShopNameInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal membuat toko baru.");
+      }
+      showToast(`Toko '${newShopNameInput.trim()}' berhasil ditambahkan!`, "success");
+      const createdShop: Shop = data.data;
+      setShops((prev) => [createdShop, ...prev]);
+      if (isModalOpen) {
+        setShopOrigin(createdShop.name);
+      }
+      setIsNewShopModalOpen(false);
+      setNewShopNameInput("");
+    } catch (err: any) {
+      setNewShopError(err.message || "Gagal membuat toko baru.");
+    } finally {
+      setSavingNewShop(false);
+    }
+  };
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -237,7 +273,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, keepShop = false) => {
     e.preventDefault();
     if (!shopOrigin.trim()) {
       setErrorMessage("Pilih atau isi Toko Asal / Supplier terlebih dahulu.");
@@ -294,10 +330,27 @@ export default function ProductsPage() {
         setErrorMessage(data.error || "Gagal menyimpan produk.");
         showToast(data.error || "Gagal menyimpan produk.", "error");
       } else {
-        const msg = editingProduct ? "Produk berhasil diperbarui." : "Produk baru berhasil ditambahkan.";
-        showToast(msg, "success");
-        setIsModalOpen(false);
-        fetchProducts();
+        if (!editingProduct && keepShop) {
+          showToast(`Produk baru berhasil disimpan! Silakan input tas berikutnya untuk toko '${shopOrigin}'.`, "success");
+          setCapitalPriceInput("");
+          setPriceInput("");
+          setDescriptionInput("");
+          setFile(null);
+          setPreviewUrl(null);
+          setCompressedInfo(null);
+          setErrorMessage(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+          fetchProducts();
+          fetchShops();
+        } else {
+          const msg = editingProduct ? "Produk berhasil diperbarui." : "Produk baru berhasil ditambahkan.";
+          showToast(msg, "success");
+          setIsModalOpen(false);
+          fetchProducts();
+          fetchShops();
+        }
       }
     } catch {
       setErrorMessage("Terjadi kesalahan koneksi.");
@@ -352,17 +405,28 @@ export default function ProductsPage() {
             [ Product Catalog ]
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={handleCleanupStorage}
             disabled={cleaning}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer disabled:opacity-50"
+            className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm cursor-pointer disabled:opacity-50 font-technical flex items-center justify-center"
           >
             {cleaning ? "Membersihkan..." : "Bersihkan Storage"}
           </button>
           <button
+            type="button"
+            onClick={() => {
+              setNewShopNameInput("");
+              setNewShopError(null);
+              setIsNewShopModalOpen(true);
+            }}
+            className="h-9 px-4 bg-[#f5f5f5] hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-all border border-[#eaeaea] dark:border-slate-700 active:scale-95 shadow-sm cursor-pointer flex items-center justify-center font-technical"
+          >
+            Buat Toko Baru
+          </button>
+          <button
             onClick={openCreateModal}
-            className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
+            className="h-9 px-4 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm cursor-pointer font-technical flex items-center justify-center"
           >
             Tambah Produk Baru
           </button>
@@ -398,7 +462,7 @@ export default function ProductsPage() {
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
             {/* Dropdown Filter Toko */}
             <select
               value={shopFilter}
@@ -406,7 +470,7 @@ export default function ProductsPage() {
                 setShopFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical font-medium cursor-pointer"
+              className="bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs h-9 px-3 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical font-medium cursor-pointer"
             >
               <option value="ALL">Semua Toko / Supplier</option>
               {shops.map((s) => (
@@ -422,7 +486,7 @@ export default function ProductsPage() {
               placeholder="Cari ID, deskripsi, toko, pembeli..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full sm:w-60 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
+              className="w-full sm:w-64 h-9 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs px-3.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
             />
           </div>
         </div>
@@ -703,13 +767,28 @@ export default function ProductsPage() {
 
               {/* Row 1: Toko Asal (Supplier) */}
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Toko Asal / Supplier *</label>
+                <div className="flex justify-between items-center">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                    Toko Asal / Supplier *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewShopNameInput("");
+                      setNewShopError(null);
+                      setIsNewShopModalOpen(true);
+                    }}
+                    className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:bg-[#d2ecfc] dark:hover:bg-[#1f303d] uppercase font-technical cursor-pointer flex items-center gap-1 bg-[#E1F3FE] dark:bg-[#18232c] px-2 py-0.5 rounded-[4px] border border-[#c5e6fb] dark:border-slate-700 transition-all"
+                  >
+                    <span>Buat Toko Baru</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   list="shops-options"
                   value={shopOrigin}
                   onChange={(e) => setShopOrigin(e.target.value)}
-                  placeholder="Pilih atau ketik nama toko baru..."
+                  placeholder="Pilih atau ketik nama toko..."
                   required
                   className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-semibold"
                 />
@@ -807,20 +886,94 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
+                  className="sm:w-1/4 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer font-technical uppercase text-[11px]"
+                >
+                  Batal
+                </button>
+                {!editingProduct && (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={(e) => handleSubmit(e, true)}
+                    className="flex-1 py-2.5 bg-[#E1F3FE] hover:bg-[#d2ecfc] dark:bg-[#18232c] dark:hover:bg-[#1f303d] text-[#1F6C9F] dark:text-[#a2d8fa] font-bold rounded-[6px] transition-all disabled:opacity-50 border border-[#c5e6fb] dark:border-slate-700 cursor-pointer font-technical uppercase text-[11px] flex items-center justify-center gap-1"
+                  >
+                    <span>Tambah 1 Lagi di Toko Ini</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={(e) => handleSubmit(e, false)}
+                  className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer font-technical uppercase text-[11px]"
+                >
+                  {saving ? "Menyimpan..." : editingProduct ? "Simpan Perubahan" : "Simpan & Selesai"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah Toko Cepat (Task 9) */}
+      {isNewShopModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4" onClick={() => setIsNewShopModalOpen(false)}>
+          <div
+            className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-sm w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.08)] animate-fade-in-up font-ui"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+                Tambah Toko / Supplier Baru
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewShopModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            {newShopError && (
+              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold font-technical">
+                {newShopError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNewShop} className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                  Nama Toko / Supplier *
+                </label>
+                <input
+                  type="text"
+                  value={newShopNameInput}
+                  onChange={(e) => setNewShopNameInput(e.target.value)}
+                  placeholder="Contoh: Sukaraja Store, Supplier Batam"
+                  required
+                  autoFocus
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNewShopModalOpen(false)}
+                  className="w-1/3 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer uppercase font-technical text-[10px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
-                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
+                  disabled={savingNewShop}
+                  className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer uppercase font-technical text-[10px]"
                 >
-                  {saving ? "Menyimpan..." : "Simpan Produk"}
+                  {savingNewShop ? "Menyimpan..." : "Simpan Toko"}
                 </button>
               </div>
             </form>
