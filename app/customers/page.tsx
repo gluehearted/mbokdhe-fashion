@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import CustomerForm from "@/components/forms/CustomerForm";
 
 interface Customer {
   id: string;
@@ -404,190 +405,19 @@ function CustomersPageContent() {
 
       {/* Modal Form Tambah/Edit Pelanggan */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up">
-            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
-                {editingCustomer ? `Edit Pelanggan [${editingCustomer.id}]` : "Tambah Pelanggan"}
-              </h3>
-            </div>
-
-            {errorMessage && (
-              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical">
-                {errorMessage}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-ui">
-              
-              {/* CUST ID Badge */}
-              {editingCustomer ? (
-                <div className="p-2.5 bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-xs font-technical font-bold text-[#111111] dark:text-[#f3f3f3] flex justify-between items-center">
-                  <span>CUST ID:</span>
-                  <span>#{editingCustomer.id}</span>
-                </div>
-              ) : (
-                <div className="p-2.5 bg-[#E1F3FE] text-[#1F6C9F] rounded-[6px] text-[10px] font-technical uppercase">
-                  CUST ID akan dibuat otomatis (Format: CST-YYMMDD-XX)
-                </div>
-              )}
-
-              {/* Row 1: Nama & WhatsApp */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Nama Pelanggan *</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Contoh: Siti Rahma"
-                    required
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">No. WhatsApp</label>
-                  <input
-                    type="text"
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    placeholder="Contoh: 081234567890 (Opsional)"
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Domisili, Ongkir, Ekspedisi */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Domisili</label>
-                  <input
-                    type="text"
-                    value={domisili}
-                    onChange={(e) => setDomisili(e.target.value)}
-                    placeholder="Contoh: Kab. Bogor, Jawa Barat (Opsional)"
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Ongkir Default (Rp)</label>
-                  <input
-                    type="number"
-                    value={shippingCostInput}
-                    onChange={(e) => setShippingCostInput(e.target.value)}
-                    placeholder="Contoh: 15000"
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Ekspedisi Preferred</label>
-                  <select
-                    value={courier}
-                    onChange={(e) => setCourier(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium cursor-pointer"
-                  >
-                    <option value="">-- Pilih Ekspedisi --</option>
-                    {COURIER_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Row 3: Detail Alamat */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Detail Alamat Jalan & Patokan</label>
-                <textarea
-                  rows={2}
-                  value={addressDetail}
-                  onChange={(e) => setAddressDetail(e.target.value)}
-                  placeholder="Contoh: Jl. Jendral Sudirman No. 45, RT 02/RW 05... (Opsional)"
-                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Row 4: Behavioral & Tipe Konsumen */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Behavioral</label>
-                  <select
-                    value={behavioral}
-                    onChange={(e) => setBehavioral(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium cursor-pointer"
-                  >
-                    <option value="">-- Pilih Behavioral --</option>
-                    {BEHAVIORAL_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Tipe Konsumen (Teks)</label>
-                  <input
-                    type="text"
-                    value={consumerType}
-                    onChange={(e) => setConsumerType(e.target.value)}
-                    placeholder="Contoh: Value Seeker, Price Sensitive"
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Row 5: Status Hubungan & Catatan Status Krisis (Optional) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Status Hubungan</label>
-                  <select
-                    value={relationshipStatus}
-                    onChange={(e) => setRelationshipStatus(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium cursor-pointer"
-                  >
-                    <option value="">-- Pilih Status Hubungan --</option>
-                    {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Status Krisis (Catatan Opsional)</label>
-                  <input
-                    type="text"
-                    value={crisisStatus}
-                    onChange={(e) => setCrisisStatus(e.target.value)}
-                    placeholder="Contoh: Sering komplain, Pernah cancel DP"
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {saving ? "Menyimpan..." : "Simpan Data Pelanggan"}
-                </button>
-              </div>
-            </form>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-4 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up">
+            <CustomerForm
+              initialData={editingCustomer}
+              showExtendedFields={true}
+              onCancel={() => setIsModalOpen(false)}
+              onSubmitSuccess={() => {
+                const msg = editingCustomer ? "Data pelanggan berhasil diperbarui." : "Pelanggan baru berhasil ditambahkan.";
+                showToast(msg, "success");
+                setIsModalOpen(false);
+                fetchCustomers();
+              }}
+            />
           </div>
         </div>
       )}

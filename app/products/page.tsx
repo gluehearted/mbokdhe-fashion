@@ -8,6 +8,7 @@ const supabase = createClient();
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import ProductForm from "@/components/forms/ProductForm";
 
 interface Product {
   id: string;
@@ -778,262 +779,25 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Modal Tambah/Edit Produk */}
+      {/* Modal Form Tambah/Edit Produk Tas */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-lg w-full p-6 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up font-ui">
-            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
-                {editingProduct ? `Edit Produk [${editingProduct.id}]` : "Tambah Produk Tas Baru"}
-              </h3>
-            </div>
-
-            {errorMessage && (
-              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical">
-                {errorMessage}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-ui">
-              
-              {/* Product ID Notice */}
-              {editingProduct ? (
-                <div className="p-2.5 bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] text-xs font-technical font-bold text-[#111111] dark:text-white flex justify-between items-center">
-                  <span>ID TAS (CUSTOM):</span>
-                  <span>#{editingProduct.id.toUpperCase()}</span>
-                </div>
-              ) : (
-                <div className="p-2.5 bg-[#E1F3FE] text-[#1F6C9F] rounded-[6px] text-[10px] font-technical uppercase">
-                  ID Tas akan di-generate otomatis berdasarkan Toko Asal & tanggal input (misal: SKR-260811-01)
-                </div>
-              )}
-
-              {/* Row 1: Toko Asal (Supplier) */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                    Toko Asal / Supplier *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewShopNameInput("");
-                      setNewShopError(null);
-                      setIsNewShopModalOpen(true);
-                    }}
-                    className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:bg-[#d2ecfc] dark:hover:bg-[#1f303d] uppercase font-technical cursor-pointer flex items-center gap-1 bg-[#E1F3FE] dark:bg-[#18232c] px-2 py-0.5 rounded-[4px] border border-[#c5e6fb] dark:border-slate-700 transition-all"
-                  >
-                    <span>+ Toko</span>
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  list="shops-options"
-                  value={shopOrigin}
-                  onChange={(e) => setShopOrigin(e.target.value)}
-                  placeholder="Pilih atau ketik nama toko..."
-                  required
-                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-semibold"
-                />
-                <datalist id="shops-options">
-                  {shops.map((s) => (
-                    <option key={s.id} value={s.name} />
-                  ))}
-                </datalist>
-              </div>
-
-              {/* Row 2: Harga Modal & Harga Jual */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Harga Modal (Rp)</label>
-                  <input
-                    type="number"
-                    value={capitalPriceInput}
-                    onChange={(e) => setCapitalPriceInput(e.target.value)}
-                    placeholder="Contoh: 70000"
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Harga Jual (Rp) *</label>
-                  <input
-                    type="number"
-                    value={priceInput}
-                    onChange={(e) => setPriceInput(e.target.value)}
-                    placeholder="Contoh: 95000"
-                    required
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Debounced Profit Margin Badge */}
-              {debouncedProfit !== null && (
-                <div className="p-2.5 rounded-[6px] bg-[#EDF3EC] text-[#346538] border border-[#cbe1cc] text-[11px] font-technical font-semibold flex justify-between items-center">
-                  <span>ESTIMASI PROFIT MARGIN:</span>
-                  <span>+Rp {debouncedProfit.toLocaleString("id-ID")}</span>
-                </div>
-              )}
-
-              {/* Row 3: Deskripsi Produk */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Deskripsi Produk Tas</label>
-                <textarea
-                  value={descriptionInput}
-                  onChange={(e) => setDescriptionInput(e.target.value)}
-                  placeholder="Contoh: Bahan kulit sintetis, warna hitam, kondisi mulus 95%"
-                  rows={2}
-                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none text-xs font-medium"
-                />
-              </div>
-
-              {/* Row 4: Upload & Drag-and-Drop Foto Tas */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                    Foto Produk Tas (Kamera / Galeri / Drag & Drop)
-                  </label>
-                  {previewUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRemovePhoto}
-                      className="text-[10px] text-red-600 dark:text-red-400 font-bold hover:underline uppercase font-technical cursor-pointer flex items-center gap-0.5"
-                    >
-                      Hapus Foto
-                    </button>
-                  )}
-                </div>
-
-                {/* Drag and Drop Box Dropzone */}
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={`relative border-2 border-dashed rounded-[8px] p-4 text-center transition-all ${
-                    isDragging
-                      ? "border-[#1F6C9F] bg-[#E1F3FE]/40 dark:bg-[#18232c]/50 scale-[1.01]"
-                      : previewUrl
-                      ? "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517]"
-                      : "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517]"
-                  }`}
-                >
-                  {/* Hidden Inputs */}
-                  <input
-                    type="file"
-                    id="product-photo-file-input"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    disabled={compressing}
-                    className="hidden"
-                  />
-                  <input
-                    type="file"
-                    id="product-photo-camera-input"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileChange}
-                    disabled={compressing}
-                    className="hidden"
-                  />
-
-                  {previewUrl ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                      <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-[6px] overflow-hidden border border-[#eaeaea] dark:border-slate-800 relative shrink-0 shadow-sm">
-                        <Image src={previewUrl} alt="Preview" fill sizes="80px" className="object-cover" />
-                      </div>
-                      <div className="text-left space-y-1.5 min-w-0">
-                        <p className="text-xs font-bold text-[#111111] dark:text-white font-technical truncate">
-                          {file ? file.name : "Foto Produk Saat Ini"}
-                        </p>
-                        {compressedInfo && (
-                          <span className="inline-block text-[9px] font-bold text-[#1F6C9F] dark:text-[#6cb6e4] bg-[#E1F3FE] dark:bg-[#18232c] px-2 py-0.5 rounded font-technical uppercase">
-                            {compressedInfo}
-                          </span>
-                        )}
-                        <div className="flex gap-2 pt-1">
-                          <label
-                            htmlFor="product-photo-camera-input"
-                            className="px-2.5 py-1 bg-[#1F6C9F] hover:bg-[#195781] text-white font-bold rounded-[4px] text-[10px] uppercase font-technical cursor-pointer flex items-center gap-1 shadow-sm transition-all"
-                          >
-                            📷 Foto Kamera
-                          </label>
-                          <label
-                            htmlFor="product-photo-file-input"
-                            className="px-2.5 py-1 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[4px] text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1 transition-all"
-                          >
-                            🖼️ Ganti Galeri
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-2 space-y-2 text-slate-500 dark:text-slate-400">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f5f5] dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                        <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
-                      </div>
-                      <p className="text-xs font-bold text-[#111111] dark:text-white font-technical uppercase">
-                        Upload Foto Produk
-                      </p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-technical">
-                        Pilih foto dari Kamera HP langsung atau dari Galeri (Otomatis Kompres &lt; 150 KB)
-                      </p>
-
-                      {/* Tombol Pilihan Kamera vs Galeri */}
-                      <div className="flex gap-2 pt-1.5">
-                        <label
-                          htmlFor="product-photo-camera-input"
-                          className="px-3.5 py-2 bg-[#1F6C9F] hover:bg-[#195781] text-white font-bold rounded-[6px] text-[11px] uppercase font-technical cursor-pointer flex items-center gap-1.5 shadow-sm transition-all"
-                        >
-                          📷 Ambil Foto Kamera
-                        </label>
-                        <label
-                          htmlFor="product-photo-file-input"
-                          className="px-3.5 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[11px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1.5 transition-all"
-                        >
-                          🖼️ Pilih dari Galeri
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                  {compressing && (
-                    <p className="text-xs text-[#1F6C9F] dark:text-[#6cb6e4] font-bold mt-2 animate-pulse font-technical">
-                      ⚡ MENGOMPRESI FOTO DI BROWSER (&lt; 150 KB, WEBP)...
-                    </p>
-                  )}
-                </div>
-
-              <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="sm:w-1/4 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer font-technical uppercase text-[11px]"
-                >
-                  Batal
-                </button>
-                {!editingProduct && (
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={(e) => handleSubmit(e, true)}
-                    className="flex-1 py-2.5 bg-[#E1F3FE] hover:bg-[#d2ecfc] dark:bg-[#18232c] dark:hover:bg-[#1f303d] text-[#1F6C9F] dark:text-[#a2d8fa] font-bold rounded-[6px] transition-all disabled:opacity-50 border border-[#c5e6fb] dark:border-slate-700 cursor-pointer font-technical uppercase text-[11px] flex items-center justify-center gap-1"
-                  >
-                    <span>Tambah 1 Lagi di Toko Ini</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={(e) => handleSubmit(e, false)}
-                  className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer font-technical uppercase text-[11px]"
-                >
-                  {saving ? "Menyimpan..." : editingProduct ? "Simpan Perubahan" : "Simpan & Selesai"}
-                </button>
-              </div>
-            </form>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-lg w-full p-4 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up font-ui">
+            <ProductForm
+              initialData={editingProduct}
+              shops={shops}
+              onCancel={() => setIsModalOpen(false)}
+              onSaveAndAddAnother={() => {
+                showToast("Produk berhasil ditambahkan. Silakan isi produk berikutnya dari toko yang sama.", "success");
+                fetchProducts();
+              }}
+              onSubmitSuccess={() => {
+                const msg = editingProduct ? "Data produk berhasil diperbarui." : "Produk tas baru berhasil ditambahkan.";
+                showToast(msg, "success");
+                setIsModalOpen(false);
+                fetchProducts();
+              }}
+            />
           </div>
         </div>
       )}

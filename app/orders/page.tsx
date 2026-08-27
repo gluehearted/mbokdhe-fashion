@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -77,6 +78,7 @@ function getDurationHeld(createdAt: string) {
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const { showToast } = useToast();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -111,15 +113,6 @@ export default function OrdersPage() {
   const [orderToRelease, setOrderToRelease] = useState<Order | null>(null);
   const [isReleasingOrder, setIsReleasingOrder] = useState(false);
 
-  // State Modal Edit Item Order (Real-time Grand Total)
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [editOrderItems, setEditOrderItems] = useState<{ productId: string; price: number; customPrice: number; discount: number; description?: string }[]>([]);
-  const [availableProductsForEdit, setAvailableProductsForEdit] = useState<Product[]>([]);
-  const [selectedAddProductId, setSelectedAddProductId] = useState<string>("");
-  const [editShippingCost, setEditShippingCost] = useState<string>("0");
-  const [editDpAmount, setEditDpAmount] = useState<string>("0");
-  const [editNotes, setEditNotes] = useState<string>("");
-  const [savingEditOrder, setSavingEditOrder] = useState(false);
 
   // Floating Hover Tooltip state (prevents table overflow clipping)
   const [hoveredPreview, setHoveredPreview] = useState<{
@@ -165,10 +158,22 @@ export default function OrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      const targetOrder = orders.find((o) => o.id === orderId);
+      let payloadDpAmount: number | undefined = undefined;
+
+      if (newStatus === "Keep (Lunas)" || newStatus === "Siap Kirim" || newStatus === "Dikirim") {
+        if (targetOrder) payloadDpAmount = targetOrder.totalPrice;
+      } else if (newStatus === "Keep (Belum Bayar)" || newStatus === "Menunggu" || newStatus === "Dibatalkan") {
+        payloadDpAmount = 0;
+      }
+
+      const payload: any = { status: newStatus };
+      if (payloadDpAmount !== undefined) payload.dpAmount = payloadDpAmount;
+
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
@@ -230,109 +235,6 @@ export default function OrdersPage() {
     }
   };
 
-  const handleOpenEditModal = async (order: Order) => {
-    setEditingOrder(order);
-    setEditShippingCost(String(order.shippingCost || 0));
-    setEditDpAmount(String(order.dpAmount || 0));
-    setEditNotes(order.notes || "");
-    setEditOrderItems(
-      (order.products || []).map((p) => ({
-        productId: p.id,
-        price: p.price,
-        customPrice: p.price,
-        discount: p.discount || 0,
-        description: p.description || undefined,
-      }))
-    );
-
-    try {
-      const res = await fetch("/api/products");
-      const data = await res.json();
-      if (data.success) {
-        setAvailableProductsForEdit(data.data.filter((p: Product) => p.status === "Tersedia"));
-      }
-    } catch {
-      // Ignore
-    }
-  };
-
-  const handleAddItemToEditOrder = (product: Product) => {
-    if (editOrderItems.some((i) => i.productId === product.id)) {
-      showToast("Produk sudah ada dalam pesanan ini.", "error");
-      return;
-    }
-    setEditOrderItems((prev) => [
-      ...prev,
-      {
-        productId: product.id,
-        price: product.price,
-        customPrice: product.price,
-        discount: 0,
-        description: product.description || undefined,
-      },
-    ]);
-    setSelectedAddProductId("");
-  };
-
-  const handleRemoveItemFromEditOrder = (productId: string) => {
-    if (editOrderItems.length <= 1) {
-      showToast("Pesanan harus memiliki minimal 1 tas.", "error");
-      return;
-    }
-    setEditOrderItems((prev) => prev.filter((i) => i.productId !== productId));
-  };
-
-  const handleSaveEditOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingOrder) return;
-    if (editOrderItems.length === 0) {
-      showToast("Pesanan harus memiliki minimal 1 item barang.", "error");
-      return;
-    }
-    setSavingEditOrder(true);
-
-    const totalBarang = editOrderItems.reduce((acc, item) => {
-      const base = isNaN(item.customPrice) ? item.price : item.customPrice;
-      const disc = isNaN(item.discount) ? 0 : item.discount;
-      return acc + Math.max(0, base - disc);
-    }, 0);
-
-    const shipping = parseInt(editShippingCost, 10) || 0;
-    const dp = parseInt(editDpAmount, 10) || 0;
-    const grandTotal = totalBarang + shipping;
-
-    try {
-      const res = await fetch(`/api/orders/${editingOrder.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shippingCost: shipping,
-          dpAmount: dp,
-          totalPrice: grandTotal,
-          notes: editNotes.trim() || null,
-          productIds: editOrderItems.map((i) => i.productId),
-          products: editOrderItems.map((i) => ({
-            productId: i.productId,
-            customPrice: i.customPrice,
-            discount: i.discount,
-          })),
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Pesanan #${editingOrder.id.slice(0, 8)} berhasil diperbarui.`, "success");
-        setEditingOrder(null);
-        fetchOrders();
-      } else {
-        showToast(data.error || "Gagal memperbarui pesanan.", "error");
-      }
-    } catch {
-      showToast("Terjadi kesalahan koneksi saat memperbarui pesanan.", "error");
-    } finally {
-      setSavingEditOrder(false);
-    }
-  };
 
   const handleSaveResi = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,8 +361,23 @@ A/N ALRON EBENHAEZER C`;
   };
 
   const filteredOrders = orders.filter((o) => {
-    const matchesStatus =
-      statusFilter === "ALL" ? o.status !== "Keep" : o.status === statusFilter;
+    let matchesStatus = false;
+    if (statusFilter === "ALL") {
+      matchesStatus = true;
+    } else if (statusFilter === "Keep (Belum Bayar)") {
+      matchesStatus =
+        o.status === "Keep (Belum Bayar)" ||
+        (o.status === "Keep" && o.dpAmount < o.totalPrice);
+    } else if (statusFilter === "Keep (Lunas)") {
+      matchesStatus =
+        o.status === "Keep (Lunas)" ||
+        (o.status === "Keep" && o.dpAmount >= o.totalPrice && o.totalPrice > 0);
+    } else if (statusFilter === "Keep") {
+      matchesStatus = o.status.startsWith("Keep");
+    } else {
+      matchesStatus = o.status === statusFilter;
+    }
+
     const matchesSearch =
       o.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       o.customer?.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -503,6 +420,8 @@ A/N ALRON EBENHAEZER C`;
           <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
             {[
               { label: "Semua Order", value: "ALL" },
+              { label: "Keep (Belum Bayar)", value: "Keep (Belum Bayar)" },
+              { label: "Keep (Lunas)", value: "Keep (Lunas)" },
               { label: "Menunggu", value: "Menunggu" },
               { label: "DP", value: "DP" },
               { label: "Siap Kirim", value: "Siap Kirim" },
@@ -668,12 +587,20 @@ A/N ALRON EBENHAEZER C`;
 
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800">
                         <select
-                          value={o.status}
+                          value={
+                            o.status === "Keep"
+                              ? o.dpAmount >= o.totalPrice && o.totalPrice > 0
+                                ? "Keep (Lunas)"
+                                : "Keep (Belum Bayar)"
+                              : o.status
+                          }
                           onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                          className="bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 text-[#111111] dark:text-white text-[10px] font-bold p-1.5 rounded-[6px] focus:border-[#111111] focus:outline-none cursor-pointer"
+                          className="bg-white dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 text-[#111111] dark:text-white text-xs font-bold p-1.5 rounded-[6px] focus:border-[#111111] focus:outline-none cursor-pointer w-full"
                         >
                           <option value="Menunggu">Menunggu</option>
-                          <option value="DP">DP</option>
+                          <option value="Keep (Belum Bayar)">Keep (Belum Bayar)</option>
+                          <option value="Keep (Lunas)">Keep (Lunas)</option>
+                          <option value="DP">DP (Sebagian)</option>
                           <option value="Siap Kirim">Siap Kirim</option>
                           <option value="Dikirim">Dikirim</option>
                           <option value="Dibatalkan">Dibatalkan</option>
@@ -684,9 +611,9 @@ A/N ALRON EBENHAEZER C`;
                         <TableActionsMenu
                           items={[
                             {
-                              label: "Edit Item Pesanan",
+                              label: "Edit Pesanan",
                               icon: "edit",
-                              onClick: () => handleOpenEditModal(o),
+                              onClick: () => router.push(`/orders/${o.id}/edit`),
                             },
                             {
                               label: "Kirim Rekap WA",
@@ -921,211 +848,6 @@ A/N ALRON EBENHAEZER C`;
         cancelText="Batal"
         isLoading={isReleasingOrder}
       />
-
-      {/* Modal Edit Item Pesanan & Real-time Grand Total */}
-      {editingOrder && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-lg w-full p-5 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up font-ui">
-            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
-              <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
-                Edit Item Pesanan #{editingOrder.id.slice(0, 8).toUpperCase()}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingOrder(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs cursor-pointer font-technical uppercase"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEditOrder} className="space-y-4 text-xs">
-              {/* Daftar Item Pesanan */}
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                  Item Tas dalam Pesanan ({editOrderItems.length})
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {editOrderItems.map((item) => (
-                    <div
-                      key={item.productId}
-                      className="p-3 bg-[#f9f9f8] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] flex items-center justify-between gap-3"
-                    >
-                      <div>
-                        <span className="font-bold text-[#111111] dark:text-white font-technical text-sm block">
-                          #{item.productId.toUpperCase()}
-                        </span>
-                        {item.description && (
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate max-w-xs">
-                            {item.description}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="flex flex-col gap-1.5">
-                          {/* Input Ubah Harga Normal */}
-                          <div className="flex items-center justify-between gap-2 bg-white dark:bg-[#141517] px-2 py-1 rounded border border-[#eaeaea] dark:border-slate-700 w-[140px]">
-                            <span className="text-[9px] text-slate-400 font-technical uppercase">Harga:</span>
-                            <input
-                              type="number"
-                              value={item.customPrice}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value, 10) || 0;
-                                setEditOrderItems((prev) =>
-                                  prev.map((i) =>
-                                    i.productId === item.productId
-                                      ? { ...i, customPrice: val }
-                                      : i
-                                  )
-                                );
-                              }}
-                              className="w-[80px] text-right font-technical font-bold text-[11px] text-[#111111] dark:text-white focus:outline-none bg-transparent"
-                            />
-                          </div>
-
-                          {/* Input Diskon Nominal */}
-                          <div className="flex items-center justify-between gap-2 bg-white dark:bg-[#141517] px-2 py-1 rounded border border-[#eaeaea] dark:border-slate-700 w-[140px]">
-                            <span className="text-[9px] text-rose-500 font-technical uppercase">Diskon:</span>
-                            <input
-                              type="number"
-                              value={item.discount || ""}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value, 10) || 0;
-                                setEditOrderItems((prev) =>
-                                  prev.map((i) =>
-                                    i.productId === item.productId
-                                      ? { ...i, discount: val }
-                                      : i
-                                  )
-                                );
-                              }}
-                              placeholder="0"
-                              className="w-[80px] text-right font-technical font-bold text-[11px] text-rose-600 dark:text-rose-400 focus:outline-none bg-transparent"
-                            />
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItemFromEditOrder(item.productId)}
-                          className="text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs p-2 rounded font-technical cursor-pointer self-start ml-1"
-                          title="Hapus tas ini"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Add Available Product Dropdown */}
-              {availableProductsForEdit.length > 0 && (
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#1F6C9F] dark:text-[#6cb6e4] uppercase tracking-widest font-technical">
-                    + Tambah Tas dari Etalase Tersedia
-                  </label>
-                  <select
-                    value={selectedAddProductId}
-                    onChange={(e) => {
-                      const prodId = e.target.value;
-                      if (!prodId) return;
-                      const prod = availableProductsForEdit.find((p) => p.id === prodId);
-                      if (prod) handleAddItemToEditOrder(prod);
-                    }}
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-xs focus:outline-none cursor-pointer"
-                  >
-                    <option value="">-- Pilih Tas yang ingin ditambahkan --</option>
-                    {availableProductsForEdit.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        #{p.id.toUpperCase()} - Rp {p.price.toLocaleString("id-ID")} {p.description ? `(${p.description})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Ongkir & DP Row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                    Ongkos Kirim (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={editShippingCost}
-                    onChange={(e) => setEditShippingCost(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-xs font-semibold focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                    DP Dibayar (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={editDpAmount}
-                    onChange={(e) => setEditDpAmount(e.target.value)}
-                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-xs font-semibold focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                  Catatan Pesanan
-                </label>
-                <input
-                  type="text"
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="Catatan pesanan..."
-                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 text-xs focus:outline-none"
-                />
-              </div>
-
-              {/* Real-time Grand Total Breakdown */}
-              <div className="p-3 bg-[#E1F3FE] dark:bg-[#18232c] border border-[#d2ecfc] dark:border-slate-700 rounded-[6px] space-y-1 font-technical uppercase text-xs">
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Subtotal Barang:</span>
-                  <span className="font-bold">
-                    Rp {editOrderItems.reduce((acc, i) => acc + Math.max(0, i.customPrice - (i.discount || 0)), 0).toLocaleString("id-ID")}
-                  </span>
-                </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Ongkir:</span>
-                  <span className="font-bold">Rp {(parseInt(editShippingCost, 10) || 0).toLocaleString("id-ID")}</span>
-                </div>
-                <div className="flex justify-between items-center border-t border-[#1F6C9F]/20 dark:border-slate-700 pt-1 text-[#1F6C9F] dark:text-[#6cb6e4] font-bold">
-                  <span>Grand Total Tagihan:</span>
-                  <span className="text-sm">
-                    Rp {(editOrderItems.reduce((acc, i) => acc + Math.max(0, i.customPrice - (i.discount || 0)), 0) + (parseInt(editShippingCost, 10) || 0)).toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingOrder(null)}
-                  className="w-1/3 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-xs font-technical uppercase"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEditOrder}
-                  className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer text-xs font-technical uppercase"
-                >
-                  {savingEditOrder ? "Menyimpan..." : "Simpan Perubahan Pesanan"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

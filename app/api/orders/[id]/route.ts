@@ -9,7 +9,8 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    let { status, trackingNo, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice, notes, productIds, products } = body;
+    let { customerId, status, trackingNo, courier, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice, notes, productIds, products } = body;
+    const finalCourier = courier || shippingCourier;
 
     // Map status string if provided in English
     if (status === "Keep") status = "Keep";
@@ -109,9 +110,10 @@ export async function PATCH(
     const { data: order, error: updateError } = await supabase
       .from("orders")
       .update({
+        ...(customerId !== undefined && { customerId }),
         ...(status && { status }),
         ...(trackingNo !== undefined && { trackingNo }),
-        ...(shippingCourier !== undefined && { shippingCourier }),
+        ...(finalCourier !== undefined && { shippingCourier: finalCourier }),
         ...(shippingService !== undefined && { shippingService }),
         ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
         ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),

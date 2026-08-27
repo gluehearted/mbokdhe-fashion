@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import ShopForm from "@/components/forms/ShopForm";
 
 interface Shop {
   id: string;
@@ -247,51 +248,18 @@ export default function ShopsPage() {
 
       {/* Modal Tambah/Edit Toko */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-6 space-y-5 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up">
-            <h3 className="text-sm font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
-              {editingShop ? "Edit Nama Toko" : "Tambah Toko"}
-            </h3>
-
-            {errorMessage && (
-              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical">
-                {errorMessage}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-ui">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
-                  Nama Toko / Supplier *
-                </label>
-                <input
-                  type="text"
-                  value={shopNameInput}
-                  onChange={(e) => setShopNameInput(e.target.value)}
-                  placeholder="Contoh: Sukaraja Store, Supplier Batam"
-                  required
-                  autoFocus
-                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {saving ? "Menyimpan..." : "Simpan Toko"}
-                </button>
-              </div>
-            </form>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up">
+            <ShopForm
+              initialData={editingShop}
+              onCancel={() => setIsModalOpen(false)}
+              onSubmitSuccess={() => {
+                const msg = editingShop ? "Nama toko berhasil diperbarui." : "Toko baru berhasil ditambahkan.";
+                showToast(msg, "success");
+                setIsModalOpen(false);
+                fetchShops();
+              }}
+            />
           </div>
         </div>
       )}
