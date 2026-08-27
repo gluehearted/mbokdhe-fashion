@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 // GET /api/products?status=Tersedia
 export async function GET(request: Request) {
@@ -175,23 +173,36 @@ export async function POST(request: Request) {
     if (!clientPhotoUrl && file && file.size > 0) {
       try {
         const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+        const fileExt = file.name.split('.').pop() || "jpg";
+        
+        // Buat nama file unik (ID Tas + Timestamp)
+        const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}-${Date.now()}.${fileExt}`;
+        const filePath = `bags/${fileName}`;
 
-        const fileExt = path.extname(file.name) || ".jpg";
-        const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}${fileExt}`;
-        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        // Upload file langsung ke Supabase Storage (Server-side)
+        const { error: uploadError } = await supabase.storage
+          .from("products")
+          .upload(filePath, bytes, {
+            contentType: file.type,
+            upsert: true,
+          });
 
-        await mkdir(uploadsDir, { recursive: true });
-        const filePath = path.join(uploadsDir, fileName);
+        if (uploadError) throw uploadError;
 
-        await writeFile(filePath, buffer);
-        photoUrl = `/uploads/${fileName}`;
-      } catch (fsError: any) {
-        console.error("Local upload failed (expected on serverless):", fsError.message);
+        // Ambil URL public dari Supabase
+        const { data: publicUrlData } = supabase.storage
+          .from("products")
+          .getPublicUrl(filePath);
+
+        if (publicUrlData?.publicUrl) {
+          photoUrl = publicUrlData.publicUrl;
+        }
+      } catch (storageError: any) {
+        console.error("Supabase server upload failed:", storageError.message);
         return NextResponse.json(
           { 
             success: false, 
-            error: "Lingkungan serverless (Vercel) bersifat Read-Only. Harap pastikan Storage Bucket bernama 'products' sudah dibuat di dashboard Supabase Anda dengan akses Public agar foto bisa diunggah langsung ke Cloud Storage." 
+            error: "Gagal mengunggah foto ke Supabase. Pastikan Storage Bucket 'products' telah dibuat di dashboard Supabase dengan akses Public." 
           },
           { status: 500 }
         );
