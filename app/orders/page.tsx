@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
+
+const emptySubscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 interface Customer {
   id: string;
@@ -56,35 +60,11 @@ function parseSafeDate(dateStr: string) {
   return new Date(safeStr);
 }
 
-function getDurationHeld(createdAt: string) {
-  const safeDate = parseSafeDate(createdAt);
-  const diffMs = Date.now() - safeDate.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
-  const remainingHours = diffHours % 24;
-
-  let durationStr = "";
-  if (diffDays > 0) {
-    durationStr = `${diffDays} Hr ${remainingHours} Jm`;
-  } else if (diffHours > 0) {
-    durationStr = `${diffHours} Jam`;
-  } else {
-    const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-    durationStr = `${diffMins} Mnt`;
-  }
-
-  const isWarning = diffHours >= 24;
-  return { durationStr, diffHours, isWarning };
-}
-
 export default function OrdersPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,8 +133,25 @@ export default function OrdersPage() {
   }, [showToast]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    let ignore = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/orders");
+        const data = await res.json();
+        if (!ignore && data.success) {
+          setOrders(data.data);
+        }
+      } catch {
+        if (!ignore) showToast("Gagal memuat data pesanan.", "error");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [showToast]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -167,7 +164,7 @@ export default function OrdersPage() {
         payloadDpAmount = 0;
       }
 
-      const payload: any = { status: newStatus };
+      const payload: { status: string; dpAmount?: number } = { status: newStatus };
       if (payloadDpAmount !== undefined) payload.dpAmount = payloadDpAmount;
 
       const res = await fetch(`/api/orders/${orderId}`, {

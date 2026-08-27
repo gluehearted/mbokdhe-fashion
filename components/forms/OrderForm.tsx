@@ -391,8 +391,9 @@ export default function OrderForm({ orderId }: OrderFormProps) {
       }
 
       router.push("/orders");
-    } catch (err: any) {
-      setErrorMessage(err.message || `Terjadi kesalahan sistem saat ${isEditMode ? "memperbarui" : "membuat"} pesanan.`);
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setErrorMessage(errorObj.message || `Terjadi kesalahan sistem saat ${isEditMode ? "memperbarui" : "membuat"} pesanan.`);
     } finally {
       setSubmitting(false);
     }

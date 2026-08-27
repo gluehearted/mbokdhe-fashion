@@ -87,7 +87,7 @@ export default function CustomerForm({
       const endpoint = isEditing ? `/api/customers/${initialData!.id}` : "/api/customers";
       const method = isEditing ? "PATCH" : "POST";
 
-      const payload: any = {
+      const payload: Record<string, string | number | null> = {
         name: name.trim(),
         whatsapp: whatsapp.trim(),
         domisili: domisili.trim() || null,
@@ -117,8 +117,9 @@ export default function CustomerForm({
       if (onSubmitSuccess) {
         onSubmitSuccess(data.data);
       }
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan sistem saat menyimpan pelanggan.");
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setError(errorObj.message || "Terjadi kesalahan sistem saat menyimpan pelanggan.");
     } finally {
       setSubmitting(false);
     }

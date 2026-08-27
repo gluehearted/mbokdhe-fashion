@@ -54,8 +54,9 @@ export default function ShopForm({
       if (onSubmitSuccess) {
         onSubmitSuccess(data.data);
       }
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan sistem saat menyimpan toko.");
+    } catch (err: unknown) {
+        const errorObj = err as Error;
+      setError(errorObj.message || "Terjadi kesalahan sistem saat menyimpan toko.");
     } finally {
       setSubmitting(false);
     }

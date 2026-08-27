@@ -183,8 +183,9 @@ export default function ProductForm({
           onSubmitSuccess(result.data);
         }
       }
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan sistem saat menyimpan produk.");
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setError(errorObj.message || "Terjadi kesalahan sistem saat menyimpan produk.");
     } finally {
       setSubmitting(false);
     }
