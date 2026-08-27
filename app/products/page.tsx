@@ -910,19 +910,29 @@ export default function ProductsPage() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-[8px] p-4 text-center cursor-pointer transition-all ${
+                  className={`relative border-2 border-dashed rounded-[8px] p-4 text-center transition-all ${
                     isDragging
                       ? "border-[#1F6C9F] bg-[#E1F3FE]/40 dark:bg-[#18232c]/50 scale-[1.01]"
                       : previewUrl
-                      ? "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517] hover:border-slate-400 dark:hover:border-slate-600"
-                      : "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517] hover:border-[#1F6C9F] hover:bg-[#E1F3FE]/20 dark:hover:bg-[#18232c]/30"
+                      ? "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517]"
+                      : "border-[#eaeaea] dark:border-slate-800 bg-[#fbfbfa] dark:bg-[#141517]"
                   }`}
                 >
+                  {/* Hidden Inputs */}
                   <input
                     type="file"
+                    id="product-photo-file-input"
                     accept="image/*"
                     ref={fileInputRef}
+                    onChange={handleFileChange}
+                    disabled={compressing}
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    id="product-photo-camera-input"
+                    accept="image/*"
+                    capture="environment"
                     onChange={handleFileChange}
                     disabled={compressing}
                     className="hidden"
@@ -933,33 +943,61 @@ export default function ProductsPage() {
                       <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-[6px] overflow-hidden border border-[#eaeaea] dark:border-slate-800 relative shrink-0 shadow-sm">
                         <Image src={previewUrl} alt="Preview" fill sizes="80px" className="object-cover" />
                       </div>
-                      <div className="text-left space-y-1 min-w-0">
+                      <div className="text-left space-y-1.5 min-w-0">
                         <p className="text-xs font-bold text-[#111111] dark:text-white font-technical truncate">
                           {file ? file.name : "Foto Produk Saat Ini"}
-                        </p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                          Klik kotak ini atau seret (drag & drop) gambar baru untuk mengganti.
                         </p>
                         {compressedInfo && (
                           <span className="inline-block text-[9px] font-bold text-[#1F6C9F] dark:text-[#6cb6e4] bg-[#E1F3FE] dark:bg-[#18232c] px-2 py-0.5 rounded font-technical uppercase">
                             {compressedInfo}
                           </span>
                         )}
+                        <div className="flex gap-2 pt-1">
+                          <label
+                            htmlFor="product-photo-camera-input"
+                            className="px-2.5 py-1 bg-[#1F6C9F] hover:bg-[#195781] text-white font-bold rounded-[4px] text-[10px] uppercase font-technical cursor-pointer flex items-center gap-1 shadow-sm transition-all"
+                          >
+                            📷 Foto Kamera
+                          </label>
+                          <label
+                            htmlFor="product-photo-file-input"
+                            className="px-2.5 py-1 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[4px] text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1 transition-all"
+                          >
+                            🖼️ Ganti Galeri
+                          </label>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-2 space-y-1.5 text-slate-500 dark:text-slate-400">
+                    <div className="flex flex-col items-center justify-center py-2 space-y-2 text-slate-500 dark:text-slate-400">
                       <div className="w-10 h-10 rounded-full bg-[#f5f5f5] dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
                         <span className="material-symbols-outlined text-xl">add_photo_alternate</span>
                       </div>
                       <p className="text-xs font-bold text-[#111111] dark:text-white font-technical uppercase">
-                        Pilih Foto / Seret (Drag & Drop) ke Sini
+                        Upload Foto Produk
                       </p>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 font-technical">
-                        Mendukung Kamera HP, Galeri, JPEG, PNG, WebP (Otomatis Kompres &lt; 150 KB)
+                        Pilih foto dari Kamera HP langsung atau dari Galeri (Otomatis Kompres &lt; 150 KB)
                       </p>
+
+                      {/* Tombol Pilihan Kamera vs Galeri */}
+                      <div className="flex gap-2 pt-1.5">
+                        <label
+                          htmlFor="product-photo-camera-input"
+                          className="px-3.5 py-2 bg-[#1F6C9F] hover:bg-[#195781] text-white font-bold rounded-[6px] text-[11px] uppercase font-technical cursor-pointer flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          📷 Ambil Foto Kamera
+                        </label>
+                        <label
+                          htmlFor="product-photo-file-input"
+                          className="px-3.5 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[11px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1.5 transition-all"
+                        >
+                          🖼️ Pilih dari Galeri
+                        </label>
+                      </div>
                     </div>
                   )}
+                </div>
 
                   {compressing && (
                     <p className="text-xs text-[#1F6C9F] dark:text-[#6cb6e4] font-bold mt-2 animate-pulse font-technical">
@@ -967,7 +1005,6 @@ export default function ProductsPage() {
                     </p>
                   )}
                 </div>
-              </div>
 
               <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-[#eaeaea] dark:border-slate-800/80 text-xs">
                 <button

@@ -113,7 +113,7 @@ export default function OrdersPage() {
 
   // State Modal Edit Item Order (Real-time Grand Total)
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [editOrderItems, setEditOrderItems] = useState<{ productId: string; price: number; customPrice: number; description?: string }[]>([]);
+  const [editOrderItems, setEditOrderItems] = useState<{ productId: string; price: number; customPrice: number; discount: number; description?: string }[]>([]);
   const [availableProductsForEdit, setAvailableProductsForEdit] = useState<Product[]>([]);
   const [selectedAddProductId, setSelectedAddProductId] = useState<string>("");
   const [editShippingCost, setEditShippingCost] = useState<string>("0");
@@ -153,23 +153,14 @@ export default function OrdersPage() {
         setOrders(data.data);
       }
     } catch {
-      // Ignore
+      showToast("Gagal memuat data pesanan.", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      if (isMounted) {
-        await fetchOrders();
-      }
-    }
-    load();
-    return () => {
-      isMounted = false;
-    };
+    fetchOrders();
   }, [fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -181,13 +172,13 @@ export default function OrdersPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast(`Status pesanan #${orderId.slice(0, 8)} diubah ke '${newStatus}'.`, "success");
+        showToast(`Status pesanan #${orderId.slice(0, 8)} berhasil diubah ke '${newStatus}'.`, "success");
         fetchOrders();
       } else {
-        showToast(data.error || "Gagal memperbarui status order.", "error");
+        showToast(data.error || "Gagal mengubah status pesanan.", "error");
       }
     } catch {
-      showToast("Terjadi kesalahan koneksi saat memperbarui status order.", "error");
+      showToast("Terjadi kesalahan koneksi saat mengubah status pesanan.", "error");
     }
   };
 
@@ -249,6 +240,7 @@ export default function OrdersPage() {
         productId: p.id,
         price: p.price,
         customPrice: p.price,
+        discount: p.discount || 0,
         description: p.description || undefined,
       }))
     );
@@ -275,6 +267,7 @@ export default function OrdersPage() {
         productId: product.id,
         price: product.price,
         customPrice: product.price,
+        discount: 0,
         description: product.description || undefined,
       },
     ]);
@@ -298,7 +291,12 @@ export default function OrdersPage() {
     }
     setSavingEditOrder(true);
 
-    const totalBarang = editOrderItems.reduce((acc, item) => acc + item.customPrice, 0);
+    const totalBarang = editOrderItems.reduce((acc, item) => {
+      const base = isNaN(item.customPrice) ? item.price : item.customPrice;
+      const disc = isNaN(item.discount) ? 0 : item.discount;
+      return acc + Math.max(0, base - disc);
+    }, 0);
+
     const shipping = parseInt(editShippingCost, 10) || 0;
     const dp = parseInt(editDpAmount, 10) || 0;
     const grandTotal = totalBarang + shipping;
@@ -313,7 +311,11 @@ export default function OrdersPage() {
           totalPrice: grandTotal,
           notes: editNotes.trim() || null,
           productIds: editOrderItems.map((i) => i.productId),
-          products: editOrderItems,
+          products: editOrderItems.map((i) => ({
+            productId: i.productId,
+            customPrice: i.customPrice,
+            discount: i.discount,
+          })),
         }),
       });
 
@@ -398,17 +400,17 @@ export default function OrdersPage() {
       })
       .join("\n");
 
-    let financialLines = `* Total Barang (${o.products.length}): Rp ${totalBarangPrice.toLocaleString("id-ID")}`;
+    let financialLines = `Total Barang (${o.products.length}): Rp ${totalBarangPrice.toLocaleString("id-ID")}`;
     if (totalDiscount > 0) {
-      financialLines += `\n* Diskon: - Rp ${totalDiscount.toLocaleString("id-ID")}`;
+      financialLines += `\nDiskon: Rp ${totalDiscount.toLocaleString("id-ID")}`;
     }
-    financialLines += `\n* Ongkir (${o.shippingCourier || "Ekspedisi"}): Rp ${(o.shippingCost || 0).toLocaleString("id-ID")}`;
+    financialLines += `\nOngkir (${o.shippingCourier || "Ekspedisi"}): Rp ${(o.shippingCost || 0).toLocaleString("id-ID")}`;
 
     if (o.dpAmount > 0) {
-      financialLines += `\n* DP Dibayar: - Rp ${o.dpAmount.toLocaleString("id-ID")}`;
+      financialLines += `\nDP Dibayar: Rp ${o.dpAmount.toLocaleString("id-ID")}`;
       const sisa = Math.max(0, o.totalPrice - o.dpAmount);
       if (sisa > 0) {
-        financialLines += `\n* Sisa Pelunasan: Rp ${sisa.toLocaleString("id-ID")}`;
+        financialLines += `\nSisa Pelunasan: Rp ${sisa.toLocaleString("id-ID")}`;
       }
     }
 
@@ -961,29 +963,53 @@ A/N ALRON EBENHAEZER C`;
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-white dark:bg-[#141517] px-2 py-1 rounded border border-[#eaeaea] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-400 font-technical">Rp</span>
-                          <input
-                            type="number"
-                            value={item.customPrice}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value, 10) || 0;
-                              setEditOrderItems((prev) =>
-                                prev.map((i) =>
-                                  i.productId === item.productId
-                                    ? { ...i, customPrice: val }
-                                    : i
-                                )
-                              );
-                            }}
-                            className="w-24 text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
-                          />
+                        <div className="flex flex-col gap-1.5">
+                          {/* Input Ubah Harga Normal */}
+                          <div className="flex items-center justify-between gap-2 bg-white dark:bg-[#141517] px-2 py-1 rounded border border-[#eaeaea] dark:border-slate-700 w-[140px]">
+                            <span className="text-[9px] text-slate-400 font-technical uppercase">Harga:</span>
+                            <input
+                              type="number"
+                              value={item.customPrice}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10) || 0;
+                                setEditOrderItems((prev) =>
+                                  prev.map((i) =>
+                                    i.productId === item.productId
+                                      ? { ...i, customPrice: val }
+                                      : i
+                                  )
+                                );
+                              }}
+                              className="w-[80px] text-right font-technical font-bold text-[11px] text-[#111111] dark:text-white focus:outline-none bg-transparent"
+                            />
+                          </div>
+
+                          {/* Input Diskon Nominal */}
+                          <div className="flex items-center justify-between gap-2 bg-white dark:bg-[#141517] px-2 py-1 rounded border border-[#eaeaea] dark:border-slate-700 w-[140px]">
+                            <span className="text-[9px] text-rose-500 font-technical uppercase">Diskon:</span>
+                            <input
+                              type="number"
+                              value={item.discount || ""}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10) || 0;
+                                setEditOrderItems((prev) =>
+                                  prev.map((i) =>
+                                    i.productId === item.productId
+                                      ? { ...i, discount: val }
+                                      : i
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="w-[80px] text-right font-technical font-bold text-[11px] text-rose-600 dark:text-rose-400 focus:outline-none bg-transparent"
+                            />
+                          </div>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => handleRemoveItemFromEditOrder(item.productId)}
-                          className="text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs p-1 rounded font-technical cursor-pointer"
+                          className="text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs p-2 rounded font-technical cursor-pointer self-start ml-1"
                           title="Hapus tas ini"
                         >
                           ✕
@@ -1063,8 +1089,10 @@ A/N ALRON EBENHAEZER C`;
               {/* Real-time Grand Total Breakdown */}
               <div className="p-3 bg-[#E1F3FE] dark:bg-[#18232c] border border-[#d2ecfc] dark:border-slate-700 rounded-[6px] space-y-1 font-technical uppercase text-xs">
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Total Tas ({editOrderItems.length}):</span>
-                  <span className="font-bold">Rp {editOrderItems.reduce((acc, i) => acc + i.customPrice, 0).toLocaleString("id-ID")}</span>
+                  <span>Subtotal Barang:</span>
+                  <span className="font-bold">
+                    Rp {editOrderItems.reduce((acc, i) => acc + Math.max(0, i.customPrice - (i.discount || 0)), 0).toLocaleString("id-ID")}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Ongkir:</span>
@@ -1072,7 +1100,9 @@ A/N ALRON EBENHAEZER C`;
                 </div>
                 <div className="flex justify-between items-center border-t border-[#1F6C9F]/20 dark:border-slate-700 pt-1 text-[#1F6C9F] dark:text-[#6cb6e4] font-bold">
                   <span>Grand Total Tagihan:</span>
-                  <span className="text-sm">Rp {(editOrderItems.reduce((acc, i) => acc + i.customPrice, 0) + (parseInt(editShippingCost, 10) || 0)).toLocaleString("id-ID")}</span>
+                  <span className="text-sm">
+                    Rp {(editOrderItems.reduce((acc, i) => acc + Math.max(0, i.customPrice - (i.discount || 0)), 0) + (parseInt(editShippingCost, 10) || 0)).toLocaleString("id-ID")}
+                  </span>
                 </div>
               </div>
 

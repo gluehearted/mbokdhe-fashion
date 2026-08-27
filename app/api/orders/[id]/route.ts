@@ -67,14 +67,20 @@ export async function PATCH(
         if (linkError) throw linkError;
       }
 
-      // Update prices for individual products if provided in products array
+      // Update prices & discounts for individual products if provided in products array
       if (Array.isArray(products)) {
         for (const item of products) {
-          if (item.productId && item.customPrice !== undefined) {
-            await supabase
+          if (item.productId && (item.customPrice !== undefined || item.discount !== undefined)) {
+            const updateData: any = {};
+            if (item.customPrice !== undefined) updateData.price = item.customPrice;
+            if (item.discount !== undefined) updateData.discount = item.discount;
+
+            const { error: prodUpdateError } = await supabase
               .from("products")
-              .update({ price: item.customPrice })
+              .update(updateData)
               .eq("id", item.productId);
+
+            if (prodUpdateError) throw prodUpdateError;
           }
         }
       }

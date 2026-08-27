@@ -705,10 +705,12 @@ export default function NewOrderPage() {
               </div>
 
               {/* File Upload Foto */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Foto Produk (Opsional)</label>
+                
                 <input
                   type="file"
+                  id="new-order-prod-file-input"
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
@@ -719,10 +721,49 @@ export default function NewOrderPage() {
                       setNewProdPreview(null);
                     }
                   }}
-                  className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-[4px] file:border-0 file:text-[10px] file:font-bold file:uppercase file:font-technical file:bg-slate-100 file:text-slate-700 dark:file:bg-slate-800 dark:file:text-slate-300 hover:file:bg-slate-200 cursor-pointer"
+                  className="hidden"
                 />
+
+                <input
+                  type="file"
+                  id="new-order-prod-camera-input"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setNewProdFile(file);
+                    if (file) {
+                      setNewProdPreview(URL.createObjectURL(file));
+                    } else {
+                      setNewProdPreview(null);
+                    }
+                  }}
+                  className="hidden"
+                />
+
+                <div className="flex gap-2">
+                  <label
+                    htmlFor="new-order-prod-camera-input"
+                    className="px-3 py-1.5 bg-[#1F6C9F] hover:bg-[#195781] text-white font-bold rounded-[6px] text-[10px] uppercase font-technical cursor-pointer flex items-center gap-1 shadow-sm transition-all"
+                  >
+                    📷 Buka Kamera HP
+                  </label>
+                  <label
+                    htmlFor="new-order-prod-file-input"
+                    className="px-3 py-1.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center gap-1 transition-all"
+                  >
+                    🖼️ Pilih Galeri
+                  </label>
+                </div>
+
+                {newProdFile && (
+                  <span className="text-[10px] text-[#1F6C9F] font-bold font-technical block truncate">
+                    File: {newProdFile.name}
+                  </span>
+                )}
+
                 {newProdPreview && (
-                  <div className="mt-2 w-16 h-16 rounded-[4px] border overflow-hidden relative">
+                  <div className="mt-2 w-16 h-16 rounded-[4px] border border-[#eaeaea] dark:border-slate-800 overflow-hidden relative shadow-sm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={newProdPreview} alt="Preview" className="w-full h-full object-cover" />
                   </div>
