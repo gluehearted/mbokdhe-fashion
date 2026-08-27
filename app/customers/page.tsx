@@ -24,13 +24,9 @@ interface Customer {
 }
 
 const COURIER_OPTIONS = [
-  "JNE",
   "SiCepat",
   "J&T Express",
   "TIKI",
-  "POS Indonesia",
-  "IDExpress",
-  "Ninja Express",
   "Wahana",
   "Lion Parcel",
 ];

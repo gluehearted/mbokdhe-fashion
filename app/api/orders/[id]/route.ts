@@ -9,10 +9,10 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    let { status, trackingNo, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice } = body;
+    let { status, trackingNo, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice, notes, productIds, products } = body;
 
     // Map status string if provided in English
-    if (status === "Keep") status = "Menunggu";
+    if (status === "Keep") status = "Keep";
     if (status === "Siap_Packing" || status === "Siap_Kirim" || status === "Siap Packing") status = "Siap Kirim";
     if (status === "Shipped") status = "Dikirim";
     if (status === "Cancelled") status = "Dibatalkan";
@@ -35,7 +35,52 @@ export async function PATCH(
       );
     }
 
-    // If status is changed to Dibatalkan/Cancelled, revert all linked products to Tersedia
+    // 1. Synchronize Product Items if productIds is provided
+    if (Array.isArray(productIds)) {
+      const currentProducts: any[] = existingOrder.products || [];
+      const currentProductIds = currentProducts.map((p: any) => p.id);
+
+      // Removed products -> revert status to Tersedia and unlink orderId
+      const removedIds = currentProductIds.filter((pid: string) => !productIds.includes(pid));
+      if (removedIds.length > 0) {
+        const { error: unlinkError } = await supabase
+          .from("products")
+          .update({
+            status: "Tersedia",
+            orderId: null,
+          })
+          .in("id", removedIds);
+        if (unlinkError) throw unlinkError;
+      }
+
+      // Added or updated products -> link to this orderId
+      const addedIds = productIds.filter((pid: string) => !currentProductIds.includes(pid));
+      if (addedIds.length > 0) {
+        const newProductStatus = (status === "Dikirim" || status === "Shipped") ? "Terjual" : "Dibooking";
+        const { error: linkError } = await supabase
+          .from("products")
+          .update({
+            status: newProductStatus,
+            orderId: id,
+          })
+          .in("id", addedIds);
+        if (linkError) throw linkError;
+      }
+
+      // Update prices for individual products if provided in products array
+      if (Array.isArray(products)) {
+        for (const item of products) {
+          if (item.productId && item.customPrice !== undefined) {
+            await supabase
+              .from("products")
+              .update({ price: item.customPrice })
+              .eq("id", item.productId);
+          }
+        }
+      }
+    }
+
+    // 2. Handle Status changes
     if (status === "Dibatalkan" || status === "Cancelled") {
       const { error: prodError } = await supabase
         .from("products")
@@ -46,7 +91,6 @@ export async function PATCH(
         .eq("orderId", id);
       if (prodError) throw prodError;
     } else if (status === "Dikirim" || status === "Shipped") {
-      // If status changed to Dikirim, products become Terjual
       const { error: prodError } = await supabase
         .from("products")
         .update({
@@ -66,6 +110,7 @@ export async function PATCH(
         ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
         ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),
         ...(totalPrice !== undefined && { totalPrice: parseInt(String(totalPrice), 10) }),
+        ...(notes !== undefined && { notes: notes ? String(notes).trim() : null }),
         updatedAt: new Date().toISOString(),
       })
       .eq("id", id)

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     if (status && status !== "ALL") {
       let checkStatus = status;
-      if (status === "Keep") checkStatus = "Menunggu";
+      if (status === "Keep") checkStatus = "Keep";
       else if (status === "Siap_Packing" || status === "Siap Packing") checkStatus = "Siap Kirim";
       else if (status === "Shipped") checkStatus = "Dikirim";
       else if (status === "Cancelled") checkStatus = "Dibatalkan";
@@ -58,18 +58,23 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
     if (!body) throw new Error("Format data tidak valid");
 
-    const {
+    let {
       customerId,
       productIds,
       products, // Frontend mengirim array of object {productId, discount, customPrice}
       shippingCost = 0,
       courier, 
       status = "Menunggu",
-      dpAmount = 0
+      dpAmount = 0,
+      notes = null
     } = body;
 
+    if ((!productIds || !Array.isArray(productIds) || productIds.length === 0) && Array.isArray(products)) {
+      productIds = products.map((p: any) => p.productId || p.id).filter(Boolean);
+    }
+
     let orderStatus = status;
-    if (orderStatus === "Keep") orderStatus = "Menunggu";
+    if (orderStatus === "Keep") orderStatus = "Keep";
     if (orderStatus === "Siap_Packing" || orderStatus === "Siap_Kirim" || orderStatus === "Siap Packing") orderStatus = "Siap Kirim";
     if (orderStatus === "Shipped") orderStatus = "Dikirim";
     if (orderStatus === "Cancelled") orderStatus = "Dibatalkan";
@@ -91,7 +96,7 @@ export async function POST(request: Request) {
       throw new Error(`Tas [${unavailableIds}] sudah tidak tersedia (mungkin sudah terjual).`);
     }
 
-    // 3. Hitung total harga sesuai diskon individual dari Frontend
+    // 3. Hitung total harga sesuai harga barang dari Frontend
     let totalBarang = 0;
     for (const dbProduct of dbProducts || []) {
       const userProduct = products?.find((p: any) => p.productId === dbProduct.id);
@@ -112,6 +117,7 @@ export async function POST(request: Request) {
         totalPrice: totalTagihan,
         dpAmount: Number(dpAmount),
         dpDate: Number(dpAmount) > 0 ? new Date().toISOString() : null,
+        notes: notes ? String(notes).trim() : null,
         updatedAt: new Date().toISOString(),
       }])
       .select()

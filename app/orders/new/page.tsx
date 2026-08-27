@@ -26,14 +26,11 @@ interface Product {
 }
 
 const AVAILABLE_COURIERS = [
-  { code: "JNE", label: "JNE Express" },
-  { code: "J&T", label: "J&T Express" },
-  { code: "POS", label: "POS Indonesia" },
-  { code: "SiCepat", label: "SiCepat Ekspres" },
-  { code: "Ninja", label: "Ninja Xpress" },
-  { code: "Lion", label: "Lion Parcel" },
-  { code: "ShopeeExpress", label: "Shopee Xpress" },
-  { code: "Lainnya", label: "Ekspedisi Lainnya" },
+  { code: "SiCepat", label: "SiCepat" },
+  { code: "J&T Express", label: "J&T Express" },
+  { code: "TIKI", label: "TIKI" },
+  { code: "Wahana", label: "Wahana" },
+  { code: "Lion Parcel", label: "Lion Parcel" },
 ];
 
 export default function NewOrderPage() {
@@ -53,6 +50,7 @@ export default function NewOrderPage() {
   const [manualShippingCost, setManualShippingCost] = useState<string>("");
   const [orderStatus, setOrderStatus] = useState<string>("Menunggu");
   const [dpAmountInput, setDpAmountInput] = useState<string>("");
+  const [orderNotes, setOrderNotes] = useState<string>("");
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -67,6 +65,19 @@ export default function NewOrderPage() {
   const [newCustShippingCost, setNewCustShippingCost] = useState("");
   const [newCustError, setNewCustError] = useState<string | null>(null);
   const [savingNewCust, setSavingNewCust] = useState(false);
+
+  // --- State Modal Tambah Produk Baru ---
+  const [shops, setShops] = useState<{ id: string; name: string }[]>([]);
+  const [isNewProdModalOpen, setIsNewProdModalOpen] = useState(false);
+  const [newProdShop, setNewProdShop] = useState("");
+  const [newProdCustomId, setNewProdCustomId] = useState("");
+  const [newProdCapital, setNewProdCapital] = useState("");
+  const [newProdPrice, setNewProdPrice] = useState("");
+  const [newProdDesc, setNewProdDesc] = useState("");
+  const [newProdFile, setNewProdFile] = useState<File | null>(null);
+  const [newProdPreview, setNewProdPreview] = useState<string | null>(null);
+  const [savingNewProd, setSavingNewProd] = useState(false);
+  const [newProdError, setNewProdError] = useState<string | null>(null);
 
   const [zoomProduct, setZoomProduct] = useState<Product | null>(null);
 
@@ -98,23 +109,44 @@ export default function NewOrderPage() {
     });
   }, [customers, customerSearchQuery]);
 
+  const refreshProductsAndShops = async () => {
+    try {
+      const [prodRes, shopRes] = await Promise.all([
+        fetch("/api/products"),
+        fetch("/api/shops"),
+      ]);
+      const prodData = await prodRes.json();
+      const shopData = await shopRes.json();
+      if (prodData.success) {
+        const available = prodData.data.filter((p: Product) => p.status === "Tersedia");
+        setAvailableProducts(available);
+      }
+      if (shopData.success) setShops(shopData.data);
+    } catch {
+      // Ignore
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
       setLoadingData(true);
       try {
-        const [custRes, prodRes] = await Promise.all([
+        const [custRes, prodRes, shopRes] = await Promise.all([
           fetch("/api/customers"),
           fetch("/api/products"),
+          fetch("/api/shops"),
         ]);
         const custData = await custRes.json();
         const prodData = await prodRes.json();
+        const shopData = await shopRes.json();
         if (!isMounted) return;
         if (custData.success) setCustomers(custData.data);
         if (prodData.success) {
           const available = prodData.data.filter((p: Product) => p.status === "Tersedia");
           setAvailableProducts(available);
         }
+        if (shopData.success) setShops(shopData.data);
       } catch {
         if (isMounted) setErrorMessage("Gagal memuat data pelanggan & produk.");
       } finally {
@@ -183,31 +215,17 @@ export default function NewOrderPage() {
     }
   };
 
-  const handleDiscountChange = (product: Product, rawValue: string) => {
-    setIndividualDiscounts((prev) => ({
-      ...prev,
-      [product.id]: rawValue,
-    }));
-
-    const discVal = parseInt(rawValue, 10) || 0;
-    const finalPrice = Math.max(0, product.price - discVal);
-    setCustomPrices((prev) => ({
-      ...prev,
-      [product.id]: String(finalPrice),
-    }));
-  };
-
   const handleCustomPriceChange = (product: Product, rawValue: string) => {
     setCustomPrices((prev) => ({
       ...prev,
       [product.id]: rawValue,
     }));
+  };
 
-    const finalPrice = parseInt(rawValue, 10) || 0;
-    const computedDisc = Math.max(0, product.price - finalPrice);
+  const handleDiscountChange = (product: Product, rawValue: string) => {
     setIndividualDiscounts((prev) => ({
       ...prev,
-      [product.id]: String(computedDisc),
+      [product.id]: rawValue,
     }));
   };
 
@@ -241,24 +259,43 @@ export default function NewOrderPage() {
     return [...pinnedSelected, ...selected, ...unselected];
   }, [filteredProducts, selectedProductIds, availableProducts, productSearch]);
 
-
   const totalNormalBarangPrice = useMemo(() => {
     return selectedProducts.reduce((acc, p) => acc + p.price, 0);
   }, [selectedProducts]);
 
-  const totalIndividualDiscount = useMemo(() => {
+  const totalBasePrice = useMemo(() => {
     return selectedProducts.reduce((acc, p) => {
-      const discVal = parseInt(individualDiscounts[p.id] || "0", 10) || 0;
-      return acc + discVal;
+      const rawCustom = customPrices[p.id];
+      const parsedCustom = parseInt(rawCustom, 10);
+      return acc + (isNaN(parsedCustom) ? p.price : parsedCustom);
+    }, 0);
+  }, [selectedProducts, customPrices]);
+
+  const totalDiscountAmount = useMemo(() => {
+    return selectedProducts.reduce((acc, p) => {
+      const rawDisc = individualDiscounts[p.id];
+      const parsedDisc = parseInt(rawDisc, 10);
+      return acc + (isNaN(parsedDisc) ? 0 : parsedDisc);
     }, 0);
   }, [selectedProducts, individualDiscounts]);
 
-  const totalBarangPriceAfterDiscount = useMemo(() => {
-    return Math.max(0, totalNormalBarangPrice - totalIndividualDiscount);
-  }, [totalNormalBarangPrice, totalIndividualDiscount]);
+  const totalBarangPrice = useMemo(() => {
+    return selectedProducts.reduce((acc, p) => {
+      const rawCustom = customPrices[p.id];
+      const parsedCustom = parseInt(rawCustom, 10);
+      const basePrice = isNaN(parsedCustom) ? p.price : parsedCustom;
+
+      const rawDisc = individualDiscounts[p.id];
+      const parsedDisc = parseInt(rawDisc, 10);
+      const discount = isNaN(parsedDisc) ? 0 : parsedDisc;
+
+      const effectivePrice = Math.max(0, basePrice - discount);
+      return acc + effectivePrice;
+    }, 0);
+  }, [selectedProducts, customPrices, individualDiscounts]);
 
   const parsedCostNum = parseInt(manualShippingCost, 10) || 0;
-  const totalTagihan = totalBarangPriceAfterDiscount + parsedCostNum;
+  const totalTagihan = totalBarangPrice + parsedCostNum;
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,18 +323,17 @@ export default function NewOrderPage() {
 
     try {
       const productsPayload = selectedProducts.map((p) => {
-        const rawDisc = individualDiscounts[p.id];
         const rawCustomPrice = customPrices[p.id];
-
-        const parsedDisc = parseInt(rawDisc, 10);
         const parsedCustomPrice = parseInt(rawCustomPrice, 10);
-
-        const discVal = isNaN(parsedDisc) ? 0 : parsedDisc;
         const customPriceVal = isNaN(parsedCustomPrice) ? p.price : parsedCustomPrice;
+
+        const rawDisc = individualDiscounts[p.id];
+        const parsedDisc = parseInt(rawDisc, 10);
+        const discountVal = isNaN(parsedDisc) ? 0 : parsedDisc;
 
         return {
           productId: p.id,
-          discount: discVal,
+          discount: discountVal,
           customPrice: customPriceVal,
         };
       });
@@ -310,6 +346,7 @@ export default function NewOrderPage() {
         courier: selectedCourier || selectedCustomer?.courier || "JNE",
         status: orderStatus,
         dpAmount: orderStatus === "DP" ? parseInt(dpAmountInput, 10) || 0 : 0,
+        notes: orderNotes.trim() || null,
       };
 
       const res = await fetch("/api/orders", {
@@ -329,6 +366,68 @@ export default function NewOrderPage() {
       setErrorMessage(err.message || "Terjadi kesalahan sistem saat membuat pesanan.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCreateNewProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewProdError(null);
+
+    if (!newProdShop.trim()) {
+      setNewProdError("Nama Toko / Supplier wajib diisi.");
+      return;
+    }
+
+    const parsedPrice = parseInt(newProdPrice, 10);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      setNewProdError("Harga Jual harus berupa angka positif.");
+      return;
+    }
+
+    setSavingNewProd(true);
+
+    try {
+      const formData = new FormData();
+      if (newProdCustomId.trim()) formData.append("id", newProdCustomId.trim());
+      formData.append("shopOrigin", newProdShop.trim());
+      formData.append("capitalPrice", newProdCapital.trim() || "0");
+      formData.append("price", String(parsedPrice));
+      formData.append("description", newProdDesc.trim());
+      if (newProdFile) formData.append("file", newProdFile);
+
+      const res = await fetch("/api/products", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Gagal membuat produk baru.");
+      }
+
+      const createdProduct = result.data;
+      await refreshProductsAndShops();
+
+      if (createdProduct && createdProduct.id) {
+        setSelectedProductIds((prev) => [...prev, createdProduct.id]);
+        setCustomPrices((prev) => ({
+          ...prev,
+          [createdProduct.id]: String(createdProduct.price),
+        }));
+      }
+
+      setIsNewProdModalOpen(false);
+      setNewProdShop("");
+      setNewProdCustomId("");
+      setNewProdCapital("");
+      setNewProdPrice("");
+      setNewProdDesc("");
+      setNewProdFile(null);
+      setNewProdPreview(null);
+    } catch (err: any) {
+      setNewProdError(err.message || "Terjadi kesalahan sistem saat menyimpan produk.");
+    } finally {
+      setSavingNewProd(false);
     }
   };
 
@@ -506,6 +605,145 @@ export default function NewOrderPage() {
                   className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer text-xs font-technical uppercase"
                 >
                   {savingNewCust ? "Menyimpan..." : "Simpan & Pilih Pelanggan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- Modal Tambah Produk Baru --- */}
+      {isNewProdModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-5 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-hidden transition-colors font-ui animate-fade-in-up">
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+              <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+                Tambah Produk Baru
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewProdModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs cursor-pointer font-technical uppercase"
+              >
+                ✕
+              </button>
+            </div>
+
+            {newProdError && (
+              <div className="p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold font-technical">
+                {newProdError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNewProduct} className="space-y-3 text-xs">
+              {/* Toko Supplier */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Toko Supplier / Toko Asal *</label>
+                <input
+                  type="text"
+                  required
+                  list="shop-options"
+                  value={newProdShop}
+                  onChange={(e) => setNewProdShop(e.target.value)}
+                  placeholder="Ketik atau pilih nama toko..."
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
+                />
+                <datalist id="shop-options">
+                  {shops.map((s) => (
+                    <option key={s.id} value={s.name} />
+                  ))}
+                </datalist>
+              </div>
+
+              {/* ID Tas Custom (Optional) */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">ID / Kode Tas (Opsional)</label>
+                <input
+                  type="text"
+                  value={newProdCustomId}
+                  onChange={(e) => setNewProdCustomId(e.target.value)}
+                  placeholder="Kosongkan untuk Auto-Generate ID"
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium font-technical transition-colors"
+                />
+              </div>
+
+              {/* Prices Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Harga Modal (Rp)</label>
+                  <input
+                    type="number"
+                    value={newProdCapital}
+                    onChange={(e) => setNewProdCapital(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium font-technical transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Harga Jual (Rp) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={newProdPrice}
+                    onChange={(e) => setNewProdPrice(e.target.value)}
+                    placeholder="Contoh: 150000"
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium font-technical transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Deskripsi */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Deskripsi Produk</label>
+                <input
+                  type="text"
+                  value={newProdDesc}
+                  onChange={(e) => setNewProdDesc(e.target.value)}
+                  placeholder="Warna, ukuran, tipe bahan..."
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
+                />
+              </div>
+
+              {/* File Upload Foto */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Foto Produk (Opsional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setNewProdFile(file);
+                    if (file) {
+                      setNewProdPreview(URL.createObjectURL(file));
+                    } else {
+                      setNewProdPreview(null);
+                    }
+                  }}
+                  className="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-[4px] file:border-0 file:text-[10px] file:font-bold file:uppercase file:font-technical file:bg-slate-100 file:text-slate-700 dark:file:bg-slate-800 dark:file:text-slate-300 hover:file:bg-slate-200 cursor-pointer"
+                />
+                {newProdPreview && (
+                  <div className="mt-2 w-16 h-16 rounded-[4px] border overflow-hidden relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={newProdPreview} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNewProdModalOpen(false)}
+                  className="w-1/3 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-xs font-technical uppercase"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingNewProd}
+                  className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer text-xs font-technical uppercase"
+                >
+                  {savingNewProd ? "Menyimpan..." : "Simpan & Pilih Produk"}
                 </button>
               </div>
             </form>
@@ -703,13 +941,22 @@ export default function NewOrderPage() {
                 )}
               </div>
 
-              {/* Step 2: Multi-Select Available Products & Per-Bag Individual Discounts */}
+              {/* Step 2: Multi-Select Available Products & Price Adjustments */}
               <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-colors">
                 <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 flex justify-between items-center font-technical uppercase">
-                  <span>2. Pilih Tas & Atur Diskon Individual</span>
-                  <span className="text-[10px] text-[#1F6C9F] font-bold">
-                    {selectedProductIds.length} Tas Terpilih
-                  </span>
+                  <span>2. Pilih Tas & Ubah Harga Barang</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsNewProdModalOpen(true)}
+                      className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:underline uppercase font-technical cursor-pointer flex items-center gap-1"
+                    >
+                      Tambah Produk Baru
+                    </button>
+                    <span className="text-[10px] text-[#1F6C9F] font-bold">
+                      {selectedProductIds.length} Tas Terpilih
+                    </span>
+                  </div>
                 </h3>
 
                 {availableProducts.length === 0 ? (
@@ -767,10 +1014,7 @@ export default function NewOrderPage() {
                       </div>
                     ) : displayedProducts.map((p) => {
                       const isSelected = selectedProductIds.includes(p.id);
-                      const currentDiscount = individualDiscounts[p.id] !== undefined ? individualDiscounts[p.id] : "";
                       const currentPrice = customPrices[p.id] !== undefined ? customPrices[p.id] : String(p.price);
-
-                      const discVal = parseInt(currentDiscount, 10) || 0;
 
                       return (
                         <div
@@ -829,53 +1073,67 @@ export default function NewOrderPage() {
                             )}
                           </div>
 
-                          {/* Individual Discount Controls per Bag */}
+                          {/* Price override & discount input */}
                           {isSelected && (
                             <div
-                              className="mt-3 pt-3 border-t border-[#1F6C9F]/20 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                              className="mt-3 pt-3 border-t border-[#1F6C9F]/20 dark:border-slate-800/80 space-y-3"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {/* Input Diskon Individual (Rp) */}
-                              <div className="space-y-1">
-                                <label className="block text-[9px] font-bold text-[#1F6C9F] dark:text-[#a2d8fa] uppercase tracking-wider font-technical">
-                                  Diskon Tas Ini:
-                                </label>
-                                <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 shadow-sm">
-                                  <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
-                                  <input
-                                    type="number"
-                                    value={currentDiscount}
-                                    onChange={(e) => handleDiscountChange(p, e.target.value)}
-                                    className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
-                                    placeholder="Contoh: 10000"
-                                  />
+                              <div className="grid grid-cols-2 gap-3">
+                                {/* Input Ubah Harga Normal */}
+                                <div className="space-y-1">
+                                  <label className="block text-[9px] font-bold text-[#1F6C9F] dark:text-[#a2d8fa] uppercase tracking-wider font-technical">
+                                    Ubah Harga Normal:
+                                  </label>
+                                  <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 shadow-sm">
+                                    <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
+                                    <input
+                                      type="number"
+                                      value={currentPrice}
+                                      onChange={(e) => handleCustomPriceChange(p, e.target.value)}
+                                      className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
+                                      placeholder={String(p.price)}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Input Diskon Nominal */}
+                                <div className="space-y-1">
+                                  <label className="block text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider font-technical">
+                                    Diskon Barang:
+                                  </label>
+                                  <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 shadow-sm">
+                                    <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
+                                    <input
+                                      type="number"
+                                      value={individualDiscounts[p.id] || ""}
+                                      onChange={(e) => handleDiscountChange(p, e.target.value)}
+                                      className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
+                                      placeholder="0"
+                                    />
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Input Harga Akhir (Rp) */}
-                              <div className="space-y-1">
-                                <label className="block text-[9px] font-bold text-[#1F6C9F] dark:text-[#a2d8fa] uppercase tracking-wider font-technical">
-                                  Harga Akhir Setelah Diskon:
-                                </label>
-                                <div className="flex items-center gap-1 bg-white dark:bg-[#1c1d1f] px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 shadow-sm">
-                                  <span className="font-technical text-xs font-bold text-slate-400">Rp</span>
-                                  <input
-                                    type="number"
-                                    value={currentPrice}
-                                    onChange={(e) => handleCustomPriceChange(p, e.target.value)}
-                                    className="w-full text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
-                                    placeholder={String(p.price)}
-                                  />
+                              {/* Kalkulasi Subtotal Per Item */}
+                              <div className="flex justify-between items-center text-[10px] font-technical px-1">
+                                {(parseInt(currentPrice, 10) !== p.price && !isNaN(parseInt(currentPrice, 10))) || individualDiscounts[p.id] ? (
+                                  <span className="text-[#1F6C9F] font-semibold">
+                                    Harga Dasar: Rp {p.price.toLocaleString("id-ID")}
+                                  </span>
+                                ) : <span />}
+                                
+                                <div className="flex gap-2 uppercase">
+                                  <span className="text-slate-500">Subtotal:</span>
+                                  <span className="font-bold text-[#111111] dark:text-white">
+                                    Rp {(() => {
+                                      const base = isNaN(parseInt(currentPrice, 10)) ? p.price : parseInt(currentPrice, 10);
+                                      const disc = isNaN(parseInt(individualDiscounts[p.id], 10)) ? 0 : parseInt(individualDiscounts[p.id], 10);
+                                      return Math.max(0, base - disc).toLocaleString("id-ID");
+                                    })()}
+                                  </span>
                                 </div>
                               </div>
-
-                              {/* Individual Discount Badge Notice */}
-                              {discVal > 0 && (
-                                <div className="sm:col-span-2 p-2 bg-[#E1F3FE] text-[#1F6C9F] border border-[#d2ecfc] rounded-[6px] text-[10px] font-technical font-bold flex justify-between items-center uppercase tracking-wide">
-                                  <span>Potongan Diskon Tas:</span>
-                                  <span>-Rp {discVal.toLocaleString("id-ID")}</span>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
@@ -928,10 +1186,10 @@ export default function NewOrderPage() {
             {/* RIGHT COLUMN (5 cols) */}
             <div className="lg:col-span-5 space-y-6">
 
-              {/* Status & DP */}
+              {/* Status, Catatan & DP */}
               <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-xs transition-colors">
                 <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
-                  Status Pesanan & DP
+                  Status Pesanan & Catatan
                 </h3>
 
                 <div className="space-y-1.5">
@@ -947,7 +1205,6 @@ export default function NewOrderPage() {
                     }}
                     className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-semibold focus:outline-none focus:border-[#111111] cursor-pointer"
                   >
-                    <option value="">-- Pilih Status Awal Pesanan --</option>
                     <option value="Menunggu">Menunggu Pembayaran</option>
                     <option value="DP">DP (Pembekuan Dana)</option>
                     <option value="Siap Kirim">Siap Kirim (Lunas)</option>
@@ -967,33 +1224,58 @@ export default function NewOrderPage() {
                     />
                   </div>
                 )}
+
+                {/* Textarea Catatan Pesanan */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">Catatan Pesanan (Opsional)</label>
+                  <textarea
+                    rows={2}
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    placeholder="Contoh: Titip bungkus bubble wrap tebal, janjikan pelunasan besok..."
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-medium focus:outline-none focus:border-[#111111]"
+                  />
+                </div>
               </div>
 
-              {/* Summary Tagihan with Individual Discount Breakdown */}
+              {/* Summary Tagihan */}
               <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.01)] text-xs transition-colors">
                 <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] border-b border-[#eaeaea] dark:border-slate-800 pb-3 uppercase font-technical">
                   Ringkasan Tagihan Order
                 </h3>
 
                 <div className="space-y-3 font-technical uppercase">
-                  <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
-                    <span>Total Barang ({selectedProductIds.length} Tas):</span>
-                    <span className="text-slate-800 dark:text-slate-200 font-bold">
-                      Rp {totalNormalBarangPrice.toLocaleString("id-ID")}
-                    </span>
-                  </div>
+                  {totalDiscountAmount > 0 ? (
+                    <>
+                      <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                        <span>Total Harga Dasar ({selectedProductIds.length} Tas):</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-bold">
+                          Rp {totalBasePrice.toLocaleString("id-ID")}
+                        </span>
+                      </div>
 
-                  {totalIndividualDiscount > 0 && (
-                    <div className="flex justify-between items-center text-[#9F2F2D] font-bold">
-                      <span>Total Diskon Barang:</span>
-                      <span>-Rp {totalIndividualDiscount.toLocaleString("id-ID")}</span>
+                      <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 font-bold">
+                        <span>Total Diskon Barang:</span>
+                        <span>
+                          - Rp {totalDiscountAmount.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 pt-1 border-t border-dashed border-[#eaeaea] dark:border-slate-800">
+                        <span>Subtotal Harga Barang:</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-bold">
+                          Rp {totalBarangPrice.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                      <span>Total Harga Barang ({selectedProductIds.length} Tas):</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-bold">
+                        Rp {totalBarangPrice.toLocaleString("id-ID")}
+                      </span>
                     </div>
                   )}
-
-                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-200 font-bold border-t border-[#eaeaea] dark:border-slate-800/80 pt-2">
-                    <span>Subtotal Setelah Diskon:</span>
-                    <span>Rp {totalBarangPriceAfterDiscount.toLocaleString("id-ID")}</span>
-                  </div>
 
                   <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
                     <span>Ongkos Kirim ({selectedCourier || "Ekspedisi"}):</span>
@@ -1015,7 +1297,7 @@ export default function NewOrderPage() {
                   disabled={submitting}
                   className="w-full py-3 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] shadow-sm transition-all text-xs uppercase font-technical tracking-wider cursor-pointer"
                 >
-                  {submitting ? "Memproses Pesanan..." : "SIMPAN PESANAN"}
+                  {submitting ? "Memproses..." : "Buat Pesanan"}
                 </button>
               </div>
 

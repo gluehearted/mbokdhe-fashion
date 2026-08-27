@@ -28,10 +28,27 @@ export async function GET(
       );
     }
 
-    // Sort orders in memory to match orderBy: { createdAt: "desc" }
+    // Sort orders in memory & compute totalSpending / totalTransactions
     if (customer.orders && Array.isArray(customer.orders)) {
       customer.orders.sort(
         (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      const validOrders = customer.orders.filter((o: any) => {
+        const st = o.status;
+        return (
+          st === "Siap Kirim" ||
+          st === "Siap_Kirim" ||
+          st === "Siap Packing" ||
+          st === "Dikirim" ||
+          st === "Shipped"
+        );
+      });
+
+      customer.totalTransactions = validOrders.length;
+      customer.totalSpending = validOrders.reduce(
+        (sum: number, o: any) => sum + (o.totalPrice || 0),
+        0
       );
     }
 

@@ -61,16 +61,31 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    // Compute live totalSpending & totalTransactions if needed
+    // Compute live totalSpending & totalTransactions (hanya pesanan berstatus 'Siap Kirim' atau 'Dikirim')
     const mapped = (customers || []).map((c: any) => {
       const orders = c.orders || [];
-      const ordersCount = orders.length;
-      const calculatedSpending = orders.reduce((sum: number, o: any) => sum + (o.status !== "Dibatalkan" && o.status !== "Cancelled" ? o.totalPrice : 0), 0);
+      const validOrders = orders.filter((o: any) => {
+        const st = o.status;
+        return (
+          st === "Siap Kirim" ||
+          st === "Siap_Kirim" ||
+          st === "Siap Packing" ||
+          st === "Dikirim" ||
+          st === "Shipped"
+        );
+      });
+
+      const validTransactionsCount = validOrders.length;
+      const validTotalSpending = validOrders.reduce(
+        (sum: number, o: any) => sum + (o.totalPrice || 0),
+        0
+      );
+
       return {
         ...c,
-        _count: { orders: ordersCount },
-        totalTransactions: c.totalTransactions || ordersCount,
-        totalSpending: c.totalSpending || calculatedSpending,
+        _count: { orders: validTransactionsCount },
+        totalTransactions: validTransactionsCount,
+        totalSpending: validTotalSpending,
       };
     });
 

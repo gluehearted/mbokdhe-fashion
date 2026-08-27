@@ -47,8 +47,42 @@ interface Order {
   products: Product[];
 }
 
+function parseSafeDate(dateStr: string) {
+  if (!dateStr) return new Date();
+  let safeStr = dateStr;
+  if (!safeStr.includes("T")) safeStr = safeStr.replace(" ", "T");
+  if (!safeStr.includes("Z") && !safeStr.includes("+")) safeStr = `${safeStr}Z`;
+  return new Date(safeStr);
+}
+
+function getDurationHeld(createdAt: string) {
+  const safeDate = parseSafeDate(createdAt);
+  const diffMs = Date.now() - safeDate.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  const remainingHours = diffHours % 24;
+
+  let durationStr = "";
+  if (diffDays > 0) {
+    durationStr = `${diffDays} Hr ${remainingHours} Jm`;
+  } else if (diffHours > 0) {
+    durationStr = `${diffHours} Jam`;
+  } else {
+    const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    durationStr = `${diffMins} Mnt`;
+  }
+
+  const isWarning = diffHours >= 24;
+  return { durationStr, diffHours, isWarning };
+}
+
 export default function OrdersPage() {
   const { showToast } = useToast();
+
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +106,20 @@ export default function OrdersPage() {
 
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [isDeletingOrder, setIsDeletingOrder] = useState(false);
+
+  // State Modal Release Keep Order
+  const [orderToRelease, setOrderToRelease] = useState<Order | null>(null);
+  const [isReleasingOrder, setIsReleasingOrder] = useState(false);
+
+  // State Modal Edit Item Order (Real-time Grand Total)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editOrderItems, setEditOrderItems] = useState<{ productId: string; price: number; customPrice: number; description?: string }[]>([]);
+  const [availableProductsForEdit, setAvailableProductsForEdit] = useState<Product[]>([]);
+  const [selectedAddProductId, setSelectedAddProductId] = useState<string>("");
+  const [editShippingCost, setEditShippingCost] = useState<string>("0");
+  const [editDpAmount, setEditDpAmount] = useState<string>("0");
+  const [editNotes, setEditNotes] = useState<string>("");
+  const [savingEditOrder, setSavingEditOrder] = useState(false);
 
   // Floating Hover Tooltip state (prevents table overflow clipping)
   const [hoveredPreview, setHoveredPreview] = useState<{
@@ -167,6 +215,123 @@ export default function OrdersPage() {
     }
   };
 
+  const confirmReleaseOrder = async () => {
+    if (!orderToRelease) return;
+    setIsReleasingOrder(true);
+    try {
+      const res = await fetch(`/api/orders/${orderToRelease.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Dibatalkan" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Pesanan Keep #${orderToRelease.id.slice(0, 8)} dilepas & dibatalkan. Stok barang kembali 'Tersedia'.`, "success");
+        setOrderToRelease(null);
+        fetchOrders();
+      } else {
+        showToast(data.error || "Gagal melepas pesanan.", "error");
+      }
+    } catch {
+      showToast("Terjadi kesalahan koneksi saat melepas pesanan.", "error");
+    } finally {
+      setIsReleasingOrder(false);
+    }
+  };
+
+  const handleOpenEditModal = async (order: Order) => {
+    setEditingOrder(order);
+    setEditShippingCost(String(order.shippingCost || 0));
+    setEditDpAmount(String(order.dpAmount || 0));
+    setEditNotes(order.notes || "");
+    setEditOrderItems(
+      (order.products || []).map((p) => ({
+        productId: p.id,
+        price: p.price,
+        customPrice: p.price,
+        description: p.description || undefined,
+      }))
+    );
+
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      if (data.success) {
+        setAvailableProductsForEdit(data.data.filter((p: Product) => p.status === "Tersedia"));
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleAddItemToEditOrder = (product: Product) => {
+    if (editOrderItems.some((i) => i.productId === product.id)) {
+      showToast("Produk sudah ada dalam pesanan ini.", "error");
+      return;
+    }
+    setEditOrderItems((prev) => [
+      ...prev,
+      {
+        productId: product.id,
+        price: product.price,
+        customPrice: product.price,
+        description: product.description || undefined,
+      },
+    ]);
+    setSelectedAddProductId("");
+  };
+
+  const handleRemoveItemFromEditOrder = (productId: string) => {
+    if (editOrderItems.length <= 1) {
+      showToast("Pesanan harus memiliki minimal 1 tas.", "error");
+      return;
+    }
+    setEditOrderItems((prev) => prev.filter((i) => i.productId !== productId));
+  };
+
+  const handleSaveEditOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+    if (editOrderItems.length === 0) {
+      showToast("Pesanan harus memiliki minimal 1 item barang.", "error");
+      return;
+    }
+    setSavingEditOrder(true);
+
+    const totalBarang = editOrderItems.reduce((acc, item) => acc + item.customPrice, 0);
+    const shipping = parseInt(editShippingCost, 10) || 0;
+    const dp = parseInt(editDpAmount, 10) || 0;
+    const grandTotal = totalBarang + shipping;
+
+    try {
+      const res = await fetch(`/api/orders/${editingOrder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shippingCost: shipping,
+          dpAmount: dp,
+          totalPrice: grandTotal,
+          notes: editNotes.trim() || null,
+          productIds: editOrderItems.map((i) => i.productId),
+          products: editOrderItems,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Pesanan #${editingOrder.id.slice(0, 8)} berhasil diperbarui.`, "success");
+        setEditingOrder(null);
+        fetchOrders();
+      } else {
+        showToast(data.error || "Gagal memperbarui pesanan.", "error");
+      }
+    } catch {
+      showToast("Terjadi kesalahan koneksi saat memperbarui pesanan.", "error");
+    } finally {
+      setSavingEditOrder(false);
+    }
+  };
+
   const handleSaveResi = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingResiOrder) return;
@@ -198,85 +363,80 @@ export default function OrdersPage() {
   };
 
   const generateWhatsappMessage = (o: Order) => {
-    const customerName = o.customer?.name || "Pelanggan";
-    const formattedDate = new Date(o.createdAt).toLocaleDateString("id-ID", {
+    const formattedDate = parseSafeDate(o.createdAt).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: "Asia/Jakarta",
     });
 
     let statusDesc = o.status.toUpperCase();
     if (o.status === "Menunggu") {
       statusDesc = "MENUNGGU PEMBAYARAN";
     } else if (o.status === "DP") {
-      statusDesc = `DP / UANG MUKA (Telah Diterima: Rp ${o.dpAmount.toLocaleString("id-ID")})`;
+      statusDesc = `DP / UANG MUKA (DITERIMA: RP ${o.dpAmount.toLocaleString("id-ID")})`;
     } else if (o.status === "Siap Kirim" || o.status === "Siap Packing") {
       statusDesc = "SIAP KIRIM";
     } else if (o.status === "Dikirim") {
-      statusDesc = "DIKIRIM (Dalam Pengiriman)";
+      statusDesc = "DIKIRIM";
     } else if (o.status === "Dibatalkan") {
       statusDesc = "DIBATALKAN";
     } else if (o.status === "Lunas" || o.status === "Selesai") {
       statusDesc = "LUNAS & SELESAI";
     }
 
-    const totalBarang = o.products.reduce((acc, p) => acc + p.price, 0);
-    const sisaTagihan = o.dpAmount > 0 ? o.totalPrice - o.dpAmount : 0;
+    const totalDiscount = o.products.reduce((sum, p) => sum + (p.discount || 0), 0);
+    const totalBarangPrice = o.products.reduce((sum, p) => sum + (p.price || 0), 0);
 
     const productList = o.products
       .map((p, idx) => {
         const desc = p.description?.trim();
         const itemDesc = desc
           ? desc
-          : `Produk #${p.id.slice(0, 8).toUpperCase()}`;
-        let itemStr = `${idx + 1}. ${itemDesc} - Rp ${p.price.toLocaleString("id-ID")}`;
-        if (p.discount && p.discount > 0) {
-          itemStr += ` (Diskon: Rp ${p.discount.toLocaleString("id-ID")})`;
-        }
-        return itemStr;
+          : `Tas #${p.id.slice(0, 8).toUpperCase()}`;
+        return `${idx + 1}. ${itemDesc} - Rp ${p.price.toLocaleString("id-ID")}`;
       })
       .join("\n");
 
-    let financialLines = `• Total Barang (${o.products.length}): Rp ${totalBarang.toLocaleString("id-ID")}\n• Ongkir (${o.shippingCourier || "Ekspedisi"}): Rp ${(o.shippingCost || 0).toLocaleString("id-ID")}`;
+    let financialLines = `* Total Barang (${o.products.length}): Rp ${totalBarangPrice.toLocaleString("id-ID")}`;
+    if (totalDiscount > 0) {
+      financialLines += `\n* Diskon: - Rp ${totalDiscount.toLocaleString("id-ID")}`;
+    }
+    financialLines += `\n* Ongkir (${o.shippingCourier || "Ekspedisi"}): Rp ${(o.shippingCost || 0).toLocaleString("id-ID")}`;
 
     if (o.dpAmount > 0) {
-      financialLines += `\n• DP Dibayar: -Rp ${o.dpAmount.toLocaleString("id-ID")}`;
-    }
-    if (sisaTagihan > 0) {
-      financialLines += `\n• Sisa Pelunasan: Rp ${sisaTagihan.toLocaleString("id-ID")}`;
+      financialLines += `\n* DP Dibayar: - Rp ${o.dpAmount.toLocaleString("id-ID")}`;
+      const sisa = Math.max(0, o.totalPrice - o.dpAmount);
+      if (sisa > 0) {
+        financialLines += `\n* Sisa Pelunasan: Rp ${sisa.toLocaleString("id-ID")}`;
+      }
     }
 
-    let resiLine = "";
+    let resiSection = "";
     if (o.trackingNo) {
-      resiLine = `\n\n*NO. RESI (${(o.shippingCourier || "EKSPEDISI").toUpperCase()})*:\n*${o.trackingNo}*`;
+      resiSection = `\nNo. Resi (${(o.shippingCourier || "Ekspedisi").toUpperCase()}): ${o.trackingNo}\n----------------------------------`;
     }
 
-    return `Halo *${customerName}*, berikut rekap pesanan Anda dari *Mbokdhe Fashion*:
-
+    return `REKAP PESANAN
 ----------------------------------
-*REKAP PESANAN*
-----------------------------------
-*Order ID*: #${o.id.slice(0, 8).toUpperCase()}
-*Tanggal*: ${formattedDate}
-*Status*: *${statusDesc}*
+Order ID: #${o.id.slice(0, 8).toUpperCase()}
+Tanggal: ${formattedDate}
+Status: ${statusDesc}
 
-*RINCIAN BARANG DIPESAN*:
+RINCIAN BARANG DIPESAN:
 ${productList}
 
-*RINCIAN PEMBAYARAN*:
+RINCIAN PEMBAYARAN:
 ${financialLines}
 ----------------------------------
-*TOTAL TAGIHAN*: *Rp ${o.totalPrice.toLocaleString("id-ID")}*
-----------------------------------${resiLine}
-
-Pembayaran bisa lewat rek. berikut ya kakk 
+TOTAL TAGIHAN: Rp ${o.totalPrice.toLocaleString("id-ID")}
+----------------------------------${resiSection ? "\n" + resiSection : ""}
+Pembayaran bisa lewat rek. berikut:
 BCA 1671403539
 A/N ALRON EBENHAEZER C
 
 BRI 8017 0101 8680 504
-A/N ALRON EBENHAEZER C
-
-Terima kasih telah berbelanja di Mbokdhe Fashion!`;
+A/N ALRON EBENHAEZER C`;
   };
 
   const handleSendWhatsapp = (o: Order) => {
@@ -297,7 +457,8 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
   };
 
   const filteredOrders = orders.filter((o) => {
-    const matchesStatus = statusFilter === "ALL" || o.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "ALL" ? o.status !== "Keep" : o.status === statusFilter;
     const matchesSearch =
       o.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       o.customer?.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -363,13 +524,15 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
             ))}
           </div>
 
-          <input
-            type="text"
-            placeholder="Cari ID pesanan, nama, WA..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
-          />
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Cari ID pesanan, nama, WA..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"
+            />
+          </div>
         </div>
 
         {/* Orders Content Area */}
@@ -409,6 +572,11 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                           <div>
                             <p className="font-semibold text-slate-900 dark:text-white">{o.customer.name}</p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{o.customer.whatsapp}</p>
+                            {o.notes && (
+                              <div className="mt-1.5 text-[10px] text-slate-600 dark:text-slate-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 p-1.5 rounded text-left font-sans max-w-xs">
+                                <span className="font-bold text-amber-800 dark:text-amber-300 font-technical uppercase">Catatan:</span> {o.notes}
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <span className="text-slate-400">Pelanggan terhapus</span>
@@ -416,20 +584,22 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                       </td>
 
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono whitespace-nowrap">
-                        {o.createdAt ? (
+                        {isMounted && o.createdAt ? (
                           <>
                             <span className="font-semibold text-slate-900 dark:text-slate-200 block text-[11px]">
-                              {new Date(o.createdAt).toLocaleDateString("id-ID", {
+                              {parseSafeDate(o.createdAt).toLocaleDateString("id-ID", {
                                 day: "numeric",
                                 month: "short",
                                 year: "numeric",
+                                timeZone: "Asia/Jakarta",
                               })}
                             </span>
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
-                              {new Date(o.createdAt).toLocaleTimeString("id-ID", {
+                              {parseSafeDate(o.createdAt).toLocaleTimeString("id-ID", {
                                 hour: "2-digit",
                                 minute: "2-digit",
-                              })}
+                                timeZone: "Asia/Jakarta",
+                              })} WIB
                             </span>
                           </>
                         ) : (
@@ -511,6 +681,11 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
                       <td className="p-4 text-center">
                         <TableActionsMenu
                           items={[
+                            {
+                              label: "Edit Item Pesanan",
+                              icon: "edit",
+                              onClick: () => handleOpenEditModal(o),
+                            },
                             {
                               label: "Kirim Rekap WA",
                               icon: "chat",
@@ -717,6 +892,210 @@ Terima kasih telah berbelanja di Mbokdhe Fashion!`;
         cancelText="Batal"
         isLoading={isDeletingOrder}
       />
+
+      {/* Confirm Modal Release Keep Order */}
+      <ConfirmModal
+        isOpen={Boolean(orderToRelease)}
+        onClose={() => setOrderToRelease(null)}
+        onConfirm={confirmReleaseOrder}
+        title="Lepas & Batalkan Keep Order"
+        message={
+          orderToRelease ? (
+            <div className="space-y-2">
+              <p>
+                Apakah Anda yakin ingin melepas pesanan Keep{" "}
+                <span className="font-bold text-[#111111] dark:text-white font-technical">
+                  #{orderToRelease.id.slice(0, 8).toUpperCase()}
+                </span>
+                {orderToRelease.customer ? ` atas nama "${orderToRelease.customer.name}"` : ""}?
+              </p>
+              <p className="text-[11px] text-[#9F2F2D] dark:text-red-400 font-semibold">
+                ⚠️ Seluruh barang dalam pesanan ini akan dilepas dan status stoknya kembali &quot;Tersedia&quot; untuk umum.
+              </p>
+            </div>
+          ) : ""
+        }
+        confirmText="Ya, Lepas & Batalkan"
+        cancelText="Batal"
+        isLoading={isReleasingOrder}
+      />
+
+      {/* Modal Edit Item Pesanan & Real-time Grand Total */}
+      {editingOrder && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-lg w-full p-5 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] animate-fade-in-up font-ui">
+            <div className="flex justify-between items-center border-b border-[#eaeaea] dark:border-slate-800 pb-3">
+              <h3 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
+                Edit Item Pesanan #{editingOrder.id.slice(0, 8).toUpperCase()}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingOrder(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold text-xs cursor-pointer font-technical uppercase"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditOrder} className="space-y-4 text-xs">
+              {/* Daftar Item Pesanan */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                  Item Tas dalam Pesanan ({editOrderItems.length})
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {editOrderItems.map((item) => (
+                    <div
+                      key={item.productId}
+                      className="p-3 bg-[#f9f9f8] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] flex items-center justify-between gap-3"
+                    >
+                      <div>
+                        <span className="font-bold text-[#111111] dark:text-white font-technical text-sm block">
+                          #{item.productId.toUpperCase()}
+                        </span>
+                        {item.description && (
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate max-w-xs">
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-white dark:bg-[#141517] px-2 py-1 rounded border border-[#eaeaea] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-400 font-technical">Rp</span>
+                          <input
+                            type="number"
+                            value={item.customPrice}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0;
+                              setEditOrderItems((prev) =>
+                                prev.map((i) =>
+                                  i.productId === item.productId
+                                    ? { ...i, customPrice: val }
+                                    : i
+                                )
+                              );
+                            }}
+                            className="w-24 text-right font-technical font-bold text-xs text-[#111111] dark:text-white focus:outline-none bg-transparent"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItemFromEditOrder(item.productId)}
+                          className="text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs p-1 rounded font-technical cursor-pointer"
+                          title="Hapus tas ini"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Available Product Dropdown */}
+              {availableProductsForEdit.length > 0 && (
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#1F6C9F] dark:text-[#6cb6e4] uppercase tracking-widest font-technical">
+                    + Tambah Tas dari Etalase Tersedia
+                  </label>
+                  <select
+                    value={selectedAddProductId}
+                    onChange={(e) => {
+                      const prodId = e.target.value;
+                      if (!prodId) return;
+                      const prod = availableProductsForEdit.find((p) => p.id === prodId);
+                      if (prod) handleAddItemToEditOrder(prod);
+                    }}
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-xs focus:outline-none cursor-pointer"
+                  >
+                    <option value="">-- Pilih Tas yang ingin ditambahkan --</option>
+                    {availableProductsForEdit.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        #{p.id.toUpperCase()} - Rp {p.price.toLocaleString("id-ID")} {p.description ? `(${p.description})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Ongkir & DP Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                    Ongkos Kirim (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={editShippingCost}
+                    onChange={(e) => setEditShippingCost(e.target.value)}
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                    DP Dibayar (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={editDpAmount}
+                    onChange={(e) => setEditDpAmount(e.target.value)}
+                    className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 font-technical text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
+                  Catatan Pesanan
+                </label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Catatan pesanan..."
+                  className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white p-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 text-xs focus:outline-none"
+                />
+              </div>
+
+              {/* Real-time Grand Total Breakdown */}
+              <div className="p-3 bg-[#E1F3FE] dark:bg-[#18232c] border border-[#d2ecfc] dark:border-slate-700 rounded-[6px] space-y-1 font-technical uppercase text-xs">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <span>Total Tas ({editOrderItems.length}):</span>
+                  <span className="font-bold">Rp {editOrderItems.reduce((acc, i) => acc + i.customPrice, 0).toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <span>Ongkir:</span>
+                  <span className="font-bold">Rp {(parseInt(editShippingCost, 10) || 0).toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-[#1F6C9F]/20 dark:border-slate-700 pt-1 text-[#1F6C9F] dark:text-[#6cb6e4] font-bold">
+                  <span>Grand Total Tagihan:</span>
+                  <span className="text-sm">Rp {(editOrderItems.reduce((acc, i) => acc + i.customPrice, 0) + (parseInt(editShippingCost, 10) || 0)).toLocaleString("id-ID")}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="w-1/3 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-xs font-technical uppercase"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditOrder}
+                  className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer text-xs font-technical uppercase"
+                >
+                  {savingEditOrder ? "Menyimpan..." : "Simpan Perubahan Pesanan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

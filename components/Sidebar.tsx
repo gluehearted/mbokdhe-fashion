@@ -47,6 +47,7 @@ export function Sidebar() {
     { label: "Kelola Toko", path: "/shops", icon: "store" },
     { label: "Customers", path: "/customers", icon: "group" },
     { label: "Orders", path: "/orders", icon: "shopping_cart" },
+    { label: "Keep Barang", path: "/keep", icon: "bookmark" },
     { label: "Perlu Dikirim", path: "/ready-to-ship", icon: "local_shipping" },
     { label: "Laporan Keuntungan", path: "/pembekuan", icon: "payments" },
   ];
