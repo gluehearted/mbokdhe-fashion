@@ -18,7 +18,9 @@ export async function GET(
 
     if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json(
-        [{ type: 0, content: "Supabase Key belum disetel di Vercel/Env", bold: 0, align: 1, format: 0 }],
+        {
+          "0": { type: 0, content: "Supabase Key belum disetel di Vercel/Env", bold: 0, align: 1, format: 0 }
+        },
         {
           headers: {
             "Access-Control-Allow-Origin": "*",
@@ -41,7 +43,9 @@ export async function GET(
 
     if (error || !order || !customer) {
       return NextResponse.json(
-        [{ type: 0, content: "Data pesanan tidak ditemukan di Database", bold: 0, align: 1, format: 0 }],
+        {
+          "0": { type: 0, content: "Data pesanan tidak ditemukan di Database", bold: 0, align: 1, format: 0 }
+        },
         {
           headers: {
             "Access-Control-Allow-Origin": "*",
@@ -58,7 +62,7 @@ export async function GET(
     const domisili = customer.domisili || "-";
     const courier = order.shippingCourier || customer.courier || "Ekspedisi";
 
-    // 3. Susun JSON murni (Array)
+    // 3. Susun data instruksi cetak
     const printData = [
       {
         type: 1,
@@ -90,7 +94,11 @@ export async function GET(
       { type: 0, content: " ", bold: 0, align: 0, format: 0 }
     ];
 
-    return NextResponse.json(printData, {
+    // Wajib ubah Array menjadi Object berindeks ("0": {...}, "1": {...})
+    // (Ini meniru perilaku JSON_FORCE_OBJECT yang diwajibkan aplikasi Android Bluetooth Print)
+    const formattedPrintData = Object.assign({}, printData);
+
+    return NextResponse.json(formattedPrintData, {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
@@ -99,9 +107,9 @@ export async function GET(
 
   } catch (err: unknown) {
     const errorObj = err as Error;
-    return NextResponse.json([
-      { type: 0, content: `Server Error: ${errorObj.message}`, bold: 0, align: 1, format: 0 }
-    ], {
+    return NextResponse.json({
+      "0": { type: 0, content: `Server Error: ${errorObj.message}`, bold: 0, align: 1, format: 0 }
+    }, {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
