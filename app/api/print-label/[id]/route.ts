@@ -22,9 +22,15 @@ export async function GET(
     const customer = Array.isArray(order?.customer) ? order.customer[0] : order?.customer;
 
     if (error || !order || !customer) {
-      return NextResponse.json({
-        "0": { type: 0, content: "Data pesanan tidak ditemukan", bold: 0, align: 1, format: 0 }
-      });
+      return NextResponse.json(
+        [{ type: 0, content: "Data pesanan tidak ditemukan", bold: 0, align: 1, format: 0 }],
+        {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
 
     // 2. Ekstrak data pelanggan
@@ -34,10 +40,10 @@ export async function GET(
     const domisili = customer.domisili || "-";
     const courier = order.shippingCourier || customer.courier || "Ekspedisi";
 
-    // 3. Susun JSON murni sesuai format Bluetooth Print App
+    // 3. Susun JSON murni (Array of Objects) sesuai format Bluetooth Print App
     const printData = [
       {
-        type: 1, // Tipe 1 untuk gambar
+        type: 1, // Tipe 1 untuk gambar logo
         path: "https://csoeufwcicpbecqzffyu.supabase.co/storage/v1/object/public/assets/mbokdhe-fashion.jpeg",
         align: 1 // 1 untuk align center
       },
@@ -58,7 +64,7 @@ export async function GET(
       { type: 0, content: "DARI (PENGIRIM):", bold: 1, align: 0, format: 0 },
       { 
         type: 0, 
-        content: "Mbokdhe Fashion<br />WA: 081234567890", // Bisa kamu sesuaikan
+        content: "Mbokdhe Fashion<br />WA: 081234567890", 
         bold: 0, 
         align: 0, 
         format: 0 
@@ -67,24 +73,24 @@ export async function GET(
       { type: 0, content: " ", bold: 0, align: 0, format: 0 }
     ];
 
-    // 4. WAJIB: Konversi Array menjadi Object bernomor indeks 
-    // (Ini meniru perilaku JSON_FORCE_OBJECT yang diwajibkan aplikasi Bluetooth Print)
-    const formattedPrintData = Object.assign({}, printData);
-
-    // Kembalikan Response dalam bentuk JSON Object, bukan Array
-    return NextResponse.json(formattedPrintData, {
+    // Langsung kembalikan variabel printData (Array of Objects)
+    return NextResponse.json(printData, {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json",
       }
     });
 
-  } catch (err) {
-    console.error("Error generating print label:", err);
-    // Jika ada error (catch), format response juga WAJIB berbentuk Object
-    const errorData = {
-      "0": { type: 0, content: "Error memproses data cetak", bold: 0, align: 1, format: 0 }
-    };
-    return NextResponse.json(errorData);
+  } catch (err: unknown) {
+    const errorObj = err as Error;
+    console.error("Error generating print label:", errorObj);
+    return NextResponse.json([
+      { type: 0, content: `Server Error: ${errorObj.message || "Error memproses cetak"}`, bold: 0, align: 1, format: 0 }
+    ], {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+      }
+    });
   }
 }
