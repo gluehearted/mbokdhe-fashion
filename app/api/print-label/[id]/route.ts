@@ -66,7 +66,7 @@ export async function GET(
     const printData = [
       {
         type: 1,
-        path: "https://csoeufwcicpbecqzffyu.supabase.co/storage/v1/object/public/assets/mbokdhe-fashion.jpeg",
+        path: "https://csoeufwcicpbecqzffyu.supabase.co/storage/v1/object/public/assets/logo_mbokdhe.png",
         align: 1
       },
       { type: 0, content: "PENGIRIMAN PAKET", bold: 1, align: 1, format: 1 },
