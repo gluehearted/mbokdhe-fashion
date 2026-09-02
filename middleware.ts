@@ -48,6 +48,8 @@ export async function middleware(request: NextRequest) {
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/print-label") ||
+    pathname.startsWith("/api/cron") ||
     (pathname === "/api/products" && request.method === "GET") ||
     pathname.startsWith("/uploads") ||
     pathname.startsWith("/icon") ||
@@ -73,6 +75,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/print-label|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
