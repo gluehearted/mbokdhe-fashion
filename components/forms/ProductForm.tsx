@@ -390,7 +390,7 @@ export default function ProductForm({
               type="button"
               disabled={submitting || compressing}
               onClick={(e) => handleSubmit(e, true)}
-              className="flex-1 py-2.5 bg-[#E1F3FE] hover:bg-[#d2ecfc] dark:bg-[#18232c] dark:hover:bg-[#1f303d] text-[#1F6C9F] dark:text-[#a2d8fa] font-bold rounded-[6px] transition-all disabled:opacity-50 border border-[#c5e6fb] dark:border-slate-700 cursor-pointer font-technical uppercase text-[11px] flex items-center justify-center gap-1"
+              className="flex-1 py-2.5 bg-white hover:bg-[#f5f5f5] dark:bg-[#141517] dark:hover:bg-slate-800 text-[#111111] dark:text-[#f3f3f3] font-bold rounded-[6px] transition-all disabled:opacity-50 border border-[#eaeaea] dark:border-slate-800 cursor-pointer font-technical uppercase text-[11px] flex items-center justify-center gap-1"
             >
               <span>Tambah 1 Lagi di Toko Ini</span>
             </button>

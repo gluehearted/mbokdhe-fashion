@@ -446,11 +446,11 @@ export default function ProductsPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-4 sm:space-y-6">
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-3.5 sm:p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1">
             {[
               { label: "Semua Produk", value: "ALL" },
               { label: "Tersedia", value: "Tersedia" },
@@ -532,14 +532,14 @@ export default function ProductsPage() {
                 <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {currentTableData.map((p) => {
                     const profit = p.price - (p.capitalPrice || 0);
-                    let statusBg = "bg-[#f5f5f5] text-slate-700 dark:bg-slate-800 dark:text-slate-300"; // default
+                    let statusBg = "bg-white text-[#111111] border border-[#eaeaea] dark:bg-[#141517] dark:text-[#f3f3f3] dark:border-slate-800"; // default
                     
                     if (p.status === "Tersedia" || p.status === "Available") {
-                      statusBg = "bg-[#EDF3EC] text-[#346538]"; // Pastel Green
+                      statusBg = "bg-[#111111] text-white dark:bg-[#f3f3f3] dark:text-[#111111]";
                     } else if (p.status === "Dibooking" || p.status === "Booked" || p.status === "DP") {
-                      statusBg = "bg-[#E1F3FE] text-[#1F6C9F]"; // Pastel Blue
+                      statusBg = "bg-white text-[#111111] border border-[#eaeaea] dark:bg-[#141517] dark:text-[#f3f3f3] dark:border-slate-800";
                     } else if (p.status === "Terjual" || p.status === "Sold") {
-                      statusBg = "bg-[#FDEBEC] text-[#9F2F2D]"; // Pastel Red
+                      statusBg = "bg-[#787774] text-white dark:bg-slate-700 dark:text-slate-200";
                     }
 
                     return (
@@ -579,7 +579,7 @@ export default function ProductsPage() {
                         <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">
                           Rp {p.price.toLocaleString("id-ID")}
                         </td>
-                        <td className="p-4 text-center font-bold text-[#346538] dark:text-[#a0cfa4]">
+                        <td className="p-4 text-center font-bold text-[#111111] dark:text-white">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
                         <td className="p-4 text-center">

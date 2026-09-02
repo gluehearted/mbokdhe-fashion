@@ -179,12 +179,12 @@ export default function ReadyToShipPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-4 sm:space-y-6">
 
         {/* Filter Ekspedisi & Search Bar */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-3.5 sm:p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           {/* Ekspedisi Tabs */}
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1">
             <button
               onClick={() => setCourierFilter("ALL")}
               className={`px-3.5 py-1.5 rounded-[6px] text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
@@ -257,7 +257,7 @@ export default function ReadyToShipPage() {
                       </p>
                     </div>
 
-                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[#E1F3FE] text-[#1F6C9F]">
+                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[#111111] text-white dark:bg-white dark:text-[#111111]">
                       {o.status.toUpperCase()}
                     </span>
                   </div>
@@ -282,7 +282,7 @@ export default function ReadyToShipPage() {
                         return (
                           <span
                             key={p.id}
-                            className="bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4] border border-[#d2ecfc] dark:border-slate-700 font-technical text-[9px] font-bold px-2 py-0.5 rounded-full"
+                            className="bg-white dark:bg-[#141517] text-[#111111] dark:text-white border border-[#eaeaea] dark:border-slate-800 font-technical text-[9px] font-bold px-2 py-0.5 rounded-full"
                             title={`ID: #${p.id.toUpperCase()}${p.shop?.name ? ` | Toko: ${p.shop.name}` : ""}`}
                           >
                             {displayText}
@@ -296,14 +296,14 @@ export default function ReadyToShipPage() {
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-[#eaeaea] dark:border-slate-800/80">
                     <a
                       href={`my.bluetoothprint.scheme://https://mbokdhe-fashion.vercel.app/api/print-label/${o.id}`}
-                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] rounded-[6px] text-xs font-bold uppercase font-technical cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] rounded-[6px] text-xs font-bold uppercase font-technical cursor-pointer flex items-center justify-center gap-1.5 transition-colors border border-[#111111] dark:border-[#f3f3f3]"
                     >
                       <span>Cetak Label Thermal</span>
                     </a>
 
                     <button
                       onClick={() => handleCopyTemplate(o)}
-                      className="flex-1 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
+                      className="flex-1 py-2 bg-white hover:bg-[#f5f5f5] dark:bg-[#141517] dark:hover:bg-slate-800 text-[#111111] dark:text-[#f3f3f3] font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-800 flex items-center justify-center gap-1 cursor-pointer font-technical uppercase"
                     >
                       <span>Salin Label</span>
                     </button>
@@ -313,9 +313,9 @@ export default function ReadyToShipPage() {
                         setEditingResiOrder(o);
                         setTrackingNoInput(o.trackingNo || "");
                       }}
-                      className="flex-1 py-2 bg-[#EDF3EC] hover:bg-[#dbecdb] text-[#346538] dark:bg-[#182319] dark:text-emerald-300 dark:hover:bg-[#203021] font-bold text-xs rounded-[6px] transition-colors border border-[#cbe1cc] dark:border-emerald-950/60 cursor-pointer"
+                      className="flex-1 py-2 bg-white hover:bg-[#f5f5f5] dark:bg-[#141517] dark:hover:bg-slate-800 text-[#111111] dark:text-[#f3f3f3] font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-800 cursor-pointer font-technical uppercase"
                     >
-                      + Input Resi & Tandai Dikirim
+                      Input Resi & Tandai Dikirim
                     </button>
                   </div>
                 </div>
@@ -357,14 +357,14 @@ export default function ReadyToShipPage() {
                 <button
                   type="button"
                   onClick={() => setEditingResiOrder(null)}
-                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
+                  className="w-1/2 py-2.5 bg-white hover:bg-[#f5f5f5] dark:bg-[#141517] dark:hover:bg-slate-800 text-[#111111] dark:text-[#f3f3f3] font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-800 cursor-pointer font-technical uppercase"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingResi}
-                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer font-technical uppercase border border-[#111111] dark:border-[#f3f3f3]"
                 >
                   {savingResi ? "Menyimpan..." : "Tandai Dikirim"}
                 </button>

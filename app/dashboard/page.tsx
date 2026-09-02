@@ -184,10 +184,10 @@ export default function DashboardPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-12 space-y-6">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-12 space-y-4 sm:space-y-6">
         
         {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
           
           {/* Card 1: Total Tas Tersedia */}
           <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col justify-between transition-colors">
@@ -240,16 +240,16 @@ export default function DashboardPage() {
           {/* Card 4: Total Keuntungan */}
           <Link
             href="/pembekuan"
-            className="bg-[#EDF3EC] dark:bg-[#182319] rounded-[8px] p-6 border border-[#cbe1cc] dark:border-emerald-950/60 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col justify-between transition-colors hover:border-[#346538] cursor-pointer"
+            className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col justify-between transition-colors hover:border-[#111111] dark:hover:border-slate-700 cursor-pointer"
           >
-            <h3 className="text-[10px] font-bold text-[#346538] dark:text-emerald-400 uppercase tracking-widest font-technical">
+            <h3 className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
               [04 // REKAP LABA BERSIH]
             </h3>
             <div className="flex items-end justify-between mt-2">
-              <span className="text-xl font-bold text-[#346538] dark:text-emerald-300 font-technical">
+              <span className="text-xl font-bold text-[#111111] dark:text-[#f3f3f3] font-technical">
                 {loading ? "..." : `Rp ${totalProfit.toLocaleString("id-ID")}`}
               </span>
-              <span className="text-[9px] text-[#346538] dark:text-emerald-400 font-bold uppercase font-technical">
+              <span className="text-[9px] text-[#787774] dark:text-slate-400 font-bold uppercase font-technical">
                 Laporan →
               </span>
             </div>
@@ -260,14 +260,14 @@ export default function DashboardPage() {
         {/* DATA TABLE 1: Recent Orders Tracking Table */}
         <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <div className="p-5 border-b border-[#eaeaea] dark:border-slate-800/80 flex justify-between items-center bg-[#F9F9F8] dark:bg-slate-900/40 px-6">
-            <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical">
-              Daftar Pesanan Terbaru
+            <h2 className="text-xs font-bold text-[#111111] dark:text-[#f3f3f3] uppercase font-technical tracking-wider">
+              Pesanan Terbaru &amp; Status Pengiriman
             </h2>
             <Link
               href="/orders"
-              className="text-[10px] font-bold text-[#787774] dark:text-slate-400 hover:text-[#111111] dark:hover:text-[#f3f3f3] uppercase font-technical"
+              className="text-[10px] text-[#787774] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white font-technical font-semibold uppercase"
             >
-              Lihat Semua ({orders.length}) →
+              Lihat Semua →
             </Link>
           </div>
 
@@ -295,14 +295,14 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-[#f1f1f1] dark:divide-slate-800 font-technical text-xs text-slate-800 dark:text-slate-200">
                   {recentOrders.map((ord) => {
-                    let statusBg = "bg-[#E1F3FE] text-[#1F6C9F]";
+                    let statusBg = "bg-[#111111] text-white dark:bg-white dark:text-[#111111]";
                     const s = (ord.status || "").toLowerCase().trim();
                     if (s === "siap kirim" || s === "siap packing" || s === "siap_kirim" || s === "siap_packing") {
-                      statusBg = "bg-[#FDEBEC] text-[#9F2F2D]";
+                      statusBg = "bg-[#111111] text-white dark:bg-white dark:text-[#111111]";
                     } else if (s === "selesai" || s === "lunas" || s === "completed") {
-                      statusBg = "bg-[#EDF3EC] text-[#346538]";
+                      statusBg = "bg-white text-[#111111] border border-[#eaeaea] dark:bg-[#141517] dark:text-[#f3f3f3] dark:border-slate-800";
                     } else if (s === "dibatalkan" || s === "cancelled") {
-                      statusBg = "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400";
+                      statusBg = "bg-[#787774] text-white dark:bg-slate-700 dark:text-slate-200";
                     }
                     
                     return (
@@ -394,7 +394,7 @@ export default function DashboardPage() {
                         Rp {prod.price.toLocaleString("id-ID")}
                       </td>
                       <td className="p-4 text-center">
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#EDF3EC] text-[#346538] font-bold uppercase text-[9px] inline-block">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#111111] text-white dark:bg-white dark:text-[#111111] font-bold uppercase text-[9px] inline-block">
                           {prod.status.toUpperCase()}
                         </span>
                       </td>

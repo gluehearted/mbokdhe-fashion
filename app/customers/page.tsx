@@ -243,10 +243,10 @@ function CustomersPageContent() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-4 sm:space-y-6">
 
         {/* Search Bar */}
-        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+        <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-3.5 sm:p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <input
             type="text"
             placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
@@ -306,26 +306,26 @@ function CustomersPageContent() {
 
                       <td className="p-4 text-center">
                         <span className="font-semibold text-[#111111] dark:text-[#f3f3f3] block">Rp {(c.shippingCost || 0).toLocaleString("id-ID")}</span>
-                        <span className="text-[9px] bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#1c2c35] dark:text-[#6cb6e4] px-2 py-0.5 rounded-full font-bold inline-block mt-0.5 uppercase tracking-wider">
+                        <span className="text-[9px] bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] border border-[#eaeaea] dark:border-slate-800 px-2 py-0.5 rounded-full font-bold inline-block mt-0.5 uppercase tracking-wider">
                           {c.courier || "JNE"}
                         </span>
                       </td>
 
                       <td className="p-4 text-center space-y-1">
-                        <span className="bg-[#EDF3EC] text-[#346538] dark:bg-[#182319] dark:text-[#a2e8aa] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
+                        <span className="bg-[#111111] text-white dark:bg-white dark:text-[#111111] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
                           {c.consumerType || "Value Seeker"}
                         </span>
-                        <span className="bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#1c2c35] dark:text-[#6cb6e4] px-2.5 py-0.5 rounded-full text-[9px] font-bold block mx-auto max-w-[120px] truncate uppercase tracking-wider">
+                        <span className="bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] border border-[#eaeaea] dark:border-slate-800 px-2.5 py-0.5 rounded-full text-[9px] font-bold block mx-auto max-w-[120px] truncate uppercase tracking-wider">
                           {c.behavioral || "Pelanggan Setia"}
                         </span>
                       </td>
 
                       <td className="p-4 text-center max-w-xs space-y-1">
-                        <span className="bg-[#FBF3DB] text-[#956400] dark:bg-[#282115] dark:text-[#f8d484] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
+                        <span className="bg-[#787774] text-white dark:bg-slate-700 dark:text-slate-200 px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
                           {c.relationshipStatus || "New Customer"}
                         </span>
                         {c.crisisStatus ? (
-                          <span className="bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] dark:bg-[#2c1c1d] dark:text-[#fca5a5] dark:border-red-955/40 px-2 py-0.5 rounded-[4px] text-[9px] font-medium block truncate max-w-[140px] mx-auto uppercase tracking-wide" title={c.crisisStatus}>
+                          <span className="bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] border border-[#eaeaea] dark:border-slate-800 px-2 py-0.5 rounded-[4px] text-[9px] font-medium block truncate max-w-[140px] mx-auto uppercase tracking-wide" title={c.crisisStatus}>
                             Catatan: {c.crisisStatus}
                           </span>
                         ) : (

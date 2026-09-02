@@ -410,11 +410,11 @@ A/N ALRON EBENHAEZER C`;
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-4 sm:space-y-6">
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-3.5 sm:p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+          <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1">
             {[
               { label: "Semua Order", value: "ALL" },
               { label: "Keep (Belum Bayar)", value: "Keep (Belum Bayar)" },
@@ -557,7 +557,7 @@ A/N ALRON EBENHAEZER C`;
 
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono">
                         {o.trackingNo ? (
-                          <span className="font-bold text-[#1F6C9F] bg-[#E1F3FE] dark:bg-[#1c2c35] dark:text-[#6cb6e4] px-2.5 py-0.5 rounded-full text-[9px] inline-block uppercase">
+                          <span className="font-bold text-[#111111] dark:text-[#f3f3f3] bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800 px-2.5 py-0.5 rounded-full text-[9px] inline-block uppercase">
                             {o.trackingNo}
                           </span>
                         ) : (
@@ -566,7 +566,7 @@ A/N ALRON EBENHAEZER C`;
                               setEditingResiOrder(o);
                               setTrackingNoInput("");
                             }}
-                            className="text-red-600 dark:text-red-400 font-bold hover:underline text-[10px] uppercase font-technical cursor-pointer"
+                            className="text-[#111111] dark:text-white font-bold hover:underline text-[10px] uppercase font-technical cursor-pointer"
                           >
                             + Input Resi
                           </button>
@@ -576,7 +576,7 @@ A/N ALRON EBENHAEZER C`;
                       <td className="p-4 text-center border-r border-[#eaeaea] dark:border-slate-800 font-mono font-bold text-[#111111] dark:text-white">
                         Rp {o.totalPrice.toLocaleString("id-ID")}
                         {o.dpAmount > 0 && (
-                          <span className="block text-[9px] text-[#1F6C9F] font-bold mt-0.5">
+                          <span className="block text-[9px] text-[#787774] dark:text-slate-400 font-bold mt-0.5">
                             DP: Rp {o.dpAmount.toLocaleString("id-ID")}
                           </span>
                         )}
@@ -716,14 +716,14 @@ A/N ALRON EBENHAEZER C`;
                 <button
                   type="button"
                   onClick={() => setEditingResiOrder(null)}
-                  className="w-1/2 py-2.5 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer"
+                  className="w-1/2 py-2.5 bg-white hover:bg-[#f5f5f5] dark:bg-[#141517] dark:hover:bg-slate-800 text-[#111111] dark:text-[#f3f3f3] font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-800 cursor-pointer font-technical uppercase"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={savingResi}
-                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer"
+                  className="w-1/2 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all disabled:opacity-50 cursor-pointer font-technical uppercase border border-[#111111] dark:border-[#f3f3f3]"
                 >
                   {savingResi ? "Simpan..." : "Simpan Resi & Kirim"}
                 </button>

@@ -51,10 +51,12 @@ const isSettledOrder = (status: string) => {
   );
 };
 
+type Timeframe = "DAILY" | "WEEKLY" | "MONTHLY" | "ALL";
+
 export default function PembekuanPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeframe, setTimeframe] = useState<"DAILY" | "WEEKLY" | "MONTHLY" | "ALL">("DAILY");
+  const [timeframe, setTimeframe] = useState<Timeframe>("DAILY");
   const [search, setSearch] = useState("");
 
   const fetchFinancialOrders = useCallback(async () => {
@@ -217,22 +219,22 @@ export default function PembekuanPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-6">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-4 sm:space-y-6">
 
         {/* Financial KPI Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
           
           {/* Card 1: Total Profit Bersih */}
-          <div className="bg-[#EDF3EC] dark:bg-[#182319] rounded-[8px] p-6 border border-[#cbe1cc] dark:border-emerald-950/60 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
-            <span className="text-[10px] font-bold text-[#346538] dark:text-emerald-400 uppercase tracking-widest font-technical">
+          <div className="bg-white dark:bg-[#141517] rounded-[8px] p-6 border border-[#eaeaea] dark:border-slate-800/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col gap-2 transition-colors">
+            <span className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase tracking-widest font-technical">
               [01 // TOTAL PROFIT BERSIH]
             </span>
             <div className="flex items-end justify-between mt-1">
-              <span className="text-2xl font-bold text-[#346538] dark:text-emerald-300 font-technical">
+              <span className="text-2xl font-bold text-[#111111] dark:text-[#f3f3f3] font-technical">
                 Rp {metrics.totalNetProfit.toLocaleString("id-ID")}
               </span>
             </div>
-            <span className="text-[9px] text-[#346538]/85 dark:text-emerald-400/85 uppercase">
+            <span className="text-[9px] text-[#787774] dark:text-slate-400 uppercase">
               Omset - Modal + DP Hangus
             </span>
           </div>
@@ -298,15 +300,15 @@ export default function PembekuanPage() {
 
             {/* Timeframe Filter Buttons */}
             <div className="flex flex-wrap items-center gap-1.5 bg-[#f5f5f5] dark:bg-slate-800 p-1 rounded-[6px] border border-[#eaeaea] dark:border-slate-700 text-xs font-semibold">
-              {[
+              {([
                 { label: "Per Hari", value: "DAILY" },
                 { label: "Per Minggu", value: "WEEKLY" },
                 { label: "Per Bulan", value: "MONTHLY" },
                 { label: "Semua", value: "ALL" },
-              ].map((tab) => (
+              ] as const).map((tab) => (
                 <button
                   key={tab.value}
-                  onClick={() => setTimeframe(tab.value as any)}
+                  onClick={() => setTimeframe(tab.value)}
                   className={`px-3 py-1 rounded-[4px] transition-all cursor-pointer font-technical uppercase ${
                     timeframe === tab.value
                       ? "bg-[#111111] dark:bg-[#f3f3f3] text-white dark:text-[#111111] font-bold"
@@ -353,10 +355,10 @@ export default function PembekuanPage() {
                       <td className="p-4 text-center text-slate-400 dark:text-slate-500">
                         Rp {s.shippingCostSum.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-bold text-[#956400] dark:text-amber-400">
+                      <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">
                         +Rp {s.dpForfeitedSum.toLocaleString("id-ID")}
                       </td>
-                      <td className="p-4 text-center font-bold text-[#346538] dark:text-emerald-300 bg-[#EDF3EC] dark:bg-[#182319]/40">
+                      <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3] bg-[#f5f5f5] dark:bg-slate-800/40">
                         +Rp {s.netProfit.toLocaleString("id-ID")}
                       </td>
                     </tr>
@@ -418,7 +420,7 @@ export default function PembekuanPage() {
 
                     return (
                       <tr key={ord.id} className="hover:bg-[#F9F9F8] dark:hover:bg-slate-900/20 transition-colors">
-                        <td className="p-4 text-center font-bold text-red-600 dark:text-emerald-400">
+                        <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3]">
                           #{ord.id.slice(0, 8).toUpperCase()}
                         </td>
                         <td className="p-4 text-center">
@@ -439,14 +441,14 @@ export default function PembekuanPage() {
                           {isCancelledDp ? <span className="text-slate-400">[ Barang Kembali ]</span> : `Rp ${capitalSum.toLocaleString("id-ID")}`}
                         </td>
                         
-                        <td className="p-4 text-center font-bold text-[#346538] dark:text-emerald-300 bg-[#EDF3EC] dark:bg-[#182319]/40">
+                        <td className="p-4 text-center font-bold text-[#111111] dark:text-[#f3f3f3] bg-[#f5f5f5] dark:bg-slate-800/40">
                           +Rp {profit.toLocaleString("id-ID")}
                         </td>
                         <td className="p-4 text-center">
                           <span className={`px-2.5 py-0.5 rounded-full font-bold uppercase text-[9px] inline-block ${
-                            ord.dpForfeited
-                              ? "bg-[#FBF3DB] text-[#956400]"
-                              : "bg-[#E1F3FE] text-[#1F6C9F]"
+                            ord.dpForfeited && !isCompleted
+                              ? "bg-[#787774] text-white dark:bg-slate-700 dark:text-slate-200"
+                              : "bg-[#111111] text-white dark:bg-white dark:text-[#111111]"
                           }`}>
                             {ord.dpForfeited && !isCompleted ? "DP HANGUS" : ord.status.toUpperCase()}
                           </span>

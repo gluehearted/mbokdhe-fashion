@@ -53,13 +53,7 @@ export function ConfirmModal({
       >
         {/* Header with Icon */}
         <div className="flex items-start gap-3.5 border-b border-[#eaeaea] dark:border-slate-800/80 pb-4">
-          <div
-            className={`w-10 h-10 rounded-[6px] flex items-center justify-center shrink-0 ${
-              isDestructive
-                ? "bg-[#FDEBEC] dark:bg-red-950/40 text-[#9F2F2D] dark:text-red-400 border border-[#f5c2c2] dark:border-red-900/50"
-                : "bg-[#E1F3FE] dark:bg-sky-950/40 text-[#1F6C9F] dark:text-sky-400 border border-[#c5e6fb] dark:border-sky-900/50"
-            }`}
-          >
+          <div className="w-10 h-10 rounded-[6px] bg-[#111111] dark:bg-[#f3f3f3] text-white dark:text-[#111111] flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-xl">
               {isDestructive ? "delete_forever" : "help_outline"}
             </span>
@@ -98,7 +92,7 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 py-2.5 bg-[#f5f5f5] hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer uppercase font-technical text-xs disabled:opacity-50"
+            className="flex-1 py-2.5 bg-white hover:bg-[#f5f5f5] dark:bg-[#141517] dark:hover:bg-slate-800 text-[#111111] dark:text-[#f3f3f3] font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-800 cursor-pointer uppercase font-technical text-xs disabled:opacity-50"
           >
             {cancelText}
           </button>
@@ -106,11 +100,7 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex-1 py-2.5 text-white font-bold rounded-[6px] transition-all cursor-pointer uppercase font-technical text-xs active:scale-95 shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 ${
-              isDestructive
-                ? "bg-[#9F2F2D] hover:bg-red-800"
-                : "bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:text-[#111111] dark:hover:bg-slate-200"
-            }`}
+            className="flex-1 py-2.5 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] font-bold rounded-[6px] transition-all cursor-pointer uppercase font-technical text-xs active:scale-95 shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 border border-[#111111] dark:border-[#f3f3f3]"
           >
             {isLoading ? (
               <span className="flex items-center gap-1.5">

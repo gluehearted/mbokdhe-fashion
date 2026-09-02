@@ -479,7 +479,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
       </header>
 
       {/* Main Content Scroll Container */}
-      <div className="flex-1 overflow-auto p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 transition-colors">
+      <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 transition-colors">
         {errorMessage && (
           <div className="mb-6 p-3 bg-[#FDEBEC] text-[#9F2F2D] border border-[#f5c2c2] rounded-[6px] text-xs font-semibold text-center font-technical max-w-6xl mx-auto">
             {errorMessage}
@@ -489,7 +489,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
         {loadingData ? (
           <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs font-technical uppercase">[ Loading data inventaris & pelanggan... ]</div>
         ) : (
-          <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto font-ui">
+          <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 max-w-6xl mx-auto font-ui">
             
             {/* LEFT COLUMN (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
@@ -512,9 +512,9 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                 {/* Autocomplete Customer Picker */}
                 <div ref={customerDropdownRef} className="relative">
                   {selectedCustomer ? (
-                    <div className="p-3 bg-[#E1F3FE] dark:bg-[#18232c] border border-[#1F6C9F]/40 dark:border-[#1F6C9F]/60 rounded-[6px] flex items-center justify-between gap-3">
+                    <div className="p-3 bg-white dark:bg-[#141517] border border-[#111111] dark:border-[#f3f3f3] rounded-[6px] flex items-center justify-between gap-3 shadow-sm">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-[#1F6C9F] text-white flex items-center justify-center font-bold text-xs shrink-0 font-technical">
+                        <div className="w-8 h-8 rounded-full bg-[#111111] dark:bg-[#f3f3f3] text-white dark:text-[#111111] flex items-center justify-center font-bold text-xs shrink-0 font-technical">
                           {selectedCustomer.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
@@ -522,7 +522,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                             <span className="font-bold text-xs text-[#111111] dark:text-white truncate">
                               {selectedCustomer.name}
                             </span>
-                            <span className="text-[10px] font-technical text-[#1F6C9F] dark:text-[#6cb6e4] font-bold">
+                            <span className="text-[10px] font-technical text-[#787774] dark:text-slate-400 font-bold">
                               #{selectedCustomer.id.toUpperCase()}
                             </span>
                           </div>
@@ -725,7 +725,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                           onClick={() => toggleProductSelect(p)}
                           className={`p-3.5 rounded-[6px] border cursor-pointer transition-all text-xs ${
                             isSelected
-                              ? "bg-[#E1F3FE] dark:bg-[#18232c] border-[#1F6C9F] text-[#1F6C9F] dark:text-slate-200 shadow-sm"
+                              ? "bg-white dark:bg-[#141517] border-[#111111] dark:border-white text-[#111111] dark:text-white shadow-sm font-bold"
                               : "bg-[#f5f5f5] dark:bg-[#1c1d1f] border-[#eaeaea] dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-650"
                           }`}
                         >
@@ -735,7 +735,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => {}}
-                                className="accent-[#1F6C9F] w-4 h-4 shrink-0 cursor-pointer"
+                                className="accent-[#111111] dark:accent-white w-4 h-4 shrink-0 cursor-pointer"
                               />
 
                               <button
