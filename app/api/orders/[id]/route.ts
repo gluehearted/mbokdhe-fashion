@@ -107,6 +107,8 @@ export async function PATCH(
       if (prodError) throw prodError;
     }
 
+    let finalTotalPrice = totalPrice !== undefined ? parseInt(String(totalPrice), 10) : undefined;
+
     const { data: order, error: updateError } = await supabase
       .from("orders")
       .update({
@@ -117,7 +119,7 @@ export async function PATCH(
         ...(shippingService !== undefined && { shippingService }),
         ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
         ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),
-        ...(totalPrice !== undefined && { totalPrice: parseInt(String(totalPrice), 10) }),
+        ...(finalTotalPrice !== undefined && { totalPrice: finalTotalPrice }),
         ...(notes !== undefined && { notes: notes ? String(notes).trim() : null }),
         updatedAt: new Date().toISOString(),
       })
@@ -127,10 +129,29 @@ export async function PATCH(
 
     if (updateError) throw updateError;
 
+    const orderProducts = (order.products || []).map((p: any) => ({
+      ...p,
+      shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
+    }));
+
+    let calculatedTotalPrice = order.totalPrice || 0;
+    if (orderProducts.length > 0) {
+      const itemNetTotal = orderProducts.reduce(
+        (sum: number, p: any) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)),
+        0
+      );
+      calculatedTotalPrice = itemNetTotal + (order.shippingCost || 0);
+
+      if (order.totalPrice !== calculatedTotalPrice) {
+        supabase.from("orders").update({ totalPrice: calculatedTotalPrice }).eq("id", id).then();
+      }
+    }
+
     const normalized = {
       ...order,
       customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
-      products: order.products || [],
+      products: orderProducts,
+      totalPrice: calculatedTotalPrice,
     };
 
     return NextResponse.json({
@@ -171,10 +192,29 @@ export async function GET(
       );
     }
 
+    const products = (order.products || []).map((p: any) => ({
+      ...p,
+      shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
+    }));
+
+    let calculatedTotalPrice = order.totalPrice || 0;
+    if (products.length > 0) {
+      const itemNetTotal = products.reduce(
+        (sum: number, p: any) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)),
+        0
+      );
+      calculatedTotalPrice = itemNetTotal + (order.shippingCost || 0);
+
+      if (order.totalPrice !== calculatedTotalPrice) {
+        supabase.from("orders").update({ totalPrice: calculatedTotalPrice }).eq("id", id).then();
+      }
+    }
+
     const normalized = {
       ...order,
       customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
-      products: order.products || [],
+      products,
+      totalPrice: calculatedTotalPrice,
     };
 
     return NextResponse.json({

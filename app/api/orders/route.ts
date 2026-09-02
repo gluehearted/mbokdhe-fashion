@@ -33,14 +33,34 @@ export async function GET(request: Request) {
     const { data: orders, error } = await query;
     if (error) throw error;
 
-    // Normalisasi format data dari array relasi Supabase
-    const mapped = (orders || []).map((o: any) => ({
-      ...o,
-      customer: Array.isArray(o.customer) ? o.customer[0] : o.customer || null,
-      products: (o.products || []).map((p: any) => ({
+    // Normalisasi format data dari array relasi Supabase & hitung totalPrice secara akurat (net harga barang setelah diskon + ongkir)
+    const mapped = await Promise.all((orders || []).map(async (o: any) => {
+      const customer = Array.isArray(o.customer) ? o.customer[0] : o.customer || null;
+      const products = (o.products || []).map((p: any) => ({
         ...p,
         shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
-      })),
+      }));
+
+      let calculatedTotalPrice = o.totalPrice || 0;
+      if (products.length > 0) {
+        const itemNetTotal = products.reduce(
+          (sum: number, p: any) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)),
+          0
+        );
+        calculatedTotalPrice = itemNetTotal + (o.shippingCost || 0);
+
+        // Swat mismatch in DB if data was saved without deducting discount
+        if (o.totalPrice !== calculatedTotalPrice) {
+          supabase.from("orders").update({ totalPrice: calculatedTotalPrice }).eq("id", o.id).then();
+        }
+      }
+
+      return {
+        ...o,
+        customer,
+        products,
+        totalPrice: calculatedTotalPrice,
+      };
     }));
 
     return NextResponse.json({ success: true, data: mapped });
@@ -96,15 +116,18 @@ export async function POST(request: Request) {
       throw new Error(`Tas [${unavailableIds}] sudah tidak tersedia (mungkin sudah terjual).`);
     }
 
-    // 3. Hitung total harga sesuai harga barang dari Frontend
-    let totalBarang = 0;
+    // 3. Hitung total harga barang dikurangi diskon masing-masing barang + ongkir
+    let totalBarangNet = 0;
     for (const dbProduct of dbProducts || []) {
       const userProduct = products?.find((p: any) => p.productId === dbProduct.id);
-      const finalPrice = userProduct?.customPrice !== undefined ? userProduct.customPrice : dbProduct.price;
-      totalBarang += finalPrice;
+      const basePrice = userProduct?.customPrice !== undefined ? userProduct.customPrice : dbProduct.price;
+      const discount = userProduct?.discount ? Number(userProduct.discount) : 0;
+      const effectivePrice = Math.max(0, basePrice - discount);
+      totalBarangNet += effectivePrice;
     }
 
-    const totalTagihan = totalBarang + Number(shippingCost);
+    const calculatedTotalTagihan = totalBarangNet + Number(shippingCost);
+    const finalTotalPrice = body.totalPrice !== undefined ? Number(body.totalPrice) : calculatedTotalTagihan;
 
     // 4. Buat Order baru di database
     const { data: newOrder, error: orderError } = await supabase
@@ -114,7 +137,7 @@ export async function POST(request: Request) {
         status: orderStatus,
         shippingCourier: courier || "JNE",
         shippingCost: Number(shippingCost),
-        totalPrice: totalTagihan,
+        totalPrice: finalTotalPrice,
         dpAmount: Number(dpAmount),
         dpDate: Number(dpAmount) > 0 ? new Date().toISOString() : null,
         notes: notes ? String(notes).trim() : null,
@@ -155,6 +178,7 @@ export async function POST(request: Request) {
       ...result,
       customer: Array.isArray(result.customer) ? result.customer[0] : result.customer || null,
       products: result.products || [],
+      totalPrice: finalTotalPrice,
     };
 
     return NextResponse.json({ success: true, data: normalized }, { status: 201 });

@@ -48,7 +48,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("customers")
-      .select("*, orders(id, status, totalPrice, createdAt)")
+      .select("*, orders(id, status, totalPrice, shippingCost, createdAt, products(price, discount))")
       .order("createdAt", { ascending: false });
 
     if (search) {
@@ -76,10 +76,17 @@ export async function GET(request: Request) {
       });
 
       const validTransactionsCount = validOrders.length;
-      const validTotalSpending = validOrders.reduce(
-        (sum: number, o: any) => sum + (o.totalPrice || 0),
-        0
-      );
+      const validTotalSpending = validOrders.reduce((sum: number, o: any) => {
+        let computed = o.totalPrice || 0;
+        if (o.products && Array.isArray(o.products) && o.products.length > 0) {
+          const itemNet = o.products.reduce(
+            (pSum: number, p: any) => pSum + Math.max(0, (p.price || 0) - (p.discount || 0)),
+            0
+          );
+          computed = itemNet + (o.shippingCost || 0);
+        }
+        return sum + computed;
+      }, 0);
 
       return {
         ...c,
