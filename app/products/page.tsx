@@ -80,14 +80,12 @@ export default function ProductsPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [cleaning, setCleaning] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- State Confirm Modal ---
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeletingProduct, setIsDeletingProduct] = useState(false);
-  const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
 
   // --- State Modal Tambah Toko Cepat (Task 9) ---
   const [isNewShopModalOpen, setIsNewShopModalOpen] = useState(false);
@@ -287,29 +285,6 @@ export default function ProductsPage() {
     }
   };
 
-  const handleCleanupStorage = () => {
-    setIsCleanupModalOpen(true);
-  };
-
-  const confirmCleanupStorage = async () => {
-    setCleaning(true);
-    try {
-      const res = await fetch("/api/products/cleanup", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        showToast(data.message || "Pembersihan storage selesai.", "success");
-        setIsCleanupModalOpen(false);
-        fetchProducts();
-      } else {
-        showToast(data.error || "Gagal membersihkan storage.", "error");
-      }
-    } catch {
-      showToast("Terjadi kesalahan koneksi saat membersihkan storage.", "error");
-    } finally {
-      setCleaning(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent, keepShop = false) => {
     e.preventDefault();
     if (!shopOrigin.trim()) {
@@ -450,13 +425,6 @@ export default function ProductsPage() {
           </span>
         </div>
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleCleanupStorage}
-            disabled={cleaning}
-            className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-sm cursor-pointer disabled:opacity-50 font-technical flex items-center justify-center"
-          >
-            {cleaning ? "Membersihkan..." : "Bersihkan Storage"}
-          </button>
           <button
             type="button"
             onClick={() => {
@@ -890,31 +858,6 @@ export default function ProductsPage() {
         confirmText="Ya, Hapus Produk"
         cancelText="Batal"
         isLoading={isDeletingProduct}
-      />
-
-      {/* Confirm Modal Bersihkan Storage */}
-      <ConfirmModal
-        isOpen={isCleanupModalOpen}
-        onClose={() => setIsCleanupModalOpen(false)}
-        onConfirm={confirmCleanupStorage}
-        title="Bersihkan Storage Foto"
-        message={
-          <div className="space-y-2">
-            <p>
-              Tindakan ini akan menghapus semua file foto fisik produk berstatus{" "}
-              <span className="font-bold text-[#111111] dark:text-white font-technical">
-                &quot;Terjual&quot;
-              </span>{" "}
-              yang berumur lebih dari 3 bulan dari Storage Supabase.
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              URL foto pada riwayat order lama akan digantikan dengan gambar arsip agar menghemat kuota penyimpanan.
-            </p>
-          </div>
-        }
-        confirmText="Bersihkan Sekarang"
-        cancelText="Batal"
-        isLoading={cleaning}
       />
     </div>
   );
