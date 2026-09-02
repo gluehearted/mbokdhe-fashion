@@ -294,6 +294,13 @@ export default function ReadyToShipPage() {
 
                   {/* Actions Bar */}
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-[#eaeaea] dark:border-slate-800/80">
+                    <a
+                      href={`my.bluetoothprint.scheme://https://mbokdhe-fashion.vercel.app/api/print-label/${o.id}`}
+                      className="flex-1 py-2 bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] rounded-[6px] text-xs font-bold uppercase font-technical cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <span>Cetak Label Thermal</span>
+                    </a>
+
                     <button
                       onClick={() => handleCopyTemplate(o)}
                       className="flex-1 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
