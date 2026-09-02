@@ -22,7 +22,9 @@ export async function GET(
     const customer = Array.isArray(order?.customer) ? order.customer[0] : order?.customer;
 
     if (error || !order || !customer) {
-      return NextResponse.json([{ type: 0, content: "Data pesanan tidak ditemukan", bold: 0, align: 1, format: 0 }]);
+      return NextResponse.json({
+        "0": { type: 0, content: "Data pesanan tidak ditemukan", bold: 0, align: 1, format: 0 }
+      });
     }
 
     // 2. Ekstrak data pelanggan
@@ -65,9 +67,24 @@ export async function GET(
       { type: 0, content: " ", bold: 0, align: 0, format: 0 }
     ];
 
-    // Kembalikan Response dalam bentuk JSON array
-    return NextResponse.json(printData);
+    // 4. WAJIB: Konversi Array menjadi Object bernomor indeks 
+    // (Ini meniru perilaku JSON_FORCE_OBJECT yang diwajibkan aplikasi Bluetooth Print)
+    const formattedPrintData = Object.assign({}, printData);
+
+    // Kembalikan Response dalam bentuk JSON Object, bukan Array
+    return NextResponse.json(formattedPrintData, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+      }
+    });
+
   } catch (err) {
-    return NextResponse.json([{ type: 0, content: "Error memproses cetak", bold: 0, align: 1, format: 0 }]);
+    console.error("Error generating print label:", err);
+    // Jika ada error (catch), format response juga WAJIB berbentuk Object
+    const errorData = {
+      "0": { type: 0, content: "Error memproses data cetak", bold: 0, align: 1, format: 0 }
+    };
+    return NextResponse.json(errorData);
   }
 }
