@@ -86,7 +86,6 @@ export async function GET(
         align: 0, 
         format: 0 
       },
-      { type: 0, content: "--------------------------------", bold: 0, align: 1, format: 0 },
     ];
 
     // Wajib ubah Array menjadi Object berindeks ("0": {...}, "1": {...})
