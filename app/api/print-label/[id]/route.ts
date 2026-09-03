@@ -57,7 +57,13 @@ export async function GET(
 
     // 2. Ekstrak data pelanggan
     const customerName = customer.name || "-";
-    const customerWA = customer.whatsapp || "-";
+    let rawWA = (customer.whatsapp || "").trim().replace(/\D/g, "");
+    if (rawWA.startsWith("62")) {
+      rawWA = "0" + rawWA.slice(2);
+    } else if (rawWA.startsWith("8")) {
+      rawWA = "0" + rawWA;
+    }
+    const customerWA = rawWA || "-";
     const addressDetail = customer.addressDetail || "-";
     const domisili = customer.domisili || "-";
     const courier = order.shippingCourier || customer.courier || "Ekspedisi";
@@ -66,11 +72,10 @@ export async function GET(
     const printData = [
       {
         type: 1,
-        path: "https://mbokdhe-fashion.vercel.app/icon/logo.jpg",
+        path: "https://csoeufwcicpbecqzffyu.supabase.co/storage/v1/object/public/assets/logo_mbokdhe.png",
         align: 1
       },
-      { type: 0, content: "PENGIRIMAN PAKET", bold: 1, align: 1, format: 1 },
-      { type: 0, content: "----------------------------------", bold: 0, align: 1, format: 0 },
+      { type: 0, content: "--------------------------------", bold: 0, align: 1, format: 0 },
       { type: 0, content: `Ekspedisi: ${courier.toUpperCase()}`, bold: 1, align: 0, format: 0 },
       { type: 0, content: " ", bold: 0, align: 0, format: 0 },
       { type: 0, content: "KEPADA (PENERIMA):", bold: 1, align: 0, format: 0 },
@@ -81,17 +86,7 @@ export async function GET(
         align: 0, 
         format: 0 
       },
-      { type: 0, content: "----------------------------------", bold: 0, align: 1, format: 0 },
-      { type: 0, content: "DARI (PENGIRIM):", bold: 1, align: 0, format: 0 },
-      { 
-        type: 0, 
-        content: "Mbokdhe Fashion<br />WA: 081234567890", 
-        bold: 0, 
-        align: 0, 
-        format: 0 
-      },
-      { type: 0, content: " ", bold: 0, align: 0, format: 0 },
-      { type: 0, content: " ", bold: 0, align: 0, format: 0 }
+      { type: 0, content: "--------------------------------", bold: 0, align: 1, format: 0 },
     ];
 
     // Wajib ubah Array menjadi Object berindeks ("0": {...}, "1": {...})
