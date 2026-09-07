@@ -13,15 +13,15 @@ export async function GET(request: Request) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Kredensial Supabase tidak ditemukan.");
+      throw new Error("Kredensial SUPABASE_SERVICE_ROLE_KEY tidak ditemukan. Cron Job membutuhkan akses Admin.");
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 2. Dapatkan produk "Terjual" > 3 bulan yang lalu
+    // 2. Dapatkan produk "Terjual" > 3 bulan yang lalu berdasarkan tanggal terakhir di-update (updatedAt)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       .from("products")
       .select("id, photoUrl")
       .eq("status", "Terjual")
-      .lt("createdAt", threeMonthsAgo.toISOString());
+      .lt("updatedAt", threeMonthsAgo.toISOString());
 
     if (fetchError) throw fetchError;
 

@@ -191,6 +191,7 @@ export async function PATCH(
         ...(status && { status }),
         ...(photoUrl && { photoUrl }),
         ...(shopId && { shopId }),
+        updatedAt: new Date().toISOString(),
       })
       .eq("id", id)
       .select("*, shop:shops(*)")

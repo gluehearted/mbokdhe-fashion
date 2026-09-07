@@ -181,7 +181,8 @@ export async function POST(request: Request) {
           status: "Dibooking",
           orderId: newOrder.id,
           price: userProduct?.customPrice !== undefined ? userProduct.customPrice : dbProduct.price,
-          discount: userProduct?.discount || 0
+          discount: userProduct?.discount || 0,
+          updatedAt: new Date().toISOString(),
         })
         .eq("id", dbProduct.id);
     });

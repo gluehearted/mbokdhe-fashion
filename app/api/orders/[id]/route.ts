@@ -94,6 +94,7 @@ export async function PATCH(
         .update({
           status: "Tersedia",
           orderId: null,
+          updatedAt: new Date().toISOString(),
         })
         .eq("orderId", id);
       if (prodError) throw prodError;
@@ -102,6 +103,7 @@ export async function PATCH(
         .from("products")
         .update({
           status: "Terjual",
+          updatedAt: new Date().toISOString(),
         })
         .eq("orderId", id);
       if (prodError) throw prodError;
