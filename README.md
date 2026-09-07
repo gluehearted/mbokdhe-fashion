@@ -1,145 +1,119 @@
-# Mbokdhe Fashion 👜
+# Mbokdhe Fashion - Internal Retail Management System
 
-Admin dashboard internal untuk bisnis fashion tas — mengelola katalog produk, pelanggan, pesanan, pengiriman (ongkir), pembekuan dana DP, dan rekap laporan keuangan.
-
-Built with **Next.js 16 (App Router)**, **Prisma ORM**, **Supabase (PostgreSQL & Storage)**, **Supabase SSR Auth**, **Tailwind CSS 4**, dan **Browser Image Compression**.
+Sistem ERP (Enterprise Resource Planning) dan CRM internal yang dikembangkan khusus untuk operasional bisnis retail fashion. Aplikasi ini mengotomatisasi siklus pemesanan, manajemen inventaris, pelacakan pengiriman, hingga rekonsiliasi keuangan (Down Payment & Laba Bersih).
 
 ---
 
-## ✨ Fitur Utama
+## Arsitektur & Modul Sistem
 
-| Modul | Halaman | Deskripsi |
-| --- | --- | --- |
-| **Portal Autentikasi** | `/login` | Login terproteksi untuk Admin & Staff dengan HTTP-Only Cookie Session. |
-| **Dashboard** | `/` | Ringkasan statistik bisnis (total produk, pesanan, pelanggan, omzet) |
-| **Katalog Produk** | `/products` | CRUD produk tas dengan foto (auto-compress <300KB), deskripsi, harga modal, harga jual, dan profit margin |
-| **Kelola Toko** | `/shops` | Manajemen daftar supplier/toko asal produk |
-| **CRM Pelanggan** | `/customers` | Database pelanggan dengan alamat lengkap (provinsi, kota, kecamatan, kelurahan, kode pos) |
-| **Pipeline Pesanan** | `/orders` | Tabel & Card View pesanan dengan filter status, diskon individual per tas, dan penandaan resi |
-| **Checkout Admin** | `/orders/new` | Buat pesanan baru — pilih pelanggan, pilih tas (dengan zoom photo lightbox & diskon per tas), hitung ongkir |
-| **Perlu Dikirim** | `/ready-to-ship` | Rekap khusus pesanan siap kirim — generator template label pengiriman otomatis & kirim WA direct |
-| **Laporan Keuntungan** | `/pembekuan` | Monitor dana DP yang dibekukan, aging warning >3 hari, pelunasan, dan laporan laba bersih |
-| **Alamat Asal Toko** | `/origin` | Konfigurasi alamat pengirim toko untuk kalkulasi ongkir |
+Sistem ini membagi operasional bisnis ke dalam beberapa modul utama:
 
----
+### Manajemen Inventaris & Katalog (`/products`, `/shops`)
 
-## 🔒 Keamanan & Kerahasiaan Kredensial (Anti-Bocor)
+* **Katalog Terpusat:** Manajemen SKU, harga modal (COGS), harga jual, dan kalkulasi profit margin secara otomatis.
+* **Optimasi Penyimpanan:** Kompresi gambar berjalan di sisi klien (WebWorker) otomatis mengonversi unggahan ke format WebP (<300KB) sebelum dikirim ke Supabase Storage.
+* **Manajemen Supplier:** Pendataan toko asal barang untuk mempermudah restock dan audit modal.
 
-Aplikasi ini menerapkan standar keamanan **Zero Leakage**:
-1. **Strict `.gitignore`**:
-   File `.env`, `.env.local`, `.env*.local`, `node_modules`, `.next`, `dev.db`, dan folder `public/uploads/*` secara otomatis **dilarang masuk (ignored)** dari Git.
-2. **Admin Credentials via Environment Variables**:
-   Email dan password akun Admin disimpan di dalam file `.env.local` / `.env` (TIDAK PERNAH di-hardcode pada source code repository).
+### Pipeline Transaksi (`/orders`, `/orders/new`)
 
----
+* **Lifecycle Pesanan:** Pelacakan status berjenjang (`Keep`, `DP`, `Siap Kirim`, `Dikirim`, `Dibatalkan`).
+* **Point of Sale (Admin):** Antarmuka checkout terintegrasi dengan pemotongan stok *real-time*, penyesuaian diskon individual per item, dan input ongkos kirim.
+* **Manajemen Keuangan:** Sistem pencatatan DP (Down Payment) dengan *aging warning* (peringatan tunggakan >3 hari) dan rekalkulasi pelunasan. (`/pembekuan`)
 
-## 🛠️ Tech Stack & Integrasi
+### Customer Relationship Management (`/customers`)
 
-- **Framework**: [Next.js 16](https://nextjs.org) (App Router, Turbopack)
-- **Language**: TypeScript
-- **Database & Auth**: Supabase PostgreSQL via [Prisma ORM](https://www.prisma.io) & `@supabase/ssr`
-- **Storage & Compression**: Supabase Storage + `browser-image-compression` (<300 KB WebWorker)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com)
-- **Icons**: [Google Material Symbols](https://fonts.google.com/icons)
+* **Database Terstruktur:** Pencatatan domisili lengkap (provinsi hingga kode pos) untuk integrasi logistik.
+* **Behavioral Data:** Pelacakan tipe konsumen, status relasi, dan riwayat belanja (total transaksi & *lifetime value*).
+
+### Operasional & Pemenuhan (`/ready-to-ship`, `/origin`)
+
+* **Fulfillment Hub:** Rekapitulasi pesanan siap kirim.
+* **Generator Resi & Label:** Pembuatan *shipping label* otomatis dan integrasi pengiriman pesan faktur/rekap langsung ke WhatsApp pelanggan.
 
 ---
 
-## 🚀 Langkah-Langkah Setup & Menjalankan Aplikasi
+## Tech Stack
 
-### Prasyarat
-
-Pastikan sudah terinstall di komputer/server Anda:
-- **Node.js** ≥ 18.x — [download](https://nodejs.org)
-- **npm** ≥ 9.x (bundled with Node.js)
-- **Git** — [download](https://git-scm.com)
+* **Core:** Next.js 16 (App Router, Turbopack), React
+* **Language:** TypeScript
+* **Database:** PostgreSQL (via Supabase)
+* **ORM / Query Builder:** Prisma ORM & Supabase JS Client
+* **Authentication:** Supabase SSR Auth (HTTP-Only Cookies)
+* **Styling:** Tailwind CSS 4
+* **Assets Handling:** `browser-image-compression`
 
 ---
 
-### 1. Clone Repository
+## Standar Keamanan
+
+Repositori ini menerapkan standar *Secure by Default*:
+
+* **Environment Isolation:** Kredensial database dan API keys diinjeksi via `.env.local` yang tidak dilacak oleh Git.
+* **Protected Routes:** Seluruh modul operasional di-*intercept* oleh Next.js Middleware untuk memvalidasi sesi *HTTP-Only cookie*. Akses tanpa autentikasi otomatis diarahkan ke `/login`.
+* **Cron Security:** Endpoints untuk pemeliharaan otomatis (seperti *storage cleanup*) dilindungi menggunakan validasi *header* `CRON_SECRET`.
+
+---
+
+## Panduan Instalasi Lokal
+
+### Prasyarat Sistem
+
+* Node.js (v18.x atau lebih baru)
+* Akun dan Project Supabase (PostgreSQL)
+
+### Setup Lingkungan
+
+1. **Kloning repositori & instalasi dependensi:**
 
 ```bash
 git clone https://github.com/gluehearted/mbokdhe-fashion.git
 cd mbokdhe-fashion
-```
-
----
-
-### 2. Install Dependencies
-
-```bash
 npm install
 ```
 
----
-
-### 3. Setup Kredensial & Akun Admin (`.env.local` / `.env`)
-
-Buat file `.env.local` atau `.env` di root folder proyek Anda:
+2. **Konfigurasi Environment Variables:**
+   Salin *template* environment dan isi dengan kredensial dari dashboard Supabase Anda.
 
 ```bash
 cp .env.example .env.local
 ```
 
-Buka `.env.local` dan isi Kredensial Akun Admin & Supabase Anda:
+*Contoh struktur `.env.local`:*
 
 ```env
-# =============================================================================
-# KREDENSIAL AKUN ADMIN (BEBAS DIUBAH - RAHASIA & TIDAK BOCOR KE GITHUB)
-# =============================================================================
-ADMIN_EMAIL="admin@mbokdhe.com"
-ADMIN_PASSWORD="KataSandiRahasiaAdmin2026!"
+# Admin Auth Initializer
+ADMIN_EMAIL="admin@yourdomain.com"
+ADMIN_PASSWORD="SecurePasswordHere"
 
-# =============================================================================
-# SUPABASE & DATABASE CONFIGURATION (POSTGRESQL)
-# =============================================================================
-DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+# Database URLs (Prisma)
+DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@[REGION].pooler.supabase.com:5432/postgres"
 
-# SUPABASE CLIENT API KEYS
-NEXT_PUBLIC_SUPABASE_URL="https://[YOUR-PROJECT-REF].supabase.co"
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_p_..."
-NEXT_PUBLIC_SUPABASE_ANON_KEY="sb_publishable_p_..."
+# Supabase Client Keys
+NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT-REF].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 ```
 
-> ⚠️ **PENTING**: File `.env.local` dan `.env` sudah terdaftar di `.gitignore`. Akun Admin (`ADMIN_EMAIL` & `ADMIN_PASSWORD`) Anda aman dan tidak akan pernah ter-push ke GitHub!
-
----
-
-### 4. Setup Database & Prisma
-
-Sinkronkan skema database ke PostgreSQL Supabase Anda:
+3. **Sinkronisasi Skema Database:**
+   Dorong skema Prisma ke dalam instance PostgreSQL Supabase Anda.
 
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
----
-
-### 5. Jalankan Aplikasi
+4. **Jalankan Development Server:**
 
 ```bash
 npm run dev
 ```
 
-1. Buka browser di **`http://localhost:3000`**.
-2. Anda akan otomatis di-redirect ke halaman login **`http://localhost:3000/login`**.
-3. Masukkan `ADMIN_EMAIL` dan `ADMIN_PASSWORD` yang Anda daftarkan di file `.env.local`.
-4. Selamat! Anda telah berhasil masuk ke Dashboard Admin Mbokdhe Fashion.
+Akses `http://localhost:3000` di browser. Sistem akan mengarahkan Anda ke portal login.
 
 ---
 
-## 📜 NPM Scripts
+## Lisensi
 
-```bash
-npm run dev          # Jalankan development server (http://localhost:3000)
-npm run build        # Build production bundle
-npm run start        # Jalankan production server
-npm run lint         # Jalankan ESLint
-```
-
----
-
-## 📝 License
-
-Private project — Mbokdhe Fashion © 2026
+Copyright © 2026 Mbokdhe Fashion. All rights reserved.
+Sistem ini bersifat *proprietary* dan digunakan secara internal.
