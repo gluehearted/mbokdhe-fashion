@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
 
 // GET /api/products/[id]
 export async function GET(
@@ -111,16 +109,38 @@ export async function PATCH(
       if (photoUrlVal) photoUrl = photoUrlVal;
 
       if (file && file.size > 0) {
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const fileExt = path.extname(file.name) || ".jpg";
-        const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}_${Date.now()}${fileExt}`;
-        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        try {
+          const bytes = await file.arrayBuffer();
+          const fileExt = file.name.split(".").pop() || "jpg";
+          const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}-${Date.now()}.${fileExt}`;
+          const filePath = `bags/${fileName}`;
 
-        await mkdir(uploadsDir, { recursive: true });
-        const filePath = path.join(uploadsDir, fileName);
-        await writeFile(filePath, buffer);
-        photoUrl = `/uploads/${fileName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("products")
+            .upload(filePath, bytes, {
+              contentType: file.type,
+              upsert: true,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: publicUrlData } = supabase.storage
+            .from("products")
+            .getPublicUrl(filePath);
+
+          if (publicUrlData?.publicUrl) {
+            photoUrl = publicUrlData.publicUrl;
+          }
+        } catch (storageError: any) {
+          console.error("Supabase server upload failed:", storageError.message);
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Gagal mengunggah foto ke Supabase Storage.",
+            },
+            { status: 500 }
+          );
+        }
       }
     } else {
       const body = await request.json();
@@ -132,46 +152,33 @@ export async function PATCH(
       photoUrl = body.photoUrl;
     }
 
-    // Resolusi shopId jika shopOrigin disediakan
+    // Resolusi shopId jika shopOrigin disediakan (Upsert)
     let shopId: string | undefined;
     if (shopOrigin) {
       const cleanShop = shopOrigin.trim();
-      const { data: foundShop } = await supabase
+      const { data: shopObj } = await supabase
         .from("shops")
+        .upsert({ name: cleanShop }, { onConflict: "name" })
         .select("id")
-        .eq("name", cleanShop)
-        .maybeSingle();
-
-      if (foundShop) {
-        shopId = foundShop.id;
-      } else {
-        const { data: newShop } = await supabase
-          .from("shops")
-          .insert({ name: cleanShop })
-          .select("id")
-          .single();
-        if (newShop) shopId = newShop.id;
-      }
+        .single();
+      if (shopObj) shopId = shopObj.id;
     }
 
-    // Jika foto baru disediakan dan berbeda dari foto lama, hapus foto lama (jika bukan placeholder)
+    // Jika foto baru disediakan dan berbeda dari foto lama, hapus foto lama dari Supabase Storage (jika bukan placeholder)
     if (photoUrl && existing.photoUrl && existing.photoUrl !== photoUrl && !existing.photoUrl.includes("placeholder")) {
-      if (existing.photoUrl.includes("supabase.co")) {
-        try {
-          const urlParts = existing.photoUrl.split("/products/");
-          if (urlParts.length > 1) {
-            await supabase.storage.from("products").remove([urlParts[1]]);
-          }
-        } catch {
-          // Abaikan kesalahan penghapusan storage lama
+      try {
+        let filePath: string | null = null;
+        if (existing.photoUrl.includes("/storage/v1/object/public/products/")) {
+          filePath = existing.photoUrl.split("/storage/v1/object/public/products/")[1];
+        } else if (existing.photoUrl.includes("/products/")) {
+          filePath = existing.photoUrl.split("/products/").pop() || null;
         }
-      } else if (existing.photoUrl.startsWith("/uploads/")) {
-        try {
-          const localPath = path.join(process.cwd(), "public", existing.photoUrl);
-          await unlink(localPath);
-        } catch {
-          // Abaikan kesalahan penghapusan file lokal lama
+
+        if (filePath) {
+          await supabase.storage.from("products").remove([filePath]);
         }
+      } catch {
+        // Abaikan kesalahan penghapusan storage lama
       }
     }
 
@@ -237,25 +244,21 @@ export async function DELETE(
       );
     }
 
-    // Unlink photo file if local upload or Supabase Storage upload
+    // Hapus file foto dari Supabase Storage jika bukan placeholder
     if (existing.photoUrl && !existing.photoUrl.includes("placeholder")) {
-      if (existing.photoUrl.includes("supabase.co")) {
-        try {
-          const urlParts = existing.photoUrl.split("/products/");
-          if (urlParts.length > 1) {
-            const filePath = urlParts[1];
-            await supabase.storage.from("products").remove([filePath]);
-          }
-        } catch {
-          // Ignore storage removal errors
+      try {
+        let filePath: string | null = null;
+        if (existing.photoUrl.includes("/storage/v1/object/public/products/")) {
+          filePath = existing.photoUrl.split("/storage/v1/object/public/products/")[1];
+        } else if (existing.photoUrl.includes("/products/")) {
+          filePath = existing.photoUrl.split("/products/").pop() || null;
         }
-      } else if (existing.photoUrl.startsWith("/uploads/")) {
-        try {
-          const localPath = path.join(process.cwd(), "public", existing.photoUrl);
-          await unlink(localPath);
-        } catch {
-          // Ignore file removal errors
+
+        if (filePath) {
+          await supabase.storage.from("products").remove([filePath]);
         }
+      } catch {
+        // Abaikan kesalahan penghapusan storage
       }
     }
 

@@ -146,27 +146,14 @@ export async function POST(request: Request) {
       }
     }
 
-    // Find or create Shop to link shopId
-    let shopObj;
-    const { data: foundShop, error: shopFindError } = await supabase
+    // Find or create Shop (Upsert) to link shopId
+    const { data: shopObj, error: shopUpsertError } = await supabase
       .from("shops")
-      .select("*")
-      .eq("name", shopOrigin)
-      .maybeSingle();
+      .upsert({ name: shopOrigin }, { onConflict: "name" })
+      .select()
+      .single();
 
-    if (shopFindError) throw shopFindError;
-    shopObj = foundShop;
-
-    if (!shopObj) {
-      const { data: newShop, error: shopCreateError } = await supabase
-        .from("shops")
-        .insert({ name: shopOrigin })
-        .select()
-        .single();
-
-      if (shopCreateError) throw shopCreateError;
-      shopObj = newShop;
-    }
+    if (shopUpsertError) throw shopUpsertError;
 
     let photoUrl = clientPhotoUrl || "/uploads/placeholder.jpg";
 
