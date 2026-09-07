@@ -7,34 +7,57 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const customerId = searchParams.get("customerId");
+    const search = searchParams.get("search");
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
 
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore); 
 
     let query = supabase
       .from("orders")
-      .select("*, customer:customers(*), products(*, shop:shops(*))")
+      .select("*, customer:customers(*), products(*, shop:shops(*))", { count: "exact" })
       .order("createdAt", { ascending: false });
 
     if (status && status !== "ALL") {
       let checkStatus = status;
-      if (status === "Keep") checkStatus = "Keep";
-      else if (status === "Siap_Packing" || status === "Siap Packing") checkStatus = "Siap Kirim";
+      if (status === "Siap_Packing" || status === "Siap Packing") checkStatus = "Siap Kirim";
       else if (status === "Shipped") checkStatus = "Dikirim";
       else if (status === "Cancelled") checkStatus = "Dibatalkan";
 
-      query = query.eq("status", checkStatus);
+      if (checkStatus === "Keep (Belum Bayar)") {
+        query = query.or('status.eq."Keep (Belum Bayar)",status.eq.Keep');
+      } else if (checkStatus === "Keep (Lunas)") {
+        query = query.or('status.eq."Keep (Lunas)",status.eq.Keep');
+      } else {
+        query = query.eq("status", checkStatus);
+      }
     }
 
     if (customerId) {
       query = query.eq("customerId", customerId);
     }
 
-    const { data: orders, error } = await query;
+    if (search && search.trim() !== "") {
+      const q = search.trim();
+      query = query.or(`id.ilike.%${q}%,notes.ilike.%${q}%,trackingNo.ilike.%${q}%`);
+    }
+
+    const isPaginated = Boolean(pageParam);
+    const page = parseInt(pageParam || "1", 10);
+    const limit = parseInt(limitParam || "10", 10);
+
+    if (isPaginated && page > 0 && limit > 0) {
+      const start = (page - 1) * limit;
+      const end = start + limit - 1;
+      query = query.range(start, end);
+    }
+
+    const { data: orders, error, count } = await query;
     if (error) throw error;
 
-    // Normalisasi format data dari array relasi Supabase & hitung totalPrice secara akurat (net harga barang setelah diskon + ongkir)
-    const mapped = await Promise.all((orders || []).map(async (o: any) => {
+    // OPTIMASI 1: Read-Only kalkulasi tanpa side-effect DB update saat GET
+    const mapped = (orders || []).map((o: any) => {
       const customer = Array.isArray(o.customer) ? o.customer[0] : o.customer || null;
       const products = (o.products || []).map((p: any) => ({
         ...p,
@@ -48,11 +71,6 @@ export async function GET(request: Request) {
           0
         );
         calculatedTotalPrice = itemNetTotal + (o.shippingCost || 0);
-
-        // Swat mismatch in DB if data was saved without deducting discount
-        if (o.totalPrice !== calculatedTotalPrice) {
-          supabase.from("orders").update({ totalPrice: calculatedTotalPrice }).eq("id", o.id).then();
-        }
       }
 
       return {
@@ -61,9 +79,18 @@ export async function GET(request: Request) {
         products,
         totalPrice: calculatedTotalPrice,
       };
-    }));
+    });
 
-    return NextResponse.json({ success: true, data: mapped });
+    const totalCount = count !== null ? count : mapped.length;
+
+    return NextResponse.json({
+      success: true,
+      data: mapped,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit) || 1,
+    });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -74,14 +101,13 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
     
-    // 1. Ambil payload dan paskan dengan variabel kiriman Frontend
     const body = await request.json().catch(() => null);
     if (!body) throw new Error("Format data tidak valid");
 
     let {
       customerId,
       productIds,
-      products, // Frontend mengirim array of object {productId, discount, customPrice}
+      products,
       shippingCost = 0,
       courier, 
       status = "Menunggu",
@@ -102,7 +128,6 @@ export async function POST(request: Request) {
     if (!customerId) throw new Error("Pelanggan (Customer) wajib dipilih.");
     if (!productIds || productIds.length === 0) throw new Error("Pilih minimal 1 tas.");
 
-    // 2. Cek ketersediaan produk di database (Pastikan tas belum keduluan dibeli orang)
     const { data: dbProducts, error: fetchError } = await supabase
       .from("products")
       .select("id, price, status")
@@ -116,7 +141,6 @@ export async function POST(request: Request) {
       throw new Error(`Tas [${unavailableIds}] sudah tidak tersedia (mungkin sudah terjual).`);
     }
 
-    // 3. Hitung total harga barang dikurangi diskon masing-masing barang + ongkir
     let totalBarangNet = 0;
     for (const dbProduct of dbProducts || []) {
       const userProduct = products?.find((p: any) => p.productId === dbProduct.id);
@@ -129,7 +153,6 @@ export async function POST(request: Request) {
     const calculatedTotalTagihan = totalBarangNet + Number(shippingCost);
     const finalTotalPrice = body.totalPrice !== undefined ? Number(body.totalPrice) : calculatedTotalTagihan;
 
-    // 4. Buat Order baru di database
     const { data: newOrder, error: orderError } = await supabase
       .from("orders")
       .insert([{
@@ -148,24 +171,29 @@ export async function POST(request: Request) {
 
     if (orderError) throw orderError;
 
-    // 5. Update status tas menjadi Dibooking & ubah harganya jika ada diskon
-    for (const dbProduct of dbProducts || []) {
+    // OPTIMASI 2: Update status tas secara paralel (bersamaan) menggunakan Promise.all
+    const updatePromises = (dbProducts || []).map(dbProduct => {
       const userProduct = products?.find((p: any) => p.productId === dbProduct.id);
       
-      const { error: updateProductError } = await supabase
+      return supabase
         .from("products")
         .update({
           status: "Dibooking",
-          orderId: newOrder.id, // Sambungkan tas ini ke order yang baru dibuat
+          orderId: newOrder.id,
           price: userProduct?.customPrice !== undefined ? userProduct.customPrice : dbProduct.price,
           discount: userProduct?.discount || 0
         })
         .eq("id", dbProduct.id);
+    });
 
-      if (updateProductError) throw updateProductError;
+    const updateResults = await Promise.all(updatePromises);
+    
+    const failedUpdates = updateResults.filter(res => res.error);
+    if (failedUpdates.length > 0) {
+      console.error("Sebagian tas gagal diupdate:", failedUpdates);
+      throw new Error("Sebagian tas gagal diupdate statusnya. Silakan cek database.");
     }
 
-    // Ambil order lengkap yang baru dibuat untuk dikembalikan ke frontend
     const { data: result, error: fetchOrderError } = await supabase
       .from("orders")
       .select("*, customer:customers(*), products(*)")

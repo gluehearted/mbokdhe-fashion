@@ -21,13 +21,11 @@ export default function ShopsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  // State Modal Form
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
-  const [shopNameInput, setShopNameInput] = useState("");
 
-  const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  // State Confirm Modal Hapus
   const [shopToDelete, setShopToDelete] = useState<Shop | null>(null);
   const [isDeletingShop, setIsDeletingShop] = useState(false);
 
@@ -61,54 +59,12 @@ export default function ShopsPage() {
 
   const openCreateModal = () => {
     setEditingShop(null);
-    setShopNameInput("");
-    setErrorMessage(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (shop: Shop) => {
     setEditingShop(shop);
-    setShopNameInput(shop.name);
-    setErrorMessage(null);
     setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!shopNameInput.trim()) {
-      setErrorMessage("Nama toko wajib diisi.");
-      return;
-    }
-
-    setSaving(true);
-    setErrorMessage(null);
-
-    try {
-      const url = editingShop ? `/api/shops/${editingShop.id}` : "/api/shops";
-      const method = editingShop ? "PATCH" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: shopNameInput.trim() }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Gagal menyimpan toko.");
-        showToast(data.error || "Gagal menyimpan toko.", "error");
-      } else {
-        const msg = editingShop ? "Nama toko berhasil diperbarui." : "Toko baru berhasil ditambahkan.";
-        showToast(msg, "success");
-        setIsModalOpen(false);
-        fetchShops();
-      }
-    } catch {
-      setErrorMessage("Terjadi kesalahan koneksi.");
-      showToast("Terjadi kesalahan koneksi.", "error");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = (shop: Shop) => {

@@ -72,6 +72,8 @@ export default function OrdersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -120,38 +122,29 @@ export default function OrdersPage() {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/orders");
+      const params = new URLSearchParams();
+      params.set("page", String(currentPage));
+      params.set("limit", String(itemsPerPage));
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+
+      const res = await fetch(`/api/orders?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
-        setOrders(data.data);
+        setOrders(data.data || []);
+        setTotalCount(data.totalCount || 0);
+        setTotalPages(data.totalPages || 1);
       }
     } catch {
       showToast("Gagal memuat data pesanan.", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [currentPage, statusFilter, debouncedSearch, itemsPerPage, showToast]);
 
   useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/orders");
-        const data = await res.json();
-        if (!ignore && data.success) {
-          setOrders(data.data);
-        }
-      } catch {
-        if (!ignore) showToast("Gagal memuat data pesanan.", "error");
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [showToast]);
+    fetchOrders();
+  }, [fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -357,34 +350,8 @@ A/N ALRON EBENHAEZER C`;
     window.open(url, "_blank");
   };
 
-  const filteredOrders = orders.filter((o) => {
-    let matchesStatus = false;
-    if (statusFilter === "ALL") {
-      matchesStatus = true;
-    } else if (statusFilter === "Keep (Belum Bayar)") {
-      matchesStatus =
-        o.status === "Keep (Belum Bayar)" ||
-        (o.status === "Keep" && o.dpAmount < o.totalPrice);
-    } else if (statusFilter === "Keep (Lunas)") {
-      matchesStatus =
-        o.status === "Keep (Lunas)" ||
-        (o.status === "Keep" && o.dpAmount >= o.totalPrice && o.totalPrice > 0);
-    } else if (statusFilter === "Keep") {
-      matchesStatus = o.status.startsWith("Keep");
-    } else {
-      matchesStatus = o.status === statusFilter;
-    }
-
-    const matchesSearch =
-      o.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      o.customer?.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      o.customer?.whatsapp.includes(debouncedSearch);
-    return matchesStatus && matchesSearch;
-  });
-
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentTableData = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+  const filteredOrders = orders;
+  const currentTableData = orders;
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -646,14 +613,14 @@ A/N ALRON EBENHAEZER C`;
             </div>
 
             {/* Navigasi Pagination */}
-            {filteredOrders.length > 0 && (
+            {orders.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fbfbfa] dark:bg-slate-900/60 p-4 border-t border-[#eaeaea] dark:border-slate-800 font-technical uppercase">
                 <span className="text-[10px] text-slate-500 dark:text-slate-450">
-                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{startIndex + 1}</span> -{" "}
+                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
                   <span className="font-bold text-[#111111] dark:text-white">
-                    {Math.min(startIndex + itemsPerPage, filteredOrders.length)}
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
                   </span>{" "}
-                  dari total <span className="font-bold text-[#111111] dark:text-white">{filteredOrders.length}</span> order
+                  dari total <span className="font-bold text-[#111111] dark:text-white">{totalCount}</span> order
                 </span>
 
                 <div className="flex items-center gap-2 text-xs font-bold">

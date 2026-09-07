@@ -1,10 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import imageCompression from "browser-image-compression";
-import { createClient } from "@/utils/supabase/client";
-const supabase = createClient();
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -51,6 +48,8 @@ export default function ProductsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -61,27 +60,10 @@ export default function ProductsPage() {
     return () => clearTimeout(handler);
   }, [searchInput]);
 
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const [viewingPhotoProduct, setViewingPhotoProduct] = useState<Product | null>(null);
-
-  const [shopOrigin, setShopOrigin] = useState("");
-  const [capitalPriceInput, setCapitalPriceInput] = useState<string>("");
-  const [priceInput, setPriceInput] = useState<string>("");
-  const [descriptionInput, setDescriptionInput] = useState<string>("");
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [compressing, setCompressing] = useState(false);
-  const [compressedInfo, setCompressedInfo] = useState<string | null>(null);
-
-  const [debouncedProfit, setDebouncedProfit] = useState<number | null>(null);
-
-  const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- State Confirm Modal ---
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -111,13 +93,11 @@ export default function ProductsPage() {
       showToast(`Toko '${newShopNameInput.trim()}' berhasil ditambahkan!`, "success");
       const createdShop: Shop = data.data;
       setShops((prev) => [createdShop, ...prev]);
-      if (isModalOpen) {
-        setShopOrigin(createdShop.name);
-      }
       setIsNewShopModalOpen(false);
       setNewShopNameInput("");
-    } catch (err: any) {
-      setNewShopError(err.message || "Gagal membuat toko baru.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal membuat toko baru.";
+      setNewShopError(msg);
     } finally {
       setSavingNewShop(false);
     }
@@ -126,18 +106,26 @@ export default function ProductsPage() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const url = statusFilter !== "ALL" ? `/api/products?status=${statusFilter}` : "/api/products";
-      const res = await fetch(url);
+      const params = new URLSearchParams();
+      params.set("page", String(currentPage));
+      params.set("limit", String(itemsPerPage));
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (shopFilter !== "ALL") params.set("shop", shopFilter);
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+
+      const res = await fetch(`/api/products?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
-        setProducts(data.data);
+        setProducts(data.data || []);
+        setTotalCount(data.totalCount || 0);
+        setTotalPages(data.totalPages || 1);
       }
     } catch {
       // Ignore
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [currentPage, statusFilter, shopFilter, debouncedSearch, itemsPerPage]);
 
   const fetchShops = useCallback(async () => {
     try {
@@ -164,212 +152,14 @@ export default function ProductsPage() {
     };
   }, [fetchProducts, fetchShops]);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      const capital = parseInt(capitalPriceInput, 10);
-      const sell = parseInt(priceInput, 10);
-      if (!isNaN(capital) && !isNaN(sell)) {
-        setDebouncedProfit(sell - capital);
-      } else {
-        setDebouncedProfit(null);
-      }
-    }, 200);
-
-    return () => clearTimeout(handler);
-  }, [capitalPriceInput, priceInput]);
-
   const openCreateModal = () => {
     setEditingProduct(null);
-    setShopOrigin("");
-    setCapitalPriceInput("");
-    setPriceInput("");
-    setDescriptionInput("");
-    setFile(null);
-    setPreviewUrl(null);
-    setCompressedInfo(null);
-    setErrorMessage(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
-    setShopOrigin(p.shop?.name || "");
-    setCapitalPriceInput(String(p.capitalPrice || 0));
-    setPriceInput(String(p.price));
-    setDescriptionInput(p.description || "");
-    setFile(null);
-    setPreviewUrl(p.photoUrl);
-    setErrorMessage(null);
     setIsModalOpen(true);
-  };
-
-  const processSelectedImage = async (selectedFile: File) => {
-    if (!selectedFile.type.startsWith("image/")) {
-      showToast("Hanya file gambar (JPEG, PNG, WebP) yang diperbolehkan.", "error");
-      return;
-    }
-
-    setCompressing(true);
-    setCompressedInfo(null);
-
-    try {
-      const options = {
-        maxSizeMB: 0.15, // Maksimal 150 KB
-        maxWidthOrHeight: 1000,
-        useWebWorker: true,
-        fileType: "image/webp",
-      };
-
-      const origSizeKB = (selectedFile.size / 1024).toFixed(1);
-      const compressedBlob = await imageCompression(selectedFile, options);
-
-      const dotIdx = selectedFile.name.lastIndexOf(".");
-      const baseName = dotIdx !== -1 ? selectedFile.name.substring(0, dotIdx) : selectedFile.name;
-      const webpFile = new File([compressedBlob], `${baseName}.webp`, { type: "image/webp" });
-      const compSizeKB = (webpFile.size / 1024).toFixed(1);
-
-      setCompressedInfo(`Asli: ${origSizeKB} KB → WebP: ${compSizeKB} KB`);
-      setFile(webpFile);
-      if (previewUrl && previewUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setPreviewUrl(URL.createObjectURL(webpFile));
-    } catch (err) {
-      console.error("Gagal mengompresi foto:", err);
-      setFile(selectedFile);
-      if (previewUrl && previewUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setPreviewUrl(URL.createObjectURL(selectedFile));
-    } finally {
-      setCompressing(false);
-    }
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      await processSelectedImage(e.target.files[0]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      await processSelectedImage(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleRemovePhoto = () => {
-    setFile(null);
-    setCompressedInfo(null);
-    if (previewUrl && previewUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setPreviewUrl(editingProduct ? editingProduct.photoUrl : null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent, keepShop = false) => {
-    e.preventDefault();
-    if (!shopOrigin.trim()) {
-      setErrorMessage("Pilih atau isi Toko Asal / Supplier terlebih dahulu.");
-      return;
-    }
-
-    setSaving(true);
-    setErrorMessage(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("shopOrigin", shopOrigin.trim());
-      formData.append("capitalPrice", capitalPriceInput || "0");
-      formData.append("price", priceInput);
-      formData.append("description", descriptionInput.trim());
-
-      let uploadedToSupabase = false;
-      if (supabase && file) {
-        try {
-          const fileExt = file.name.split(".").pop() || "jpg";
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-          const filePath = `bags/${fileName}`;
-          const { error: uploadError } = await supabase.storage.from("products").upload(filePath, file);
-          if (!uploadError) {
-            const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(filePath);
-            if (publicUrlData?.publicUrl) {
-              formData.append("photoUrl", publicUrlData.publicUrl);
-              uploadedToSupabase = true;
-            }
-          }
-        } catch (sErr) {
-          console.warn("Upload Supabase tidak aktif, menggunakan penyimpanan lokal:", sErr);
-        }
-      }
-
-      if (!file && editingProduct && editingProduct.photoUrl) {
-        formData.append("photoUrl", editingProduct.photoUrl);
-      }
-
-      if (file && !uploadedToSupabase) {
-        formData.append("file", file);
-      }
-
-      const url = editingProduct ? `/api/products/${editingProduct.id}` : "/api/products";
-      const method = editingProduct ? "PATCH" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Gagal menyimpan produk.");
-        showToast(data.error || "Gagal menyimpan produk.", "error");
-      } else {
-        if (!editingProduct && keepShop) {
-          showToast(`Produk baru berhasil disimpan! Silakan input tas berikutnya untuk toko '${shopOrigin}'.`, "success");
-          setCapitalPriceInput("");
-          setPriceInput("");
-          setDescriptionInput("");
-          setFile(null);
-          setPreviewUrl(null);
-          setCompressedInfo(null);
-          setErrorMessage(null);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-          fetchProducts();
-          fetchShops();
-        } else {
-          const msg = editingProduct ? "Produk berhasil diperbarui." : "Produk baru berhasil ditambahkan.";
-          showToast(msg, "success");
-          setIsModalOpen(false);
-          fetchProducts();
-          fetchShops();
-        }
-      }
-    } catch {
-      setErrorMessage("Terjadi kesalahan koneksi.");
-      showToast("Terjadi kesalahan koneksi.", "error");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = (p: Product) => {
@@ -396,21 +186,8 @@ export default function ProductsPage() {
     }
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      p.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      (p.description && p.description.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
-      (p.shop?.name && p.shop.name.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
-      (p.order?.customer?.name && p.order.customer.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
-
-    const matchesShop = shopFilter === "ALL" || p.shop?.name === shopFilter || p.shop?.id === shopFilter;
-
-    return matchesSearch && matchesShop;
-  });
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentTableData = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const filteredProducts = products;
+  const currentTableData = products;
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -636,14 +413,14 @@ export default function ProductsPage() {
             </div>
 
             {/* Navigasi Pagination */}
-            {filteredProducts.length > 0 && (
+            {products.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fbfbfa] dark:bg-slate-900/60 p-4 border-t border-[#eaeaea] dark:border-slate-800 font-technical uppercase">
                 <span className="text-[10px] text-slate-500 dark:text-slate-450">
-                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{startIndex + 1}</span> -{" "}
+                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
                   <span className="font-bold text-[#111111] dark:text-white">
-                    {Math.min(startIndex + itemsPerPage, filteredProducts.length)}
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
                   </span>{" "}
-                  dari total <span className="font-bold text-[#111111] dark:text-white">{filteredProducts.length}</span> produk
+                  dari total <span className="font-bold text-[#111111] dark:text-white">{totalCount}</span> produk
                 </span>
 
                 <div className="flex items-center gap-2 text-xs font-bold">

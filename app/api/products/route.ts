@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-// GET /api/products?status=Tersedia
+// GET /api/products?status=Tersedia&page=1&limit=10&shop=ShopName&search=keyword
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
+    const shop = searchParams.get("shop");
+    const search = searchParams.get("search");
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
 
-    // Support legacy "Available" filter mapped to "Tersedia"
     let mappedStatus = status;
     if (status === "Available") mappedStatus = "Tersedia";
     if (status === "Booked") mappedStatus = "Dibooking";
@@ -17,35 +20,72 @@ export async function GET(request: Request) {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
+    // Gunakan !inner pada relasi shop jika ada filter shop agar PostgreSQL memfilter langsung di database
+    const shopQuery = shop && shop !== "ALL" ? "shop:shops!inner(*)" : "shop:shops(*)";
+
     let query = supabase
       .from("products")
-      .select("*, shop:shops(*), order:orders(id, status, customer:customers(name, whatsapp))")
-      .order("id", { ascending: true });
+      .select(`*, ${shopQuery}, order:orders(id, status, customer:customers(name, whatsapp))`, { count: "exact" })
+      .order("id", { ascending: false });
 
+    // Filter Status
     if (mappedStatus && mappedStatus !== "ALL") {
       query = query.eq("status", mappedStatus);
     }
 
-    const { data: products, error } = await query;
+    // Filter Shop Name/ID langsung di database (bukan di JavaScript)
+    if (shop && shop !== "ALL") {
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shop);
+      if (isUUID) {
+        query = query.eq("shopId", shop);
+      } else {
+        query = query.eq("shops.name", shop);
+      }
+    }
+
+    // Search keyword across id or description
+    if (search && search.trim() !== "") {
+      const q = search.trim();
+      query = query.or(`id.ilike.%${q}%,description.ilike.%${q}%`);
+    }
+
+    // Server-side Pagination
+    const isPaginated = Boolean(pageParam);
+    const page = parseInt(pageParam || "1", 10);
+    const limit = parseInt(limitParam || "10", 10);
+
+    if (isPaginated && page > 0 && limit > 0) {
+      const start = (page - 1) * limit;
+      const end = start + limit - 1;
+      query = query.range(start, end);
+    }
+
+    const { data: products, error, count } = await query;
 
     if (error) throw error;
 
     const mapped = (products || []).map((p: Record<string, unknown>) => {
-      const shop = Array.isArray(p.shop) ? p.shop[0] : p.shop;
-      const order = Array.isArray(p.order) ? p.order[0] : p.order;
+      const shopObj = Array.isArray(p.shop) ? p.shop[0] : p.shop;
+      const orderObj = Array.isArray(p.order) ? p.order[0] : p.order;
       return {
         ...p,
-        shop: shop || null,
-        order: order ? {
-          ...order,
-          customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null
+        shop: shopObj || null,
+        order: orderObj ? {
+          ...orderObj,
+          customer: Array.isArray(orderObj.customer) ? orderObj.customer[0] : orderObj.customer || null
         } : null
       };
     });
 
+    const totalCount = count !== null ? count : mapped.length;
+
     return NextResponse.json({
       success: true,
       data: mapped,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit) || 1,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";
@@ -56,6 +96,7 @@ export async function GET(request: Request) {
   }
 }
 
+// Generator ID Otomatis (Single DB Hit tanpa while(true) loop)
 async function generateAutoProductId(supabase: ReturnType<typeof createClient>, shopOrigin: string): Promise<string> {
   const cleanShop = shopOrigin.trim().replace(/[()]/g, "");
   const words = cleanShop.split(/\s+/).filter(Boolean);
@@ -76,31 +117,27 @@ async function generateAutoProductId(supabase: ReturnType<typeof createClient>, 
 
   const datePrefix = `${prefix}-${dateCode}-`;
 
-  const { count, error } = await supabase
+  // Ambil SATU produk terakhir dengan prefix tanggal hari ini (diurutkan paling besar)
+  const { data: latestProduct, error } = await supabase
     .from("products")
-    .select("id", { count: "exact", head: true })
-    .like("id", `${datePrefix}%`);
+    .select("id")
+    .like("id", `${datePrefix}%`)
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (error) throw error;
 
-  let seq = (count || 0) + 1;
-  let candidate = `${datePrefix}${String(seq).padStart(2, "0")}`;
-
-  while (true) {
-    const { data: existing, error: checkError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("id", candidate)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-    if (!existing) break;
-
-    seq++;
-    candidate = `${datePrefix}${String(seq).padStart(2, "0")}`;
+  let seq = 1;
+  if (latestProduct && latestProduct.id) {
+    const lastSeqStr = latestProduct.id.replace(datePrefix, "");
+    const lastSeqNum = parseInt(lastSeqStr, 10);
+    if (!isNaN(lastSeqNum)) {
+      seq = lastSeqNum + 1;
+    }
   }
 
-  return candidate;
+  return `${datePrefix}${String(seq).padStart(2, "0")}`;
 }
 
 // POST /api/products (multipart/form-data)

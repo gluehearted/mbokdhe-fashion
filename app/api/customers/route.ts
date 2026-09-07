@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-async function generateAutoCustomerId(supabase: any): Promise<string> {
+// OPTIMASI: 1x Hit Database untuk Auto ID Customer
+async function generateAutoCustomerId(supabase: ReturnType<typeof createClient>): Promise<string> {
   const now = new Date();
   const yy = String(now.getFullYear()).slice(-2);
   const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -10,54 +11,64 @@ async function generateAutoCustomerId(supabase: any): Promise<string> {
   const dateCode = `${yy}${mm}${dd}`;
   const prefix = `CST-${dateCode}-`;
 
-  const { count, error } = await supabase
+  // Langsung ambil 1 ID terakhir hari ini, diurutkan dari yang paling besar
+  const { data: latestCustomer, error } = await supabase
     .from("customers")
-    .select("id", { count: "exact", head: true })
-    .like("id", `${prefix}%`);
+    .select("id")
+    .like("id", `${prefix}%`)
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (error) throw error;
 
-  let seq = (count || 0) + 1;
-  let candidate = `${prefix}${String(seq).padStart(2, "0")}`;
+  let seq = 1;
 
-  while (true) {
-    const { data: existing, error: checkError } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("id", candidate)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-    if (!existing) break;
-
-    seq++;
-    candidate = `${prefix}${String(seq).padStart(2, "0")}`;
+  if (latestCustomer && latestCustomer.id) {
+    const lastSeqStr = latestCustomer.id.replace(prefix, "");
+    const lastSeqNum = parseInt(lastSeqStr, 10);
+    if (!isNaN(lastSeqNum)) {
+      seq = lastSeqNum + 1;
+    }
   }
 
-  return candidate;
+  return `${prefix}${String(seq).padStart(2, "0")}`;
 }
 
-// GET /api/customers?search=...
+// GET /api/customers?search=...&page=1&limit=10
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
 
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
     let query = supabase
       .from("customers")
-      .select("*, orders(id, status, totalPrice, shippingCost, createdAt, products(price, discount))")
+      .select("*, orders(id, status, totalPrice, shippingCost, createdAt, products(price, discount))", { count: "exact" })
       .order("createdAt", { ascending: false });
 
-    if (search) {
+    if (search && search.trim() !== "") {
+      const q = search.trim();
       query = query.or(
-        `id.ilike.%${search}%,name.ilike.%${search}%,whatsapp.ilike.%${search}%,domisili.ilike.%${search}%,courier.ilike.%${search}%,behavioral.ilike.%${search}%,consumerType.ilike.%${search}%`
+        `id.ilike.%${q}%,name.ilike.%${q}%,whatsapp.ilike.%${q}%,domisili.ilike.%${q}%,courier.ilike.%${q}%,behavioral.ilike.%${q}%,consumerType.ilike.%${q}%`
       );
     }
 
-    const { data: customers, error } = await query;
+    const isPaginated = Boolean(pageParam);
+    const page = parseInt(pageParam || "1", 10);
+    const limit = parseInt(limitParam || "10", 10);
+
+    if (isPaginated && page > 0 && limit > 0) {
+      const start = (page - 1) * limit;
+      const end = start + limit - 1;
+      query = query.range(start, end);
+    }
+
+    const { data: customers, error, count } = await query;
 
     if (error) throw error;
 
@@ -96,9 +107,15 @@ export async function GET(request: Request) {
       };
     });
 
+    const totalCount = count !== null ? count : mapped.length;
+
     return NextResponse.json({
       success: true,
       data: mapped,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit) || 1,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal Server Error";

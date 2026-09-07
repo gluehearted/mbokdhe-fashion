@@ -24,73 +24,52 @@ interface Customer {
   createdAt: string;
 }
 
-const COURIER_OPTIONS = [
-  "SiCepat",
-  "J&T Express",
-  "TIKI",
-  "Wahana",
-  "Lion Parcel",
-];
-
-const BEHAVIORAL_OPTIONS = [
-  "Value Seeker",
-  "Price Sensitive",
-  "Design Oriented",
-  "Convenience Seeker",
-];
-
-const RELATIONSHIP_STATUS_OPTIONS = [
-  "New Customer",
-  "Repeat Buyer",
-];
-
 function CustomersPageContent() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // State Modal & Data
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-
-  const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [domisili, setDomisili] = useState("");
-  const [shippingCostInput, setShippingCostInput] = useState<string>("");
-  const [courier, setCourier] = useState("");
-  const [addressDetail, setAddressDetail] = useState("");
-  const [behavioral, setBehavioral] = useState("");
-  const [consumerType, setConsumerType] = useState("");
-  const [relationshipStatus, setRelationshipStatus] = useState("");
-  const [crisisStatus, setCrisisStatus] = useState("");
-
-  const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  
+  // State Hapus Customer
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
 
+  // State Paginasi & Pencarian
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
 
   const fetchCustomers = useCallback(async (q = "") => {
     setLoading(true);
     try {
-      const url = q ? `/api/customers?search=${encodeURIComponent(q)}` : "/api/customers";
-      const res = await fetch(url);
+      const params = new URLSearchParams();
+      params.set("page", String(currentPage));
+      params.set("limit", String(itemsPerPage));
+      if (q.trim()) params.set("search", q.trim());
+
+      const res = await fetch(`/api/customers?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
-        setCustomers(data.data);
+        setCustomers(data.data || []);
+        setTotalCount(data.totalCount || 0);
+        setTotalPages(data.totalPages || 1);
       }
     } catch {
-      // Ignore
+      showToast("Gagal memuat data pelanggan.", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, itemsPerPage, showToast]);
 
+  // Handle Search Debounce
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchInput);
@@ -99,104 +78,28 @@ function CustomersPageContent() {
     return () => clearTimeout(handler);
   }, [searchInput]);
 
+  // Trigger Fetching
   useEffect(() => {
     fetchCustomers(debouncedSearch);
   }, [debouncedSearch, fetchCustomers]);
 
+  // Simple handler untuk membuka modal form (jauh lebih bersih karena state form ada di CustomerForm)
   const openCreateModal = useCallback(() => {
     setEditingCustomer(null);
-    setName("");
-    setWhatsapp("");
-    setDomisili("");
-    setShippingCostInput("");
-    setCourier("");
-    setAddressDetail("");
-    setBehavioral("");
-    setConsumerType("");
-    setRelationshipStatus("");
-    setCrisisStatus("");
-    setErrorMessage(null);
     setIsModalOpen(true);
   }, []);
 
+  const openEditModal = (c: Customer) => {
+    setEditingCustomer(c);
+    setIsModalOpen(true);
+  };
+
+  // Cek parameter URL untuk auto-open modal create
   useEffect(() => {
     if (searchParams.get("action") === "new" || searchParams.get("new") === "true") {
       openCreateModal();
     }
   }, [searchParams, openCreateModal]);
-
-  const openEditModal = (c: Customer) => {
-    setEditingCustomer(c);
-    setName(c.name);
-    setWhatsapp(c.whatsapp);
-    setDomisili(c.domisili || "");
-    setShippingCostInput(c.shippingCost !== undefined && c.shippingCost !== null ? String(c.shippingCost) : "");
-    setCourier(c.courier || "");
-    setAddressDetail(c.addressDetail);
-    setBehavioral(c.behavioral || "");
-    setConsumerType(c.consumerType || "");
-    setRelationshipStatus(c.relationshipStatus || "");
-    setCrisisStatus(c.crisisStatus || "");
-    setErrorMessage(null);
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setErrorMessage(null);
-
-    try {
-      let cleanWa = whatsapp.trim().replace(/[^0-9]/g, "");
-      
-      if (cleanWa.startsWith("0")) {
-        cleanWa = "62" + cleanWa.substring(1);
-      }
-
-      const payload = {
-        name: name.trim(),
-        whatsapp: cleanWa,
-        domisili: domisili.trim(),
-        shippingCost: parseInt(shippingCostInput, 10) || 0,
-        courier: courier.trim(),
-        addressDetail: addressDetail.trim(),
-        behavioral: behavioral.trim(),
-        consumerType: consumerType.trim(),
-        relationshipStatus: relationshipStatus.trim(),
-        crisisStatus: crisisStatus.trim(),
-      };
-
-      const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : "/api/customers";
-      const method = editingCustomer ? "PATCH" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Gagal menyimpan data pelanggan.");
-        showToast(data.error || "Gagal menyimpan data pelanggan.", "error");
-      } else {
-        const msg = editingCustomer ? `Data pelanggan ${name} berhasil diperbarui.` : `Pelanggan baru ${name} berhasil ditambahkan.`;
-        showToast(msg, "success");
-        setIsModalOpen(false);
-        fetchCustomers(debouncedSearch);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Terjadi kesalahan.";
-      setErrorMessage(msg);
-      showToast(msg, "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = (c: Customer) => {
-    setCustomerToDelete(c);
-  };
 
   const confirmDeleteCustomer = async () => {
     if (!customerToDelete) return;
@@ -218,9 +121,7 @@ function CustomersPageContent() {
     }
   };
 
-  const totalPages = Math.ceil(customers.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentTableData = customers.slice(startIndex, startIndex + itemsPerPage);
+  const currentTableData = customers;
 
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
@@ -352,7 +253,7 @@ function CustomersPageContent() {
                               label: "Hapus Pelanggan",
                               icon: "delete",
                               danger: true,
-                              onClick: () => handleDelete(c),
+                              onClick: () => setCustomerToDelete(c),
                             },
                           ]}
                         />
@@ -367,11 +268,11 @@ function CustomersPageContent() {
             {customers.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#fbfbfa] dark:bg-slate-900/60 p-4 border-t border-[#eaeaea] dark:border-slate-800 font-technical uppercase">
                 <span className="text-[10px] text-slate-500 dark:text-slate-450">
-                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{startIndex + 1}</span> -{" "}
+                  Menampilkan <span className="font-bold text-[#111111] dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> -{" "}
                   <span className="font-bold text-[#111111] dark:text-white">
-                    {Math.min(startIndex + itemsPerPage, customers.length)}
+                    {Math.min(currentPage * itemsPerPage, totalCount)}
                   </span>{" "}
-                  dari total <span className="font-bold text-[#111111] dark:text-white">{customers.length}</span> pelanggan
+                  dari total <span className="font-bold text-[#111111] dark:text-white">{totalCount}</span> pelanggan
                 </span>
 
                 <div className="flex items-center gap-2 text-xs font-bold">
