@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import imageCompression from "browser-image-compression";
 
 export interface Product {
@@ -55,6 +55,73 @@ export default function ProductForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // State & handler Webcam Laptop
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const startWebcam = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+      });
+      setWebcamStream(stream);
+      setShowWebcam(true);
+    } catch (err: unknown) {
+      console.error("Gagal membuka webcam:", err);
+      setError("Gagal mengakses webcam. Pastikan izin kamera telah diberikan di browser Anda.");
+    }
+  };
+
+  const stopWebcam = () => {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach((track) => track.stop());
+      setWebcamStream(null);
+    }
+    setShowWebcam(false);
+  };
+
+  useEffect(() => {
+    if (showWebcam && webcamStream && videoRef.current) {
+      videoRef.current.srcObject = webcamStream;
+    }
+  }, [showWebcam, webcamStream]);
+
+  useEffect(() => {
+    return () => {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [webcamStream]);
+
+  const captureWebcam = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        async (blob) => {
+          if (blob) {
+            const capturedFile = new File([blob], `webcam-${Date.now()}.jpg`, { type: "image/jpeg" });
+            stopWebcam();
+            await processSelectedImage(capturedFile);
+          }
+        },
+        "image/jpeg",
+        0.95
+      );
+    }
+  };
 
   useEffect(() => {
     if (!passedShops) {
@@ -333,24 +400,69 @@ export default function ProductForm({
             className="hidden"
           />
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <label
               htmlFor="product-form-camera-input"
-              className={`flex-1 py-2 px-3 bg-[#1F6C9F] hover:bg-[#195781] text-white font-bold rounded-[6px] text-[10px] uppercase font-technical cursor-pointer flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+              className={`py-2 px-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
             >
-              📷 Buka Kamera HP
+              Kamera HP
             </label>
+
+            <button
+              type="button"
+              disabled={compressing || submitting}
+              onClick={showWebcam ? stopWebcam : startWebcam}
+              className={`py-2 px-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+            >
+              Webcam
+            </button>
+
             <label
               htmlFor="product-form-file-input"
-              className={`flex-1 py-2 px-3 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1.5 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+              className={`py-2 px-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
             >
-              🖼️ Pilih Galeri
+              Galeri
             </label>
           </div>
 
+          {showWebcam && (
+            <div className="mt-2 p-2.5 bg-[#f9f9f9] dark:bg-[#1c1d1f] border border-[#eaeaea] dark:border-slate-800 rounded-[6px] space-y-2">
+              <div className="relative overflow-hidden rounded-[6px] bg-black aspect-video flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onLoadedMetadata={(e) => {
+                    e.currentTarget.play();
+                  }}
+                  className="w-full h-full object-cover rounded-[6px]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={compressing || submitting}
+                  onClick={captureWebcam}
+                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-[6px] text-[10px] uppercase font-technical flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {compressing ? "⚡ Memproses..." : "📸 Jepret Foto!"}
+                </button>
+                <button
+                  type="button"
+                  disabled={compressing || submitting}
+                  onClick={stopWebcam}
+                  className="px-3 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] text-[10px] uppercase font-technical transition-all cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
+
           {compressing && (
             <p className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold animate-pulse font-technical uppercase">
-              ⚡ MENGOMPRESI FOTO (&lt; 150 KB)...
+              MENGOMPRESI FOTO (&lt; 150 KB)...
             </p>
           )}
 
