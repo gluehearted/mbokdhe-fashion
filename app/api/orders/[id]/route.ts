@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
+interface OrderProduct {
+  id: string;
+  price?: number;
+  discount?: number;
+  shop?: unknown;
+  [key: string]: unknown;
+}
+
+interface ProductItemInput {
+  productId?: string;
+  customPrice?: number;
+  discount?: number;
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -9,14 +23,28 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    let { customerId, status, trackingNo, courier, shippingCourier, shippingService, shippingCost, dpAmount, totalPrice, notes, productIds, products } = body;
+    let { status } = body;
+    const {
+      customerId,
+      trackingNo,
+      courier,
+      shippingCourier,
+      shippingService,
+      shippingCost,
+      dpAmount,
+      totalPrice,
+      notes,
+      productIds,
+      products,
+    } = body;
     const finalCourier = courier || shippingCourier;
 
-    // Map status string if provided in English
-    if (status === "Keep") status = "Keep";
-    if (status === "Siap_Packing" || status === "Siap_Kirim" || status === "Siap Packing") status = "Siap Kirim";
-    if (status === "Shipped") status = "Dikirim";
-    if (status === "Cancelled") status = "Dibatalkan";
+    // 🔥 MAP STATUS BEBAS
+    if (status) {
+      if (status === "Siap_Packing" || status === "Siap_Kirim" || status === "Siap Packing") status = "Siap Kirim";
+      if (status === "Shipped") status = "Dikirim";
+      if (status === "Cancelled") status = "Dibatalkan";
+    }
 
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
@@ -30,87 +58,80 @@ export async function PATCH(
     if (checkError) throw checkError;
 
     if (!existingOrder) {
-      return NextResponse.json(
-        { success: false, error: "Pesanan tidak ditemukan." },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Pesanan tidak ditemukan." }, { status: 404 });
     }
 
-    // 1. Synchronize Product Items if productIds is provided
+    // 1. Sinkronisasi Item Produk (jika ada perubahan dari form edit)
     if (Array.isArray(productIds)) {
-      const currentProducts: any[] = existingOrder.products || [];
-      const currentProductIds = currentProducts.map((p: any) => p.id);
+      const currentProducts: OrderProduct[] = existingOrder.products || [];
+      const currentProductIds = currentProducts.map((p) => p.id);
 
-      // Removed products -> revert status to Tersedia and unlink orderId
       const removedIds = currentProductIds.filter((pid: string) => !productIds.includes(pid));
       if (removedIds.length > 0) {
-        const { error: unlinkError } = await supabase
-          .from("products")
-          .update({
-            status: "Tersedia",
-            orderId: null,
-          })
-          .in("id", removedIds);
-        if (unlinkError) throw unlinkError;
+        await supabase.from("products").update({
+          status: "Tersedia",
+          orderId: null,
+          updatedAt: new Date().toISOString(),
+        }).in("id", removedIds);
       }
 
-      // Added or updated products -> link to this orderId
       const addedIds = productIds.filter((pid: string) => !currentProductIds.includes(pid));
       if (addedIds.length > 0) {
         const newProductStatus = (status === "Dikirim" || status === "Shipped") ? "Terjual" : "Dibooking";
-        const { error: linkError } = await supabase
-          .from("products")
-          .update({
-            status: newProductStatus,
-            orderId: id,
-          })
-          .in("id", addedIds);
-        if (linkError) throw linkError;
+        await supabase.from("products").update({
+          status: newProductStatus,
+          orderId: id,
+          updatedAt: new Date().toISOString(),
+        }).in("id", addedIds);
       }
 
-      // Update prices & discounts for individual products if provided in products array
       if (Array.isArray(products)) {
-        for (const item of products) {
+        for (const item of (products as ProductItemInput[])) {
           if (item.productId && (item.customPrice !== undefined || item.discount !== undefined)) {
-            const updateData: any = {};
+            const updateData: Record<string, unknown> = {};
             if (item.customPrice !== undefined) updateData.price = item.customPrice;
             if (item.discount !== undefined) updateData.discount = item.discount;
-
-            const { error: prodUpdateError } = await supabase
-              .from("products")
-              .update(updateData)
-              .eq("id", item.productId);
-
-            if (prodUpdateError) throw prodUpdateError;
+            await supabase.from("products").update(updateData).eq("id", item.productId);
           }
         }
       }
     }
 
-    // 2. Handle Status changes
+    // 2. Handle Perubahan Status untuk Produk yang tertaut
     if (status === "Dibatalkan" || status === "Cancelled") {
-      const { error: prodError } = await supabase
-        .from("products")
-        .update({
-          status: "Tersedia",
-          orderId: null,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("orderId", id);
-      if (prodError) throw prodError;
+      await supabase.from("products").update({
+        status: "Tersedia",
+        orderId: null,
+        updatedAt: new Date().toISOString(),
+      }).eq("orderId", id);
     } else if (status === "Dikirim" || status === "Shipped") {
-      const { error: prodError } = await supabase
-        .from("products")
-        .update({
-          status: "Terjual",
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("orderId", id);
-      if (prodError) throw prodError;
+      await supabase.from("products").update({
+        status: "Terjual",
+        updatedAt: new Date().toISOString(),
+      }).eq("orderId", id);
+    } else if (status) {
+      await supabase.from("products").update({
+        status: "Dibooking",
+        updatedAt: new Date().toISOString(),
+      }).eq("orderId", id);
     }
 
-    let finalTotalPrice = totalPrice !== undefined ? parseInt(String(totalPrice), 10) : undefined;
+    // 🔥 OTOMATISASI DP BERDASARKAN ASUMSI (BUSINESS RULE)
+    const finalTotalPrice = totalPrice !== undefined && totalPrice !== null ? parseInt(String(totalPrice), 10) : existingOrder.totalPrice;
+    let finalDpAmount = dpAmount !== undefined && dpAmount !== null ? parseInt(String(dpAmount), 10) : existingOrder.dpAmount;
 
+    // Jika admin set "Keep (Lunas)", otomatiskan DP = Total Harga
+    if (status === "Keep (Lunas)") {
+      finalDpAmount = finalTotalPrice;
+    } 
+    // Jika admin set "Keep (Belum Bayar)" atau "Menunggu", pastikan DP = 0
+    else if (status === "Keep (Belum Bayar)" || status === "Menunggu") {
+      finalDpAmount = 0;
+    }
+
+    const finalShippingCost = shippingCost !== undefined && shippingCost !== null ? parseInt(String(shippingCost), 10) : undefined;
+
+    // 3. Update Database Order
     const { data: order, error: updateError } = await supabase
       .from("orders")
       .update({
@@ -119,9 +140,9 @@ export async function PATCH(
         ...(trackingNo !== undefined && { trackingNo }),
         ...(finalCourier !== undefined && { shippingCourier: finalCourier }),
         ...(shippingService !== undefined && { shippingService }),
-        ...(shippingCost !== undefined && { shippingCost: parseInt(String(shippingCost), 10) }),
-        ...(dpAmount !== undefined && { dpAmount: parseInt(String(dpAmount), 10) }),
-        ...(finalTotalPrice !== undefined && { totalPrice: finalTotalPrice }),
+        ...(finalShippingCost !== undefined && !isNaN(finalShippingCost) && { shippingCost: finalShippingCost }),
+        dpAmount: finalDpAmount, // Selalu update nilai DP sesuai aturan baru
+        totalPrice: finalTotalPrice,
         ...(notes !== undefined && { notes: notes ? String(notes).trim() : null }),
         updatedAt: new Date().toISOString(),
       })
@@ -131,7 +152,8 @@ export async function PATCH(
 
     if (updateError) throw updateError;
 
-    const orderProducts = (order.products || []).map((p: any) => ({
+    // Hitung ulang untuk respon ke Frontend
+    const orderProducts = (order.products || []).map((p: OrderProduct) => ({
       ...p,
       shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
     }));
@@ -139,33 +161,24 @@ export async function PATCH(
     let calculatedTotalPrice = order.totalPrice || 0;
     if (orderProducts.length > 0) {
       const itemNetTotal = orderProducts.reduce(
-        (sum: number, p: any) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)),
-        0
+        (sum: number, p: OrderProduct) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)), 0
       );
       calculatedTotalPrice = itemNetTotal + (order.shippingCost || 0);
-
-      if (order.totalPrice !== calculatedTotalPrice) {
-        supabase.from("orders").update({ totalPrice: calculatedTotalPrice }).eq("id", id).then();
-      }
     }
-
-    const normalized = {
-      ...order,
-      customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
-      products: orderProducts,
-      totalPrice: calculatedTotalPrice,
-    };
 
     return NextResponse.json({
       success: true,
-      data: normalized,
+      data: {
+        ...order,
+        customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
+        products: orderProducts,
+        totalPrice: calculatedTotalPrice,
+      },
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
+  } catch (error) {
+    const err = error as Error;
+    console.error("Orders PATCH Error:", err.message || err);
+    return NextResponse.json({ success: false, error: err.message || "Internal Server Error" }, { status: 500 });
   }
 }
 
@@ -175,7 +188,6 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
@@ -186,15 +198,9 @@ export async function GET(
       .maybeSingle();
 
     if (error) throw error;
+    if (!order) return NextResponse.json({ success: false, error: "Pesanan tidak ditemukan." }, { status: 404 });
 
-    if (!order) {
-      return NextResponse.json(
-        { success: false, error: "Pesanan tidak ditemukan." },
-        { status: 404 }
-      );
-    }
-
-    const products = (order.products || []).map((p: any) => ({
+    const products = (order.products || []).map((p: OrderProduct) => ({
       ...p,
       shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
     }));
@@ -202,33 +208,23 @@ export async function GET(
     let calculatedTotalPrice = order.totalPrice || 0;
     if (products.length > 0) {
       const itemNetTotal = products.reduce(
-        (sum: number, p: any) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)),
-        0
+        (sum: number, p: OrderProduct) => sum + Math.max(0, (p.price || 0) - (p.discount || 0)), 0
       );
       calculatedTotalPrice = itemNetTotal + (order.shippingCost || 0);
-
-      if (order.totalPrice !== calculatedTotalPrice) {
-        supabase.from("orders").update({ totalPrice: calculatedTotalPrice }).eq("id", id).then();
-      }
     }
-
-    const normalized = {
-      ...order,
-      customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
-      products,
-      totalPrice: calculatedTotalPrice,
-    };
 
     return NextResponse.json({
       success: true,
-      data: normalized,
+      data: {
+        ...order,
+        customer: Array.isArray(order.customer) ? order.customer[0] : order.customer || null,
+        products,
+        totalPrice: calculatedTotalPrice,
+      },
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
+  } catch (error) {
+    const err = error as Error;
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
@@ -238,7 +234,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
@@ -249,42 +244,25 @@ export async function DELETE(
       .maybeSingle();
 
     if (checkError) throw checkError;
+    if (!existingOrder) return NextResponse.json({ success: false, error: "Pesanan tidak ditemukan." }, { status: 404 });
 
-    if (!existingOrder) {
-      return NextResponse.json(
-        { success: false, error: "Pesanan tidak ditemukan." },
-        { status: 404 }
-      );
-    }
-
-    // Kembalikan seluruh tas/produk yang terkait dengan pesanan ini ke status 'Tersedia'
     const { error: prodError } = await supabase
       .from("products")
-      .update({
-        status: "Tersedia",
-        orderId: null,
-      })
+      .update({ status: "Tersedia", orderId: null, updatedAt: new Date().toISOString() })
       .eq("orderId", id);
 
     if (prodError) throw prodError;
 
-    // Hapus data pesanan dari database
-    const { error: deleteError } = await supabase
-      .from("orders")
-      .delete()
-      .eq("id", id);
-
+    const { error: deleteError } = await supabase.from("orders").delete().eq("id", id);
     if (deleteError) throw deleteError;
 
     return NextResponse.json({
       success: true,
-      message: `Pesanan #${id.slice(0, 8)} berhasil dihapus dan produk terkait telah dikembalikan ke status 'Tersedia'.`,
+      message: `Pesanan #${id.slice(0, 8)} berhasil dihapus.`,
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
+  } catch (error) {
+    const err = error as Error;
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
