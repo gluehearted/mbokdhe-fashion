@@ -67,9 +67,16 @@ export async function GET(
     const addressDetail = customer.addressDetail || "-";
     const domisili = customer.domisili || "-";
     const courier = order.shippingCourier || customer.courier || "Ekspedisi";
+    
+    // Ambil data catatan (notes)
+    const notes = order.notes ? order.notes.trim() : null;
 
-    // 3. Susun data instruksi cetak
-    const printData = [
+    // 3. Susun data instruksi cetak (menggunakan let atau var array agar bisa di-push)
+    type PrintItem =
+      | { type: 1; path: string; align: number }
+      | { type: 0; content: string; bold: number; align: number; format: number };
+
+    const printData: PrintItem[] = [
       {
         type: 1,
         path: "https://csoeufwcicpbecqzffyu.supabase.co/storage/v1/object/public/assets/logo_mbokdhe.png",
@@ -87,6 +94,16 @@ export async function GET(
         format: 0 
       },
     ];
+
+    // LOGIKA TAMBAHAN UNTUK CATATAN (Hanya ditambahkan jika notes tidak kosong)
+    if (notes) {
+      // Ubah enter/newline menjadi <br /> agar printer mencetak baris baru dengan benar
+      const formattedNotes = notes.replace(/\n/g, "<br />");
+      
+      printData.push({ type: 0, content: "--------------------------------", bold: 0, align: 1, format: 0 });
+      printData.push({ type: 0, content: "CATATAN PESANAN:", bold: 1, align: 0, format: 0 });
+      printData.push({ type: 0, content: formattedNotes, bold: 0, align: 0, format: 0 });
+    }
 
     // Wajib ubah Array menjadi Object berindeks ("0": {...}, "1": {...})
     // (Ini meniru perilaku JSON_FORCE_OBJECT yang diwajibkan aplikasi Android Bluetooth Print)
