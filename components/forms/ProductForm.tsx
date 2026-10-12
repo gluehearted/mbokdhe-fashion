@@ -51,6 +51,7 @@ export default function ProductForm({
 
   const [compressing, setCompressing] = useState(false);
   const [compressedInfo, setCompressedInfo] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +176,34 @@ export default function ProductForm({
       setPreview(URL.createObjectURL(selectedFile));
     } finally {
       setCompressing(false);
+    }
+  };
+
+  // Drag and Drop Handlers
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!compressing && !submitting) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (compressing || submitting) return;
+
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      await processSelectedImage(droppedFile);
     }
   };
 
@@ -400,29 +429,45 @@ export default function ProductForm({
             className="hidden"
           />
 
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-            <label
-              htmlFor="product-form-camera-input"
-              className={`py-2 px-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
-            >
-              Kamera HP
-            </label>
+          {/* Container Drag & Drop */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`p-3 border-2 border-dashed rounded-[8px] text-center transition-all ${
+              isDragging
+                ? "border-[#111111] dark:border-white bg-[#f0f0f0] dark:bg-[#252629] scale-[1.01]"
+                : "border-[#eaeaea] dark:border-slate-800 bg-[#fafafa] dark:bg-[#18191c]"
+            } ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+          >
+            <p className="text-[10px] font-bold text-[#787774] dark:text-slate-400 uppercase font-technical mb-2 tracking-wider">
+              {isDragging ? "Lepaskan Gambar Di Sini..." : "Tarik & Lepas Gambar Ke Sini, Atau Pilih:"}
+            </p>
 
-            <button
-              type="button"
-              disabled={compressing || submitting}
-              onClick={showWebcam ? stopWebcam : startWebcam}
-              className={`py-2 px-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
-            >
-              Webcam
-            </button>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              <label
+                htmlFor="product-form-camera-input"
+                className={`py-2 px-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+              >
+                Kamera HP
+              </label>
 
-            <label
-              htmlFor="product-form-file-input"
-              className={`py-2 px-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
-            >
-              Galeri
-            </label>
+              <button
+                type="button"
+                disabled={compressing || submitting}
+                onClick={showWebcam ? stopWebcam : startWebcam}
+                className={`py-2 px-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+              >
+                Webcam
+              </button>
+
+              <label
+                htmlFor="product-form-file-input"
+                className={`py-2 px-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-[6px] text-[9px] sm:text-[10px] uppercase font-technical cursor-pointer border border-[#eaeaea] dark:border-slate-700 flex items-center justify-center gap-1 transition-all active:scale-95 min-h-[38px] ${compressing || submitting ? "opacity-50 pointer-events-none" : ""}`}
+              >
+                Galeri
+              </label>
+            </div>
           </div>
 
           {showWebcam && (
