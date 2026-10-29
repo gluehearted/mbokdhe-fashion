@@ -412,7 +412,7 @@ A/N ALRON EBENHAEZER C`;
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <input
               type="text"
-              placeholder="Cari nama, ekspedisi, no. telepon, resi..."
+              placeholder="Cari ID, tanggal, nama, no. telepon, resi..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full sm:w-64 bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-technical"

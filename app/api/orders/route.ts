@@ -12,6 +12,89 @@ function normalizeStatus(status: string | null): string | null {
   return status;
 }
 
+// Membuat filter ILIKE yang aman terhadap karakter khusus
+// dalam input pengguna.
+function makeIlikeFilter(column: string, value: string): string {
+  const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+  return `${column}.ilike."%${escaped}%"`;
+}
+
+// Mengenali format tanggal ISO, tanggal Indonesia,
+// dan tanggal dengan nama bulan Indonesia.
+function parseSearchDate(input: string): string | null {
+  const value = input.trim().toLowerCase().replace(/\./g, "");
+
+  let year: number;
+  let month: number;
+  let day: number;
+
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  const numericMatch = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+  const monthNames: Record<string, number> = {
+    jan: 1,
+    januari: 1,
+    feb: 2,
+    februari: 2,
+    mar: 3,
+    maret: 3,
+    apr: 4,
+    april: 4,
+    mei: 5,
+    jun: 6,
+    juni: 6,
+    jul: 7,
+    juli: 7,
+    agu: 8,
+    agustus: 8,
+    sep: 9,
+    september: 9,
+    okt: 10,
+    oktober: 10,
+    nov: 11,
+    november: 11,
+    des: 12,
+    desember: 12,
+  };
+
+  const textMatch = value.match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/);
+
+  if (isoMatch) {
+    year = Number(isoMatch[1]);
+    month = Number(isoMatch[2]);
+    day = Number(isoMatch[3]);
+  } else if (numericMatch) {
+    // Format Indonesia: DD/MM/YYYY atau DD-MM-YYYY
+    day = Number(numericMatch[1]);
+    month = Number(numericMatch[2]);
+    year = Number(numericMatch[3]);
+  } else if (textMatch && monthNames[textMatch[2]]) {
+    day = Number(textMatch[1]);
+    month = monthNames[textMatch[2]];
+    year = Number(textMatch[3]);
+  } else {
+    return null;
+  }
+
+  const dateString =
+    `${year}-${String(month).padStart(2, "0")}-` +
+    `${String(day).padStart(2, "0")}`;
+
+  const parsed = new Date(`${dateString}T00:00:00.000Z`);
+
+  // Menolak tanggal yang tidak valid, seperti 31/02/2026.
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== dateString
+  ) {
+    return null;
+  }
+
+  return dateString;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -50,23 +133,29 @@ export async function GET(request: Request) {
 
     // 3. Multi-Field Search
     if (search) {
-      const isDatePattern = /^\d{4}-\d{2}-\d{2}$/.test(search);
+      const searchDate = parseSearchDate(search);
 
-      if (isDatePattern) {
-        // Pencarian tanggal: YYYY-MM-DD
-        const startOfDay = `${search}T00:00:00.000Z`;
-        const endOfDay = `${search}T23:59:59.999Z`;
+      if (searchDate) {
+        // Tanggal mengikuti zona waktu WIB (UTC+7),
+        // sama dengan tanggal yang ditampilkan di tabel.
+        const startOfDay = new Date(
+          `${searchDate}T00:00:00.000+07:00`,
+        ).toISOString();
+
+        const endOfDay = new Date(
+          `${searchDate}T23:59:59.999+07:00`,
+        ).toISOString();
 
         query = query.gte("createdAt", startOfDay).lte("createdAt", endOfDay);
       } else {
-        // A. Cari nama pelanggan dan nomor WhatsApp
+        // A. Cari nama dan nomor WhatsApp pelanggan.
         const customerFilters = [
-          `name.ilike.%${search}%`,
-          `whatsapp.ilike.%${search}%`,
+          makeIlikeFilter("name", search),
+          makeIlikeFilter("whatsapp", search),
         ];
 
-        // Mendukung pencarian nomor telepon yang mengandung
-        // spasi, tanda hubung, atau kode negara Indonesia.
+        // Mendukung nomor telepon dengan spasi, tanda hubung,
+        // atau awalan 0 / 62.
         const phoneDigits = search.replace(/\D/g, "");
 
         if (phoneDigits.length >= 4 && /^[+\d\s().-]+$/.test(search)) {
@@ -81,8 +170,9 @@ export async function GET(request: Request) {
           }
 
           for (const digits of phoneVariants) {
-            const phonePattern = `%${digits.split("").join("%")}%`;
-            customerFilters.push(`whatsapp.ilike.${phonePattern}`);
+            const flexiblePattern = digits.split("").join("%");
+
+            customerFilters.push(makeIlikeFilter("whatsapp", flexiblePattern));
           }
         }
 
@@ -100,16 +190,19 @@ export async function GET(request: Request) {
           (customer) => customer.id,
         );
 
-        // B. Cari kolom teks pada tabel orders.
-        // Jangan gunakan ILIKE langsung pada UUID atau timestamp.
+        // B. Cari kolom pesanan, termasuk ID parsial.
+        // id_search adalah kolom teks yang dibuat di Supabase.
+        const idSearch = search.replace(/^#/, "").trim();
+
         const orderFilters = [
-          `notes.ilike.%${search}%`,
-          `trackingNo.ilike.%${search}%`,
-          `shippingCourier.ilike.%${search}%`,
-          `shippingService.ilike.%${search}%`,
+          makeIlikeFilter("id_search", idSearch),
+          makeIlikeFilter("trackingNo", search),
+          makeIlikeFilter("shippingCourier", search),
+          makeIlikeFilter("shippingService", search),
+          makeIlikeFilter("notes", search),
         ];
 
-        // C. Sertakan pesanan milik pelanggan yang cocok.
+        // C. Sertakan pesanan dari pelanggan yang cocok.
         if (customerIds.length > 0) {
           orderFilters.push(`customerId.in.(${customerIds.join(",")})`);
         }
