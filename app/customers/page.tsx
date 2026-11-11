@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
@@ -30,10 +30,15 @@ function CustomersPageContent() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listRevision, setListRevision] = useState(0);
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   
-  // State Modal & Data
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [formTarget, setFormTarget] = useState<Customer | "new" | null>();
+  const openFromUrl = searchParams.get("action") === "new" || searchParams.get("new") === "true";
+  const activeForm = formTarget === undefined && openFromUrl ? "new" : formTarget;
+  const editingCustomer = typeof activeForm === "object" ? activeForm : null;
+  const formKey = editingCustomer?.id ?? (activeForm === "new" ? "new" : null);
+  const formSection = useRef<HTMLElement>(null);
   
   // State Hapus Customer
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -47,27 +52,27 @@ function CustomersPageContent() {
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
 
-  const fetchCustomers = useCallback(async (q = "") => {
+  const fetchCustomers = useCallback(async (signal: AbortSignal) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       params.set("page", String(currentPage));
       params.set("limit", String(itemsPerPage));
-      if (q.trim()) params.set("search", q.trim());
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
 
-      const res = await fetch(`/api/customers?${params.toString()}`);
+      const res = await fetch(`/api/customers?${params.toString()}`, { signal });
       const data = await res.json();
-      if (data.success) {
-        setCustomers(data.data || []);
-        setTotalCount(data.totalCount || 0);
-        setTotalPages(data.totalPages || 1);
-      }
+      if (signal.aborted) return;
+      if (!res.ok || !data.success) throw new Error("Gagal memuat data pelanggan.");
+      setCustomers(data.data || []);
+      setTotalCount(data.totalCount || 0);
+      setTotalPages(data.totalPages || 1);
     } catch {
-      showToast("Gagal memuat data pelanggan.", "error");
+      if (!signal.aborted) showToast("Gagal memuat data pelanggan.", "error");
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
-  }, [currentPage, itemsPerPage, showToast]);
+  }, [currentPage, debouncedSearch, itemsPerPage, showToast]);
 
   // Handle Search Debounce
   useEffect(() => {
@@ -80,26 +85,19 @@ function CustomersPageContent() {
 
   // Trigger Fetching
   useEffect(() => {
-    fetchCustomers(debouncedSearch);
-  }, [debouncedSearch, fetchCustomers]);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => void fetchCustomers(controller.signal), 0);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [fetchCustomers, listRevision]);
 
-  // Simple handler untuk membuka modal form (jauh lebih bersih karena state form ada di CustomerForm)
-  const openCreateModal = useCallback(() => {
-    setEditingCustomer(null);
-    setIsModalOpen(true);
-  }, []);
-
-  const openEditModal = (c: Customer) => {
-    setEditingCustomer(c);
-    setIsModalOpen(true);
-  };
-
-  // Cek parameter URL untuk auto-open modal create
   useEffect(() => {
-    if (searchParams.get("action") === "new" || searchParams.get("new") === "true") {
-      openCreateModal();
-    }
-  }, [searchParams, openCreateModal]);
+    if (!formKey) return;
+    formSection.current?.scrollIntoView({ block: "start" });
+    formSection.current?.focus({ preventScroll: true });
+  }, [formKey]);
 
   const confirmDeleteCustomer = async () => {
     if (!customerToDelete) return;
@@ -112,7 +110,7 @@ function CustomersPageContent() {
       } else {
         showToast(`Pelanggan '${customerToDelete.name}' berhasil dihapus.`, "success");
         setCustomerToDelete(null);
-        fetchCustomers(debouncedSearch);
+        setListRevision(revision => revision + 1);
       }
     } catch {
       showToast("Terjadi kesalahan koneksi saat menghapus pelanggan.", "error");
@@ -136,8 +134,17 @@ function CustomersPageContent() {
           </span>
         </div>
         <button
-          onClick={openCreateModal}
-          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer"
+          type="button"
+          disabled={isSavingCustomer}
+          onClick={() => {
+            if (formKey === "new") {
+              formSection.current?.scrollIntoView({ block: "start" });
+              formSection.current?.focus({ preventScroll: true });
+            } else {
+              setFormTarget("new");
+            }
+          }}
+          className="bg-[#111111] hover:bg-[#333333] dark:bg-[#f3f3f3] dark:hover:bg-slate-200 text-white dark:text-[#111111] px-4 py-2 rounded-[6px] font-semibold text-xs uppercase tracking-wider transition-colors active:scale-95 shadow-sm cursor-pointer disabled:opacity-50"
         >
           Tambah Pelanggan
         </button>
@@ -145,6 +152,24 @@ function CustomersPageContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-3.5 sm:p-6 bg-[#fbfbfa] dark:bg-[#0c0d0f] w-full pb-8 space-y-4 sm:space-y-6">
+
+        {formKey && (
+          <section ref={formSection} tabIndex={-1} aria-label={editingCustomer ? "Edit pelanggan" : "Tambah pelanggan"}>
+            <CustomerForm
+              key={formKey}
+              initialData={editingCustomer}
+              isModal={false}
+              showExtendedFields
+              onSubmittingChange={setIsSavingCustomer}
+              onCancel={() => setFormTarget(null)}
+              onSubmitSuccess={() => {
+                showToast(editingCustomer ? "Data pelanggan berhasil diperbarui." : "Pelanggan baru berhasil ditambahkan.", "success");
+                setFormTarget(null);
+                setListRevision(revision => revision + 1);
+              }}
+            />
+          </section>
+        )}
 
         {/* Search Bar */}
         <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-3.5 sm:p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
@@ -247,10 +272,12 @@ function CustomersPageContent() {
                             {
                               label: "Edit Pelanggan",
                               icon: "edit",
-                              onClick: () => openEditModal(c),
+                              disabled: isSavingCustomer,
+                              onClick: () => setFormTarget(c),
                             },
                             {
                               label: "Hapus Pelanggan",
+                              disabled: isSavingCustomer,
                               icon: "delete",
                               danger: true,
                               onClick: () => setCustomerToDelete(c),
@@ -303,25 +330,6 @@ function CustomersPageContent() {
         </div>
 
       </div>
-
-      {/* Modal Form Tambah/Edit Pelanggan */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-xl w-full p-4 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.04)] overflow-y-auto max-h-[90vh] transition-colors animate-fade-in-up">
-            <CustomerForm
-              initialData={editingCustomer}
-              showExtendedFields={true}
-              onCancel={() => setIsModalOpen(false)}
-              onSubmitSuccess={() => {
-                const msg = editingCustomer ? "Data pelanggan berhasil diperbarui." : "Pelanggan baru berhasil ditambahkan.";
-                showToast(msg, "success");
-                setIsModalOpen(false);
-                fetchCustomers();
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Confirm Modal Hapus Pelanggan */}
       <ConfirmModal

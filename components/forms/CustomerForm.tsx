@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export interface Customer {
   id: string;
@@ -39,6 +39,7 @@ export const RELATIONSHIP_STATUS_OPTIONS = [
 interface CustomerFormProps {
   initialData?: Partial<Customer> | null;
   onSubmitSuccess?: (customer: Customer) => void;
+  onSubmittingChange?: (submitting: boolean) => void;
   onCancel?: () => void;
   isModal?: boolean;
   showExtendedFields?: boolean;
@@ -47,6 +48,7 @@ interface CustomerFormProps {
 export default function CustomerForm({
   initialData,
   onSubmitSuccess,
+  onSubmittingChange,
   onCancel,
   isModal = true,
   showExtendedFields = false,
@@ -70,10 +72,12 @@ export default function CustomerForm({
   const [crisisStatus, setCrisisStatus] = useState(initialData?.crisisStatus || "");
 
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
 
     if (!name.trim()) {
@@ -81,7 +85,9 @@ export default function CustomerForm({
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
+    onSubmittingChange?.(true);
 
     try {
       const endpoint = isEditing ? `/api/customers/${initialData!.id}` : "/api/customers";
@@ -121,7 +127,9 @@ export default function CustomerForm({
       const errorObj = err as Error;
       setError(errorObj.message || "Terjadi kesalahan sistem saat menyimpan pelanggan.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
+      onSubmittingChange?.(false);
     }
   };
 
@@ -139,7 +147,8 @@ export default function CustomerForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-2.5 text-xs">
+      <form onSubmit={handleSubmit} className="text-xs" aria-busy={submitting}>
+        <fieldset disabled={submitting} className="space-y-2.5">
         {/* Row 1: Nama & WhatsApp */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div className="space-y-1">
@@ -311,7 +320,7 @@ export default function CustomerForm({
             <button
               type="button"
               onClick={onCancel}
-              className="w-1/3 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-xs font-technical uppercase"
+              className="w-1/3 py-2 bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-[6px] transition-colors border border-[#eaeaea] dark:border-slate-700 cursor-pointer disabled:opacity-50 text-xs font-technical uppercase"
             >
               Batal
             </button>
@@ -324,6 +333,7 @@ export default function CustomerForm({
             {submitting ? "Menyimpan..." : isEditing ? "Simpan Perubahan" : "Simpan Pelanggan"}
           </button>
         </div>
+        </fieldset>
       </form>
     </div>
   );

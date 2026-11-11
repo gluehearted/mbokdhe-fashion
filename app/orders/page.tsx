@@ -104,8 +104,8 @@ export default function OrdersPage() {
     showBelow: boolean;
   } | null>(null);
 
-  const handleBadgeMouseEnter = (e: React.MouseEvent, p: Product) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+  const showProductPreview = (target: HTMLElement, p: Product) => {
+    const rect = target.getBoundingClientRect();
     const showBelow = rect.top < 240; // if too close to top of viewport, flip below badge
     setHoveredPreview({
       product: p,
@@ -143,7 +143,8 @@ export default function OrdersPage() {
   }, [currentPage, statusFilter, debouncedSearch, itemsPerPage, showToast]);
 
   useEffect(() => {
-    fetchOrders();
+    const timeout = setTimeout(() => void fetchOrders(), 0);
+    return () => clearTimeout(timeout);
   }, [fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -496,17 +497,31 @@ A/N ALRON EBENHAEZER C`;
                         <div className="flex flex-wrap gap-1.5 justify-center max-w-xs mx-auto">
                           {o.products && o.products.length > 0 ? (
                             o.products.map((p) => (
-                              <div key={p.id} className="inline-block">
-                                <span
-                                  onMouseEnter={(e) => handleBadgeMouseEnter(e, p)}
-                                  onMouseLeave={handleBadgeMouseLeave}
-                                  className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4] border border-[#d2ecfc] dark:border-slate-700 rounded-full font-bold text-[9px] uppercase tracking-wider inline-flex items-center gap-1 cursor-help transition-all hover:scale-105 hover:shadow-sm select-none"
+                              <div key={p.id} className="inline-block min-w-0 max-w-full">
+                                <button
+                                  type="button"
+                                  aria-label={`Lihat detail ${p.description?.trim() || "tas tanpa deskripsi"}`}
+                                  aria-describedby={hoveredPreview?.product.id === p.id ? "order-product-preview" : undefined}
+                                  onMouseEnter={(event) => showProductPreview(event.currentTarget, p)}
+                                  onMouseLeave={(event) => {
+                                    if (document.activeElement !== event.currentTarget) handleBadgeMouseLeave();
+                                  }}
+                                  onFocus={(event) => showProductPreview(event.currentTarget, p)}
+                                  onBlur={handleBadgeMouseLeave}
+                                  onClick={(event) => {
+                                    event.currentTarget.focus();
+                                    showProductPreview(event.currentTarget, p);
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Escape") handleBadgeMouseLeave();
+                                  }}
+                                  className="px-2.5 py-0.5 bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4] border border-[#d2ecfc] dark:border-slate-700 rounded-full font-bold text-[10px] inline-flex max-w-full items-center gap-1 cursor-help transition-all hover:shadow-sm"
                                 >
                                   {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1F6C9F] dark:bg-[#6cb6e4] inline-block animate-pulse" />
+                                    <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-[#1F6C9F] dark:bg-[#6cb6e4] inline-block animate-pulse" />
                                   )}
-                                  #{p.id.toUpperCase()} {p.shop?.name ? `(${p.shop.name})` : ""}
-                                </span>
+                                  <span className="min-w-0 wrap-anywhere">{p.description?.trim() || "Tanpa deskripsi"}</span>
+                                </button>
                               </div>
                             ))
                           ) : (
@@ -703,6 +718,8 @@ A/N ALRON EBENHAEZER C`;
       {/* Global Floating Hover Preview (Never Clipped by Table Overflow) */}
       {hoveredPreview && (
         <div
+          id="order-product-preview"
+          role="tooltip"
           className={`fixed z-[9999] pointer-events-none w-60 p-3 bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800 rounded-[8px] shadow-[0_16px_48px_rgba(0,0,0,0.28)] font-ui -translate-x-1/2 ${
             hoveredPreview.showBelow ? "" : "-translate-y-full"
           }`}
@@ -715,7 +732,7 @@ A/N ALRON EBENHAEZER C`;
           <div className="w-full h-32 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/80 mb-2.5 flex items-center justify-center">
             {hoveredPreview.product.photoUrl && hoveredPreview.product.photoUrl !== "/uploads/placeholder.jpg" ? (
               <Image unoptimized={hoveredPreview.product.photoUrl.startsWith("/api/product-photos/")} src={hoveredPreview.product.photoUrl}
-                alt={hoveredPreview.product.id}
+                alt={hoveredPreview.product.description?.trim() || "Foto tas"}
                 fill
                 sizes="240px"
                 className="object-contain"
@@ -729,11 +746,11 @@ A/N ALRON EBENHAEZER C`;
 
           {/* Details */}
           <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <span className="font-bold text-xs text-[#111111] dark:text-white font-technical">
-                #{hoveredPreview.product.id.toUpperCase()}
+            <div className="flex justify-between items-start gap-2">
+              <span className="min-w-0 wrap-anywhere font-bold text-xs text-[#111111] dark:text-white font-technical">
+                {hoveredPreview.product.description?.trim() || "Tanpa deskripsi"}
               </span>
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4]">
+              <span className="shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#E1F3FE] text-[#1F6C9F] dark:bg-[#18232c] dark:text-[#6cb6e4]">
                 {hoveredPreview.product.status || "Tersedia"}
               </span>
             </div>
@@ -741,12 +758,6 @@ A/N ALRON EBENHAEZER C`;
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Supplier: <strong className="text-slate-800 dark:text-slate-200">{hoveredPreview.product.shop?.name || "-"}</strong>
             </p>
-
-            {hoveredPreview.product.description && (
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 italic">
-                &quot;{hoveredPreview.product.description}&quot;
-              </p>
-            )}
 
             <div className="pt-1.5 border-t border-[#f1f1f1] dark:border-slate-800 flex justify-between items-center text-[11px] font-technical">
               <span className="text-slate-400 font-medium">Harga:</span>
