@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 
 // Deliberately fixed to the disposable local fixture: never loads .env or hosted credentials.
@@ -36,6 +37,37 @@ const createOrder = (p, key = randomUUID(), actor = STAFF) => rpc('crm_create_or
 
 test('transactional CRM with synthetic PostgreSQL fixture', async t => {
   assert.equal(await sql(`select email from auth.users where id=${quote(OUTSIDER)}`, null), 'outsider@example.test');
+  // Create records using the actual previous function definitions before upgrading.
+  const previous = readFileSync('supabase/migrations/20261110165507_crm_product_batches_atomic_orders.sql', 'utf8');
+  const oldValidate = previous.slice(previous.indexOf('create function crm_private.validate_batch'), previous.indexOf('create function public.crm_prepare_product_batch')).replace('create function', 'create or replace function');
+  const oldCommit = previous.slice(previous.indexOf('create function public.crm_commit_product_batch'), previous.indexOf('create function public.crm_fail_product_batch')).replace('create function', 'create or replace function');
+  const upgrade = readFileSync('supabase/migrations/20261111112528_product_batch_item_prices.sql', 'utf8');
+  let legacyPending, legacyCommitted, legacyResult;
+  try {
+    await sql(oldValidate + oldCommit, null);
+    legacyPending = await prepare(payload(2));
+    legacyCommitted = await prepare(payload(1));
+    legacyResult = await commit(legacyCommitted);
+  } finally { await sql(upgrade, null); }
+  await t.test('pre-upgrade pending and committed batches preserve payload, fingerprint and replay', async () => {
+    const saved = await commit(legacyPending);
+    assert(saved.every(p => p.capitalPrice === 25000 && p.price === 50000));
+    assert.deepEqual((await prepare(legacyCommitted.payload, legacyCommitted.key)).result, legacyResult);
+    assert.deepEqual(await commit(legacyCommitted), legacyResult);
+  });
+  await t.test('v2 stores independent item prices and rejects an invalid item atomically', async () => {
+    const legacy = payload(2);
+    const p = { version: 2, shopOrigin: legacy.shopOrigin, items: legacy.items.map((i, n) => ({ ...i, description: '', capitalPrice: n ? 40000 : 35000, price: n ? 60000 : 50000 })) };
+    const b = await prepare(p), saved = await commit(b);
+    assert.deepEqual(saved.map(i => [i.capitalPrice, i.price]), [[35000,50000],[40000,60000]]);
+    assert.deepEqual(await commit(b), saved);
+    await assert.rejects(prepare({ ...p, items: [p.items[0], { ...p.items[1], price: -1 }] }), /Nominal/);
+    await assert.rejects(prepare({ ...p, version: 3 }), /Versi/);
+    const edit = { ...p, editProductId: saved[0].id, items: [{ ...p.items[0], price: 52000, capitalPrice: 36000 }] };
+    const updated = await commit(await prepare(edit));
+    assert.equal(updated[0].price, 52000); assert.equal(updated[0].capitalPrice, 36000);
+    assert.equal(await sql(`select price from public.products where id=${quote(saved[1].id)}`), '60000');
+  });
   let bags;
   await t.test('batch with shared prices and independent optional fields; replay returns same products', async () => {
     const p = payload(); p.items[1].description = '';
@@ -48,7 +80,7 @@ test('transactional CRM with synthetic PostgreSQL fixture', async t => {
     await assert.rejects(prepare({ ...p, price: 50001 }, b.key), /data berbeda/);
   });
   await t.test('partial upload prevents every product and abort is durable', async () => {
-    const p = payload(2); p.items.forEach(i => { i.hasPhoto = true; i.fileHash = 'b'.repeat(64); });
+    const p = { version: 2, shopOrigin: `Test ${randomUUID()}`, items: payload(2).items.map(i => ({ ...i, capitalPrice: 35000, price: 50000 })) }; p.items.forEach(i => { i.hasPhoto = true; i.fileHash = 'b'.repeat(64); });
     const b = await prepare(p);
     await sql(`insert into storage.objects(bucket_id,name) values ('product-batches',${quote(b.paths[0])});`);
     await assert.rejects(commit(b), /Foto belum lengkap/);

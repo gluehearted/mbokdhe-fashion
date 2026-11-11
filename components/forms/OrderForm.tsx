@@ -428,6 +428,8 @@ export default function OrderForm({ orderId }: OrderFormProps) {
             <ProductForm
               isModal={true}
               shops={shops}
+              defaultShopOrigin={isEditMode ? undefined : "b"}
+              maxItems={isEditMode ? 20 : Math.min(20, 100 - selectedProductIds.length)}
               onCancel={() => setIsNewProdModalOpen(false)}
               onSubmitSuccess={(createdProducts) => {
                 setAvailableProducts(prev => [...createdProducts, ...prev.filter(p => !createdProducts.some(n => n.id === p.id))]);
@@ -436,7 +438,19 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                   createdProducts.forEach(p => { if (p.shop?.id) merged.set(p.shop.id, { id: p.shop.id, name: p.shop.name }); });
                   return [...merged.values()];
                 });
-                // Newly created bags remain unselected; existing order selections are untouched.
+                if (!isEditMode) {
+                  setSelectedProductIds(prev => [...new Set([...prev, ...createdProducts.map(p => p.id)])]);
+                  setCustomPrices(prev => {
+                    const next = { ...prev };
+                    createdProducts.forEach(p => { next[p.id] ??= String(p.price); });
+                    return next;
+                  });
+                  setIndividualDiscounts(prev => {
+                    const next = { ...prev };
+                    createdProducts.forEach(p => { next[p.id] ??= "0"; });
+                    return next;
+                  });
+                }
                 setIsNewProdModalOpen(false);
               }}
             />
@@ -639,7 +653,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setIsNewProdModalOpen(true)}
+                      onClick={() => { if (!isEditMode && selectedProductIds.length >= 100) { setErrorMessage("Maksimal 100 tas per pesanan. Kurangi pilihan sebelum menambahkan batch baru."); return; } setIsNewProdModalOpen(true); }}
                       className="text-[10px] text-[#1F6C9F] dark:text-[#6cb6e4] font-bold hover:underline uppercase font-technical cursor-pointer flex items-center gap-1"
                     >
                       Tambah Produk Baru

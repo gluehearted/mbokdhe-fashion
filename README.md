@@ -89,6 +89,7 @@ Migrasi `supabase/migrations/20261110165507_crm_product_batches_atomic_orders.sq
 ```bash
 node tooling/database.mjs audit tooling/audit.sql
 node tooling/database.mjs apply supabase/migrations/20261110165507_crm_product_batches_atomic_orders.sql
+node tooling/database.mjs apply supabase/migrations/20261111112528_product_batch_item_prices.sql
 node tooling/database.mjs audit tooling/verify-crm.sql
 ```
 
@@ -106,16 +107,34 @@ Akses `http://localhost:3000/login` untuk admin; halaman `/` adalah landing page
 
 ## Batch produk
 
-- Isi supplier, modal, dan harga jual sekali; ketiganya berlaku untuk seluruh antrean.
+- Supplier berlaku untuk seluruh antrean. Modal dan harga jual disimpan **per tas**. Setelah Tambah ke Antrean, editor berikutnya mewarisi kedua harga terakhir; harga tersebut tetap dapat diubah tanpa mengubah draft sebelumnya. Edit draft memulihkan kedua harganya.
 - Modal menyediakan Rp25.000, Rp38.000, Rp50.000, dan nominal custom.
 - **Tambah ke Antrean** hanya menambahkan draft di memori browser. Deskripsi/foto tas berikutnya kosong dan tetap opsional. Draft dapat diedit/dihapus; ID final dibuat otomatis di server dengan tanggal WIB.
 - **Simpan & Selesai** mengirim seluruh antrean sekaligus, termasuk editor aktif jika ada perubahan yang belum diantrekan. Tas kosong tanpa deskripsi/foto tetap dapat ditambahkan secara eksplisit. Batas: 20 tas, 160 KB per foto setelah kompresi, dan 4 MB per request.
-- Produk hasil batch dari form order tersedia untuk dipilih, tanpa otomatis menjadi item order. Pilihan order sebelumnya dipertahankan.
+- Pada `/orders/new`, Tambah Produk Baru memakai supplier awal `b` (dapat diubah). Semua produk dari batch yang berhasil disimpan otomatis dipilih dengan harga respons server dan diskon awal nol. Pilihan, harga khusus, diskon, pelanggan, ongkir, dan status sebelumnya tetap dipertahankan. Batch dibatasi sisa kapasitas order (maksimal 100 tas). Katalog dan edit order tidak memakai default/auto-select ini.
 - Satu foto gagal berarti tidak ada produk dari batch yang dimasukkan. Transaksi database bersifat atomik; Storage memakai staging privat dan cleanup kompensasi. Cleanup yang tertunda tercatat dan dapat diulang.
 - Foto baru, termasuk penggantian foto melalui form edit, disimpan privat dan dilayani melalui endpoint berautentikasi dengan `Cache-Control: private, no-store`. Next Image melewati optimizer bersama untuk URL ini. Foto lama pada bucket publik tidak dipindahkan otomatis.
 - Decoder server memvalidasi gambar serta menghapus EXIF/lokasi. Draft belum tersimpan akan hilang bila browser ditutup; aplikasi memberikan konfirmasi saat membatalkan modal.
 - Jika koneksi terputus dan hasil commit belum diketahui, draft dikunci sementara. **Coba Lagi** memakai identitas request yang sama dan mengembalikan hasil awal, bukan membuat duplikat. Periksa katalog sebelum membuat batch pengganti setelah menutup modal dalam keadaan tersebut.
 - Endpoint lama `POST /api/products` mengembalikan 410. Gunakan form baru atau `POST /api/products/batch` dengan header UUID `Idempotency-Key`, manifest multipart, dan file `photo:<draftId>`.
+
+### Kamera produk
+
+**Buka Kamera** membuka live preview di web; laptop memakai satu webcam default, sedangkan HP memakai kamera belakang dan menampilkan **Ganti Kamera** jika browser melaporkan lebih dari satu kamera. **Jepret Foto** menghasilkan preview terkompresi; **Ambil Ulang Foto** mempertahankan foto lama sampai pengambilan/pemrosesan baru berhasil. Galeri tetap tersedia. Tidak ada input `capture` yang mengarahkan admin ke aplikasi kamera bawaan.
+
+Izin kamera memerlukan HTTPS (atau localhost/loopback untuk pengembangan). Stream dihentikan ketika ditutup, difoto, berpindah editor, meninggalkan halaman, atau modal dilepas; respons izin yang datang terlambat juga dihentikan. Audio tidak diminta, device ID tidak disimpan/dicatat, dan foto hanya dikirim saat submit. Browser tanpa API/izin/perangkat kamera diberi pesan untuk mencoba lagi atau memakai Galeri.
+
+Verifikasi otomatis memakai video sintetis di Chromium untuk laptop/HP, depan-belakang, penolakan izin, kamera sibuk/tunggal, API tidak tersedia, `pagehide`, dan stream terlambat. Kamera fisik Safari iPhone, Chrome Android, dan webcam laptop **belum diverifikasi**; pengujian browser tiruan tidak membuktikan kompatibilitas hardware tersebut.
+
+### Kontrak batch
+
+UI baru mengirim manifest multipart versi 2. Harga setiap item wajib berupa rupiah bulat (modal >= 0, jual >= 1). Contoh dua tas tanpa foto:
+
+```json
+{"version":2,"shopOrigin":"b","items":[{"draftId":"11111111-1111-4111-8111-111111111111","description":"Tas A","hasPhoto":false,"capitalPrice":35000,"price":50000},{"draftId":"22222222-2222-4222-8222-222222222222","description":"","hasPhoto":false,"capitalPrice":40000,"price":60000}]}
+```
+
+Payload lama tanpa `version`, dengan `capitalPrice`/`price` di tingkat batch, tetap didukung. Bentuk canonical dan fingerprint lama tidak diubah agar batch pending/committed sebelum rilis masih bisa di-retry. PATCH edit produk tunggal tetap menggunakan adapter kompatibel ini. Pasang migrasi `20261111112528_product_batch_item_prices.sql` setelah migrasi awal dan sebelum UI/API baru.
 
 ## Order, keamanan, dan pengukuran latency
 
@@ -138,7 +157,7 @@ npm test
 npm run typecheck
 npm run lint
 npm run build
-npm run start
+npm run start -- --hostname 127.0.0.1 --port 3301
 ```
 
 Tes unit mencakup validasi nominal/ID, kegagalan upload paralel, respons commit hilang, cleanup gagal, dan validasi/metadata gambar. `npm run test:db` khusus PostgreSQL disposable pada `127.0.0.1:55439`, database `crm_verification`; tidak membaca `.env` atau memakai kredensial Supabase. Siapkan fixture lalu migrasi pada database tersebut sebelum menjalankan tes. Jangan memuat `tests/database-fixture.sql` di produksi.
@@ -148,10 +167,11 @@ Contoh setelah PostgreSQL uji tersebut berjalan dan database kosong telah dibuat
 ```bash
 psql -X -h 127.0.0.1 -p 55439 -d crm_verification -v ON_ERROR_STOP=1 -f tests/database-fixture.sql
 psql -X -h 127.0.0.1 -p 55439 -d crm_verification -v ON_ERROR_STOP=1 --single-transaction -c "SELECT set_config('crm.bootstrap_emails', '[\"staff@example.test\",\"staff2@example.test\"]', false)" -f supabase/migrations/20261110165507_crm_product_batches_atomic_orders.sql
+psql -X -h 127.0.0.1 -p 55439 -d crm_verification -v ON_ERROR_STOP=1 --single-transaction -f supabase/migrations/20261111112528_product_batch_item_prices.sql
 npm run test:db
 ```
 
-Tes database memeriksa rollback batch/order, foto belum lengkap, edit tunggal, retry, izin akses, staging kedaluwarsa, dan concurrency. Browser smoke check memakai data API sintetis; screenshot lokal ada di `output/playwright/` (diabaikan Git). Jika Turbopack tidak dapat membuka port internal pada sandbox, verifikasi alternatif: `npm run build -- --webpack`. Error lint yang sudah ada pada modul di luar perubahan harus dipisahkan dari lint file baru.
+Tes database memeriksa upgrade/replay batch versi lama, harga per tas versi 2, rollback batch/order, foto belum lengkap, edit tunggal, retry, izin akses, staging kedaluwarsa, dan concurrency. Browser smoke check memakai data API sintetis; screenshot lokal ada di `output/playwright/` (diabaikan Git). Jika Turbopack tidak dapat membuka port internal pada sandbox, verifikasi alternatif: `npm run build -- --webpack`. Error lint yang sudah ada pada modul di luar perubahan harus dipisahkan dari lint file baru.
 
 ## Rollout
 

@@ -1,3 +1,4 @@
+import { isSameOrigin } from "./origin";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
@@ -5,8 +6,7 @@ import { CrmError, PendingBatchError, UUID } from "./contracts";
 
 export async function requireStaff(request: Request, mutation = true, authorizeInRpc = false) {
   if (mutation) {
-    const origin = request.headers.get("origin");
-    if (!origin || origin !== new URL(request.url).origin || request.headers.get("sec-fetch-site") === "cross-site") {
+    if (!isSameOrigin(request)) {
       throw new CrmError("Asal permintaan tidak diizinkan.", 403);
     }
   }

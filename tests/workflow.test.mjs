@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 const { parseBatch, parseOrder, CrmError, PendingBatchError } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'contracts.js')).href)).default;
 const { saveBatch, uploadAll } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'batch-workflow.js')).href)).default;
 const { sanitizePhoto } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'image.js')).href)).default;
@@ -56,4 +56,34 @@ test('image decoder rejects disguised files and strips source metadata',async()=
   const jpeg=await sharp({create:{width:1500,height:1000,channels:3,background:'red'}}).jpeg().withMetadata().toBuffer();
   const output=await sanitizePhoto(jpeg);const metadata=await sharp(output).metadata();
   assert.equal(metadata.format,'webp');assert(metadata.width<=1000);assert.equal(metadata.exif,undefined);assert.equal(metadata.icc,undefined);
+});
+
+test('v2 prices belong to each item; legacy canonical bytes and hash remain unchanged', () => {
+  const first = { draftId: '11111111-1111-4111-8111-111111111111', description: '', hasPhoto: false };
+  const legacy = { shopOrigin: 'b', capitalPrice: 35000, price: 50000, items: [first] };
+  const canonical = '{"shopOrigin":"b","capitalPrice":35000,"price":50000,"items":[{"draftId":"11111111-1111-4111-8111-111111111111","description":"","hasPhoto":false}]}';
+  assert.equal(JSON.stringify(parseBatch(legacy)), canonical);
+  assert.equal(createHash('sha256').update(JSON.stringify(parseBatch(legacy))).digest('hex'), createHash('sha256').update(canonical).digest('hex'));
+  const input = { version: 2, shopOrigin: 'b', items: [
+    { ...first, capitalPrice: 35000, price: 50000 },
+    { ...first, draftId: randomUUID(), capitalPrice: 40000, price: 60000 },
+  ] };
+  const parsed = parseBatch(input);
+  assert.deepEqual(parsed.items.map(i => [i.capitalPrice, i.price]), [[35000,50000],[40000,60000]]);
+  assert.equal(parsed.capitalPrice, undefined);
+  for (const price of [-1, 0, 1.5, NaN, Infinity, 2147483648, '60000', undefined]) {
+    assert.throws(() => parseBatch({ ...input, items: [input.items[0], { ...input.items[1], price }] }));
+  }
+  assert.throws(() => parseBatch({ ...input, items: [{ ...input.items[0], capitalPrice: -1 }] }));
+  for (const version of [1, 3, '2', null]) assert.throws(() => parseBatch({ ...input, version }));
+});
+
+test('origin guard accepts bound preview host while rejecting cross-site and forwarded-host spoofing', async () => {
+  const { isSameOrigin } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'origin.js')).href)).default;
+  const req = (origin, extra = {}) => new Request('http://localhost:3301/api/products/batch', { headers: { ...(origin ? {origin} : {}), host:'127.0.0.1:3301', ...extra } });
+  assert(isSameOrigin(req('http://127.0.0.1:3301')));
+  for (const origin of [undefined,'null','http://evil.test','http://127.0.0.1:3302','https://127.0.0.1:3301','http://127.0.0.1:3301/path']) assert(!isSameOrigin(req(origin)));
+  assert(!isSameOrigin(req('http://127.0.0.1:3301', {'sec-fetch-site':'cross-site'})));
+  assert(!isSameOrigin(req('http://evil.test', {'x-forwarded-host':'evil.test'})));
+  assert(isSameOrigin(new Request('https://crm.example.test/api/orders', {headers:{origin:'https://crm.example.test',host:'crm.example.test'}})));
 });

@@ -33,11 +33,12 @@ export function money(value: unknown, label: string, min = 0): number {
   return value;
 }
 
-export interface BatchItem { draftId: string; description: string; hasPhoto: boolean; fileHash?: string }
-export interface BatchPayload { shopOrigin: string; capitalPrice: number; price: number; items: BatchItem[]; editProductId?: string }
+export interface BatchItem { draftId: string; description: string; hasPhoto: boolean; fileHash?: string; capitalPrice?: number; price?: number }
+export interface BatchPayload { shopOrigin: string; version?: 2; capitalPrice?: number; price?: number; items: BatchItem[]; editProductId?: string }
 
 export function parseBatch(value: unknown): BatchPayload {
   const body = object(value);
+  if (body.version !== undefined && body.version !== 2) throw new CrmError("Versi batch tidak didukung.");
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > MAX_BATCH_ITEMS) {
     throw new CrmError(`Satu batch harus berisi 1–${MAX_BATCH_ITEMS} tas.`);
   }
@@ -46,9 +47,17 @@ export function parseBatch(value: unknown): BatchPayload {
     if (typeof item.draftId !== "string" || !UUID.test(item.draftId) || typeof item.hasPhoto !== "boolean") {
       throw new CrmError("Identitas draft atau foto tidak valid.");
     }
-    return { draftId: item.draftId.toLowerCase(), description: text(item.description, 2000, "Deskripsi"), hasPhoto: item.hasPhoto };
+    return { draftId: item.draftId.toLowerCase(), description: text(item.description, 2000, "Deskripsi"), hasPhoto: item.hasPhoto,
+      ...(body.version === 2 ? { capitalPrice: money(item.capitalPrice, "Harga modal"), price: money(item.price, "Harga jual", 1) } : {}),
+    };
   });
   if (new Set(items.map(i => i.draftId)).size !== items.length) throw new CrmError("Draft tas tidak boleh duplikat.");
+  // Keep legacy property order/shape exactly: persisted retry fingerprints depend on it.
+  const shopOrigin = text(body.shopOrigin, 120, "Supplier", true);
+  if (body.version === 2) return {
+    version: 2, shopOrigin, items,
+    ...(body.editProductId !== undefined ? { editProductId: text(body.editProductId, 200, "ID produk", true) } : {}),
+  };
   return {
     shopOrigin: text(body.shopOrigin, 120, "Supplier", true),
     capitalPrice: money(body.capitalPrice, "Harga modal"),
