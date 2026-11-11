@@ -50,6 +50,7 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [catalogRevision, setCatalogRevision] = useState(0);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function ProductsPage() {
     }
   };
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (signal: AbortSignal) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -113,9 +114,9 @@ export default function ProductsPage() {
       if (shopFilter !== "ALL") params.set("shop", shopFilter);
       if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
 
-      const res = await fetch(`/api/products?${params.toString()}`);
+      const res = await fetch(`/api/products?${params.toString()}`, { signal });
       const data = await res.json();
-      if (data.success) {
+      if (!signal.aborted && data.success) {
         setProducts(data.data || []);
         setTotalCount(data.totalCount || 0);
         setTotalPages(data.totalPages || 1);
@@ -123,15 +124,15 @@ export default function ProductsPage() {
     } catch {
       // Ignore
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   }, [currentPage, statusFilter, shopFilter, debouncedSearch, itemsPerPage]);
 
-  const fetchShops = useCallback(async () => {
+  const fetchShops = useCallback(async (signal: AbortSignal) => {
     try {
-      const res = await fetch("/api/shops");
+      const res = await fetch("/api/shops", { signal });
       const data = await res.json();
-      if (data.success) {
+      if (!signal.aborted && data.success) {
         setShops(data.data);
       }
     } catch {
@@ -140,17 +141,12 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      if (isMounted) {
-        await Promise.all([fetchProducts(), fetchShops()]);
-      }
-    }
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, [fetchProducts, fetchShops]);
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void Promise.all([fetchProducts(controller.signal), fetchShops(controller.signal)]);
+    });
+    return () => controller.abort();
+  }, [fetchProducts, fetchShops, catalogRevision]);
 
   const openCreateModal = () => {
     setEditingProduct(null);
@@ -177,7 +173,7 @@ export default function ProductsPage() {
       } else {
         showToast(`Produk ID #${productToDelete.id} berhasil dihapus.`, "success");
         setProductToDelete(null);
-        fetchProducts();
+        setCatalogRevision(revision => revision + 1);
       }
     } catch {
       showToast("Terjadi kesalahan koneksi saat menghapus produk.", "error");
@@ -329,7 +325,7 @@ export default function ProductsPage() {
                             title="Klik untuk lihat foto detail"
                           >
                             {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
-                              <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
+                              <Image unoptimized={p.photoUrl.startsWith("/api/product-photos/")} src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                             ) : (
                               <span className="text-slate-300 dark:text-slate-600 font-bold text-xs uppercase font-technical">Tas</span>
                             )}
@@ -473,7 +469,7 @@ export default function ProductsPage() {
             {/* High-res Image Preview */}
             <div className="w-full h-72 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/80 flex items-center justify-center">
               {viewingPhotoProduct.photoUrl && viewingPhotoProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
-                <Image src={viewingPhotoProduct.photoUrl} alt={viewingPhotoProduct.id} fill sizes="600px" className="object-contain" />
+                <Image unoptimized={viewingPhotoProduct.photoUrl.startsWith("/api/product-photos/")} src={viewingPhotoProduct.photoUrl} alt={viewingPhotoProduct.id} fill sizes="600px" className="object-contain" />
               ) : (
                 <span className="text-slate-300 dark:text-slate-600 text-xs uppercase font-technical">[ Tidak ada foto produk ]</span>
               )}
@@ -532,15 +528,14 @@ export default function ProductsPage() {
               initialData={editingProduct}
               shops={shops}
               onCancel={() => setIsModalOpen(false)}
-              onSaveAndAddAnother={() => {
-                showToast("Produk berhasil ditambahkan. Silakan isi produk berikutnya dari toko yang sama.", "success");
-                fetchProducts();
-              }}
-              onSubmitSuccess={() => {
-                const msg = editingProduct ? "Data produk berhasil diperbarui." : "Produk tas baru berhasil ditambahkan.";
+              onSubmitSuccess={(createdProducts) => {
+                const msg = editingProduct ? "Data produk berhasil diperbarui." : `${createdProducts.length} tas berhasil ditambahkan.`;
                 showToast(msg, "success");
                 setIsModalOpen(false);
-                fetchProducts();
+                if (!editingProduct) {
+                  setStatusFilter("ALL"); setShopFilter("ALL"); setSearchInput(""); setDebouncedSearch(""); setCurrentPage(1);
+                }
+                setCatalogRevision(revision => revision + 1);
               }}
             />
           </div>

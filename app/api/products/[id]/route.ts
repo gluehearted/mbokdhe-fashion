@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { readForm } from "@/lib/crm/body";
+import { failure, requireStaff } from "@/lib/crm/request";
+import { MAX_BATCH_BYTES, CrmError, money, text } from "@/lib/crm/contracts";
+import { POST as saveProductBatch } from "../batch/route";
 
 // GET /api/products/[id]
 export async function GET(
@@ -10,8 +12,7 @@ export async function GET(
   try {
     const { id } = await context.params;
 
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const { supabase } = await requireStaff(request, request.method !== "GET");
 
     const { data: product, error } = await supabase
       .from("products")
@@ -41,13 +42,7 @@ export async function GET(
       success: true,
       data: normalized,
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return failure(error, "Operasi produk gagal. Silakan coba lagi."); }
 }
 
 // PATCH /api/products/[id] (Edit product)
@@ -57,9 +52,23 @@ export async function PATCH(
 ) {
   try {
     const { id } = await context.params;
+    if (request.headers.get("content-type")?.includes("multipart/form-data")) {
+      await requireStaff(request);
+      const source = await readForm(request, MAX_BATCH_BYTES);
+      const draftId = (request.headers.get("idempotency-key") || crypto.randomUUID()).toLowerCase();
+      const body = new FormData();
+      const file = source.get("file");
+      body.set("manifest", JSON.stringify({ editProductId: id, shopOrigin: source.get("shopOrigin"), capitalPrice: Number(source.get("capitalPrice") || 0), price: Number(source.get("price")), items: [{ draftId, description: String(source.get("description") || ""), hasPhoto: file instanceof File && file.size>0 }] }));
+      if (file instanceof File && file.size>0) body.set(`photo:${draftId}`, file);
+      const headers = new Headers(request.headers);
+      headers.delete("content-type"); headers.delete("content-length");
+      const response = await saveProductBatch(new Request(request.url, { method: "POST", headers, body }));
+      const result = await response.json();
+      return NextResponse.json(result.success ? { ...result, data: result.data[0] } : result, { status: response.status, headers: { "Cache-Control": "no-store" } });
+    }
 
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+
+    const { supabase } = await requireStaff(request, request.method !== "GET");
 
     const { data: existing, error: checkError } = await supabase
       .from("products")
@@ -76,79 +85,30 @@ export async function PATCH(
       );
     }
 
-    if (existing.status === "Sold") {
+    if (existing.status === "Sold" || existing.status === "Terjual") {
       return NextResponse.json(
         { success: false, error: "Produk yang sudah berstatus 'Terjual' (Sold) tidak dapat diubah." },
         { status: 400 }
       );
     }
 
-    const contentType = request.headers.get("content-type") || "";
-    let shopOrigin: string | undefined;
     let capitalPrice: number | undefined;
     let price: number | undefined;
     let description: string | undefined;
     let status: string | undefined;
     let photoUrl: string | undefined;
 
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      const originVal = formData.get("shopOrigin") as string;
-      const capitalVal = formData.get("capitalPrice") as string;
-      const priceVal = formData.get("price") as string;
-      const descVal = formData.get("description") as string;
-      const statusVal = formData.get("status") as string;
-      const photoUrlVal = formData.get("photoUrl") as string;
-      const file = formData.get("file") as File | null;
-
-      if (originVal) shopOrigin = originVal;
-      if (capitalVal) capitalPrice = parseInt(capitalVal, 10);
-      if (priceVal) price = parseInt(priceVal, 10);
-      if (descVal !== null && descVal !== undefined) description = descVal.trim();
-      if (statusVal) status = statusVal;
-      if (photoUrlVal) photoUrl = photoUrlVal;
-
-      if (file && file.size > 0) {
-        try {
-          const bytes = await file.arrayBuffer();
-          const fileExt = file.name.split(".").pop() || "jpg";
-          const fileName = `${id.replace(/[^a-zA-Z0-9_-]/g, "")}-${Date.now()}.${fileExt}`;
-          const filePath = `bags/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("products")
-            .upload(filePath, bytes, {
-              contentType: file.type,
-              upsert: true,
-            });
-
-          if (uploadError) throw uploadError;
-
-          const { data: publicUrlData } = supabase.storage
-            .from("products")
-            .getPublicUrl(filePath);
-
-          if (publicUrlData?.publicUrl) {
-            photoUrl = publicUrlData.publicUrl;
-          }
-        } catch (storageError: any) {
-          console.error("Supabase server upload failed:", storageError.message);
-          return NextResponse.json(
-            {
-              success: false,
-              error: "Gagal mengunggah foto ke Supabase Storage.",
-            },
-            { status: 500 }
-          );
-        }
-      }
-    } else {
-      const body = await request.json();
-      shopOrigin = body.shopOrigin;
-      if (body.capitalPrice !== undefined) capitalPrice = parseInt(String(body.capitalPrice), 10);
-      if (body.price !== undefined) price = parseInt(String(body.price), 10);
-      if (body.description !== undefined) description = String(body.description).trim();
+    const body = await request.json();
+    const shopOrigin = body.shopOrigin === undefined ? undefined : text(body.shopOrigin, 120, "Supplier", true);
+    if (body.capitalPrice !== undefined) capitalPrice = money(body.capitalPrice, "Harga modal");
+    if (body.price !== undefined) price = money(body.price, "Harga jual", 1);
+    if (body.description !== undefined) description = text(body.description, 2000, "Deskripsi");
+    if (body.status !== undefined) {
+      if (!["Tersedia", "Dibooking", "Terjual"].includes(body.status)) throw new CrmError("Status tas tidak valid.");
       status = body.status;
+    }
+    if (body.photoUrl !== undefined) {
+      if (body.photoUrl !== existing.photoUrl && body.photoUrl !== "/uploads/placeholder.jpg") throw new CrmError("Gunakan unggahan foto dari form produk.");
       photoUrl = body.photoUrl;
     }
 
@@ -203,13 +163,7 @@ export async function PATCH(
       success: true,
       data: updated,
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return failure(error, "Operasi produk gagal. Silakan coba lagi."); }
 }
 
 // DELETE /api/products/[id]
@@ -220,8 +174,7 @@ export async function DELETE(
   try {
     const { id } = await context.params;
 
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const { supabase } = await requireStaff(request, request.method !== "GET");
 
     const { data: existing, error: checkError } = await supabase
       .from("products")
@@ -238,7 +191,7 @@ export async function DELETE(
       );
     }
 
-    if (existing.status === "Sold") {
+    if (existing.status === "Sold" || existing.status === "Terjual") {
       return NextResponse.json(
         { success: false, error: "Produk yang sudah terjual (Sold) tidak dapat dihapus." },
         { status: 400 }
@@ -274,11 +227,5 @@ export async function DELETE(
       success: true,
       message: `Produk ID ${id} berhasil dihapus dari database.`,
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return failure(error, "Operasi produk gagal. Silakan coba lagi."); }
 }

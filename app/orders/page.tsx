@@ -714,8 +714,7 @@ A/N ALRON EBENHAEZER C`;
           {/* Photo preview container */}
           <div className="w-full h-32 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/80 mb-2.5 flex items-center justify-center">
             {hoveredPreview.product.photoUrl && hoveredPreview.product.photoUrl !== "/uploads/placeholder.jpg" ? (
-              <Image
-                src={hoveredPreview.product.photoUrl}
+              <Image unoptimized={hoveredPreview.product.photoUrl.startsWith("/api/product-photos/")} src={hoveredPreview.product.photoUrl}
                 alt={hoveredPreview.product.id}
                 fill
                 sizes="240px"

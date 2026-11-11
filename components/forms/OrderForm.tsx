@@ -34,6 +34,9 @@ export default function OrderForm({ orderId }: OrderFormProps) {
   const [orderNotes, setOrderNotes] = useState<string>("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [orderOutcomeUnknown, setOrderOutcomeUnknown] = useState(false);
+  const orderAttempt = useRef<{ key: string; body: string } | null>(null);
+  const orderSubmitLock = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // --- State Modal Tambah Pelanggan Baru & Produk Baru ---
@@ -68,24 +71,6 @@ export default function OrderForm({ orderId }: OrderFormProps) {
       return matchName || matchWA || matchDom || matchId;
     });
   }, [customers, customerSearchQuery]);
-
-  const refreshProductsAndShops = async () => {
-    try {
-      const [prodRes, shopRes] = await Promise.all([
-        fetch("/api/products"),
-        fetch("/api/shops"),
-      ]);
-      const prodData = await prodRes.json();
-      const shopData = await shopRes.json();
-      if (prodData.success) {
-        const available = prodData.data.filter((p: Product) => p.status === "Tersedia");
-        setAvailableProducts(available);
-      }
-      if (shopData.success) setShops(shopData.data);
-    } catch {
-      // Ignore
-    }
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -207,6 +192,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
   }, [customers, selectedCustomerId]);
 
   const toggleProductSelect = (product: Product) => {
+    if (submitting || orderOutcomeUnknown) return;
     if (selectedProductIds.includes(product.id)) {
       setSelectedProductIds((prev) => prev.filter((id) => id !== product.id));
       setIndividualDiscounts((prev) => {
@@ -310,6 +296,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (orderSubmitLock.current) return;
     setErrorMessage(null);
 
     if (!selectedCustomerId) {
@@ -330,6 +317,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
       }
     }
 
+    orderSubmitLock.current = true;
     setSubmitting(true);
 
     try {
@@ -378,23 +366,30 @@ export default function OrderForm({ orderId }: OrderFormProps) {
         notes: orderNotes.trim() || null,
       };
 
+      const body = JSON.stringify(payload);
+      if (!isEditMode && !orderAttempt.current) orderAttempt.current = { key: crypto.randomUUID(), body };
       const res = await fetch(endpoint, {
         method: httpMethod,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json", ...(!isEditMode ? { "Idempotency-Key": orderAttempt.current!.key } : {}) },
+        body: !isEditMode ? orderAttempt.current!.body : body,
       });
 
       const result = await res.json();
 
       if (!res.ok || !result.success) {
+        if (!isEditMode && res.status < 500 && res.status !== 401) { orderAttempt.current = null; setOrderOutcomeUnknown(false); }
         throw new Error(result.error || `Gagal ${isEditMode ? "memperbarui" : "membuat"} pesanan.`);
       }
 
+      orderAttempt.current = null;
+      setOrderOutcomeUnknown(false);
       router.push("/orders");
     } catch (err: unknown) {
+      if (!isEditMode && orderAttempt.current) setOrderOutcomeUnknown(true);
       const errorObj = err as Error;
       setErrorMessage(errorObj.message || `Terjadi kesalahan sistem saat ${isEditMode ? "memperbarui" : "membuat"} pesanan.`);
     } finally {
+      orderSubmitLock.current = false;
       setSubmitting(false);
     }
   };
@@ -425,7 +420,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
 
       {/* Modal Tambah Produk Baru (menggunakan ProductForm) */}
       {isNewProdModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-4" onClick={() => setIsNewProdModalOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-4">
           <div
             className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 rounded-[8px] max-w-md w-full p-4 sm:p-5 space-y-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] max-h-[90vh] overflow-y-auto transition-colors font-ui animate-fade-in-up"
             onClick={(e) => e.stopPropagation()}
@@ -434,25 +429,14 @@ export default function OrderForm({ orderId }: OrderFormProps) {
               isModal={true}
               shops={shops}
               onCancel={() => setIsNewProdModalOpen(false)}
-              onSaveAndAddAnother={async (createdProduct) => {
-                await refreshProductsAndShops();
-                if (createdProduct && createdProduct.id) {
-                  setSelectedProductIds((prev) => [...prev, createdProduct.id]);
-                  setCustomPrices((prev) => ({
-                    ...prev,
-                    [createdProduct.id]: String(createdProduct.price),
-                  }));
-                }
-              }}
-              onSubmitSuccess={async (createdProduct) => {
-                await refreshProductsAndShops();
-                if (createdProduct && createdProduct.id) {
-                  setSelectedProductIds((prev) => [...prev, createdProduct.id]);
-                  setCustomPrices((prev) => ({
-                    ...prev,
-                    [createdProduct.id]: String(createdProduct.price),
-                  }));
-                }
+              onSubmitSuccess={(createdProducts) => {
+                setAvailableProducts(prev => [...createdProducts, ...prev.filter(p => !createdProducts.some(n => n.id === p.id))]);
+                setShops(prev => {
+                  const merged = new Map(prev.map(s => [s.id, s]));
+                  createdProducts.forEach(p => { if (p.shop?.id) merged.set(p.shop.id, { id: p.shop.id, name: p.shop.name }); });
+                  return [...merged.values()];
+                });
+                // Newly created bags remain unselected; existing order selections are untouched.
                 setIsNewProdModalOpen(false);
               }}
             />
@@ -491,6 +475,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
         ) : (
           <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 max-w-6xl mx-auto font-ui">
             
+            <fieldset disabled={submitting || orderOutcomeUnknown} className="contents">
             {/* LEFT COLUMN (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
 
@@ -748,7 +733,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
                                 title="Klik untuk zoom gambar tas"
                               >
                                 {p.photoUrl && p.photoUrl !== "/uploads/placeholder.jpg" ? (
-                                  <Image src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
+                                  <Image unoptimized={p.photoUrl.startsWith("/api/product-photos/")} src={p.photoUrl} alt={p.id} fill sizes="48px" className="object-cover" />
                                 ) : (
                                   <span className="text-slate-300 dark:text-slate-400 font-bold text-[9px] uppercase font-technical">Foto</span>
                                 )}
@@ -1007,6 +992,11 @@ export default function OrderForm({ orderId }: OrderFormProps) {
 
             </div>
 
+            </fieldset>
+            {orderOutcomeUnknown && <div className="lg:col-span-12 border border-amber-300 p-4 rounded space-y-3">
+              <p>Status pesanan belum pasti. Periksa kembali dengan data yang sama agar tidak membuat order ganda.</p>
+              <button type="submit" disabled={submitting} className="rounded bg-[#111111] text-white px-4 py-2">{submitting ? "Memeriksa..." : "Periksa / Coba Lagi"}</button>
+            </div>}
           </form>
         )}
       </div>
@@ -1035,7 +1025,7 @@ export default function OrderForm({ orderId }: OrderFormProps) {
 
             <div className="w-full h-80 bg-[#fbfbfa] dark:bg-slate-900 rounded-[6px] overflow-hidden relative border border-[#eaeaea] dark:border-slate-800/85 flex items-center justify-center">
               {zoomProduct.photoUrl && zoomProduct.photoUrl !== "/uploads/placeholder.jpg" ? (
-                <Image src={zoomProduct.photoUrl} alt={zoomProduct.id} fill sizes="600px" className="object-contain" />
+                <Image unoptimized={zoomProduct.photoUrl.startsWith("/api/product-photos/")} src={zoomProduct.photoUrl} alt={zoomProduct.id} fill sizes="600px" className="object-contain" />
               ) : (
                 <span className="text-slate-300 dark:text-slate-600 font-bold text-xs uppercase font-technical">[ Tidak ada foto tas ]</span>
               )}

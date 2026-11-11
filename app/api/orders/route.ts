@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import { readBody } from "@/lib/crm/body";
+import { parseOrder, CrmError } from "@/lib/crm/contracts";
+import { failure, requireStaff, requestKey, rpcFailure } from "@/lib/crm/request";
+
+interface ListedProduct { price?: number; discount?: number; shop?: unknown; [key: string]: unknown }
+interface ListedOrder { customer?: unknown; products?: ListedProduct[]; totalPrice?: number; shippingCost?: number; [key: string]: unknown }
 
 // Standardize status value mapping
 function normalizeStatus(status: string | null): string | null {
@@ -222,11 +228,11 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     // Data Transformation & Calculation
-    const mappedOrders = (orders || []).map((o: any) => {
+    const mappedOrders = (orders || []).map((o: ListedOrder) => {
       const customer = Array.isArray(o.customer)
         ? o.customer[0]
         : o.customer || null;
-      const products = (o.products || []).map((p: any) => ({
+      const products = (o.products || []).map((p: ListedProduct) => ({
         ...p,
         shop: Array.isArray(p.shop) ? p.shop[0] : p.shop || null,
       }));
@@ -234,7 +240,7 @@ export async function GET(request: Request) {
       let calculatedTotalPrice = o.totalPrice || 0;
       if (products.length > 0) {
         const itemNetTotal = products.reduce(
-          (sum: number, p: any) =>
+          (sum: number, p: ListedProduct) =>
             sum + Math.max(0, (p.price || 0) - (p.discount || 0)),
           0,
         );
@@ -259,169 +265,33 @@ export async function GET(request: Request) {
       limit,
       totalPages: Math.ceil(totalRecords / limit) || 1,
     });
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: err instanceof Error ? err.message : "Gagal memuat pesanan." },
       { status: 500 },
     );
   }
 }
 
 export async function POST(request: Request) {
+  const started = performance.now();
+  const requestId = crypto.randomUUID();
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-
-    const body = await request.json().catch(() => null);
-    if (!body) throw new Error("Format data tidak valid");
-
-    let {
-      customerId,
-      productIds,
-      products,
-      shippingCost = 0,
-      courier,
-      status = "Menunggu",
-      dpAmount = 0,
-      notes = null,
-    } = body;
-
-    if (
-      (!productIds || !Array.isArray(productIds) || productIds.length === 0) &&
-      Array.isArray(products)
-    ) {
-      productIds = products
-        .map((p: any) => p.productId || p.id)
-        .filter(Boolean);
-    }
-
-    if (!customerId) throw new Error("Pelanggan (Customer) wajib dipilih.");
-    if (!productIds || productIds.length === 0)
-      throw new Error("Pilih minimal 1 tas.");
-
-    const orderStatus = normalizeStatus(status) || "Menunggu";
-
-    // 1. Fetch & Verify Product Availability
-    const { data: dbProducts, error: fetchError } = await supabase
-      .from("products")
-      .select("id, price, status")
-      .in("id", productIds);
-
-    if (fetchError) throw fetchError;
-
-    const unavailable =
-      dbProducts?.filter(
-        (p) => p.status !== "Tersedia" && p.status !== "Available",
-      ) || [];
-    if (unavailable.length > 0) {
-      throw new Error(
-        `Tas [${unavailable.map((p) => p.id).join(", ")}] sudah tidak tersedia.`,
-      );
-    }
-
-    // 2. Calculate Total Price
-    let totalBarangNet = 0;
-    for (const dbProduct of dbProducts || []) {
-      const userProduct = products?.find(
-        (p: any) => p.productId === dbProduct.id,
-      );
-      const basePrice =
-        userProduct?.customPrice !== undefined
-          ? userProduct.customPrice
-          : dbProduct.price;
-      const discount = userProduct?.discount ? Number(userProduct.discount) : 0;
-      totalBarangNet += Math.max(0, basePrice - discount);
-    }
-
-    const finalTotalPrice =
-      body.totalPrice !== undefined
-        ? Number(body.totalPrice)
-        : totalBarangNet + Number(shippingCost);
-
-    // 3. Insert Order Record
-    const { data: newOrder, error: orderError } = await supabase
-      .from("orders")
-      .insert([
-        {
-          customerId,
-          status: orderStatus,
-          shippingCourier: courier || "JNE",
-          shippingCost: Number(shippingCost),
-          totalPrice: finalTotalPrice,
-          dpAmount: Number(dpAmount),
-          dpDate: Number(dpAmount) > 0 ? new Date().toISOString() : null,
-          notes: notes ? String(notes).trim() : null,
-          updatedAt: new Date().toISOString(),
-        },
-      ])
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    // 4. Batch Update Product Status & Pricing
-    const productStatus = orderStatus === "Dikirim" ? "Terjual" : "Dibooking";
-    const updatePromises = (dbProducts || []).map((dbProduct) => {
-      const userProduct = products?.find(
-        (p: any) => p.productId === dbProduct.id,
-      );
-      const rawPrice = userProduct?.customPrice;
-      const validPrice =
-        rawPrice !== undefined && rawPrice !== "" && !isNaN(Number(rawPrice))
-          ? Number(rawPrice)
-          : dbProduct.price;
-      const rawDiscount = userProduct?.discount;
-      const validDiscount =
-        rawDiscount !== undefined &&
-        rawDiscount !== "" &&
-        !isNaN(Number(rawDiscount))
-          ? Number(rawDiscount)
-          : 0;
-
-      return supabase
-        .from("products")
-        .update({
-          status: productStatus,
-          orderId: newOrder.id,
-          price: validPrice,
-          discount: validDiscount,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("id", dbProduct.id);
-    });
-
-    const updateResults = await Promise.all(updatePromises);
-    if (updateResults.some((res) => res.error)) {
-      throw new Error(
-        "Sebagian tas gagal diupdate statusnya. Silakan cek database.",
-      );
-    }
-
-    // 5. Fetch Final Populated Order
-    const { data: result } = await supabase
-      .from("orders")
-      .select("*, customer:customers(*), products(*)")
-      .eq("id", newOrder.id)
-      .single();
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          ...result,
-          customer: Array.isArray(result?.customer)
-            ? result.customer[0]
-            : result?.customer || null,
-          products: result?.products || [],
-          totalPrice: finalTotalPrice,
-        },
-      },
-      { status: 201 },
-    );
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 },
-    );
-  }
+    const { supabase } = await requireStaff(request, true, true);
+    const authenticatedAt = performance.now();
+    const key = requestKey(request);
+    let body: unknown;
+    try { body = JSON.parse((await readBody(request, 128 * 1024)).toString("utf8")); }
+    catch (error) { if (error instanceof CrmError) throw error; throw new CrmError("Format pesanan tidak valid."); }
+    const payload = parseOrder(body);
+    const { data, error } = await supabase.rpc("crm_create_order", { p_key: key, p_payload: payload });
+    if (error) throw rpcFailure(error);
+    const completedAt = performance.now();
+    // Operational timings only; no customer/order IDs, payload, or tokens.
+    console.info(JSON.stringify({ event: "crm.order.create", requestId, items: payload.products.length, authMs: Math.round(authenticatedAt - started), dbMs: Math.round(completedAt - authenticatedAt), totalMs: Math.round(completedAt - started) }));
+    return NextResponse.json({ success: true, data }, { status: 201, headers: {
+      "Cache-Control": "no-store", "X-Request-Id": requestId,
+      "Server-Timing": `auth;dur=${(authenticatedAt - started).toFixed(1)},db;dur=${(completedAt - authenticatedAt).toFixed(1)}`,
+    } });
+  } catch (error) { return failure(error, "Pesanan belum terkonfirmasi. Coba kembali tanpa mengganti data pesanan."); }
 }

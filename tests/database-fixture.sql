@@ -1,0 +1,34 @@
+-- Synthetic Supabase-compatible fixture. Never run against a hosted database.
+do $$ begin
+  if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
+  if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
+  if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin bypassrls; end if;
+end $$;
+grant usage on schema public to anon,authenticated,service_role;
+create schema auth;
+create schema storage;
+create table auth.users(id uuid primary key,email text);
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+grant usage on schema auth,storage to authenticated;
+grant execute on function auth.uid() to authenticated;
+insert into auth.users values ('11111111-1111-4111-8111-111111111111','staff@example.test'),('22222222-2222-4222-8222-222222222222','staff2@example.test'),('33333333-3333-4333-8333-333333333333','outsider@example.test');
+create table public.users(id text primary key default gen_random_uuid(),email text unique not null,name text,role text not null default 'admin',"createdAt" timestamp not null default current_timestamp);
+create table public.customers(id text primary key default gen_random_uuid(),name text not null,whatsapp text not null,"addressDetail" text not null);
+create table public.shops(id text primary key default gen_random_uuid(),name text unique not null,"createdAt" timestamp not null default current_timestamp);
+create table public.orders(id text primary key default gen_random_uuid(),"customerId" text not null references public.customers(id),status text not null default 'Menunggu',"shippingCourier" text,"shippingCost" int not null default 0,"totalPrice" int not null default 0,"dpAmount" int not null default 0,"dpDate" timestamp,notes text,"createdAt" timestamp not null default current_timestamp,"updatedAt" timestamp not null);
+create table public.products(id text primary key,"shopId" text references public.shops(id),"orderId" text references public.orders(id),"capitalPrice" int not null default 0,price int not null,discount int not null default 0,description text not null default '',status text not null default 'Tersedia',"photoUrl" text not null,"createdAt" timestamp not null default current_timestamp,"updatedAt" timestamptz);
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text not null,unique(bucket_id,name));
+alter table public.users enable row level security;
+alter table public.customers enable row level security;
+alter table public.shops enable row level security;
+alter table public.products enable row level security;
+alter table public.orders enable row level security;
+alter table storage.objects enable row level security;
+grant select,insert,update,delete on all tables in schema public,storage to authenticated;
+create policy "Admin Full Access Users" on public.users for all to authenticated using(true);
+create policy "Admin Full Access Customers" on public.customers for all to authenticated using(true);
+create policy "Admin Full Access Shops" on public.shops for all to authenticated using(true);
+create policy "Admin Full Access Products" on public.products for all to authenticated using(true);
+create policy "Admin Full Access Orders" on public.orders for all to authenticated using(true);
+insert into public.customers(id,name,whatsapp,"addressDetail") values ('test-customer','Synthetic Customer','000','Synthetic Address');

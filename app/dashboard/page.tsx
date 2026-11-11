@@ -381,7 +381,7 @@ export default function DashboardPage() {
                       <td className="p-4 text-center">
                         <div className="w-10 h-10 rounded-[4px] bg-[#fbfbfa] dark:bg-slate-900 border border-[#eaeaea] dark:border-slate-800 overflow-hidden relative flex items-center justify-center mx-auto">
                           {prod.photoUrl && !prod.photoUrl.includes("placeholder") ? (
-                            <Image src={prod.photoUrl} alt={prod.id} fill sizes="40px" className="object-cover" />
+                            <Image unoptimized={prod.photoUrl.startsWith("/api/product-photos/")} src={prod.photoUrl} alt={prod.id} fill sizes="40px" className="object-cover" />
                           ) : (
                             <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">TAS</span>
                           )}
