@@ -4,6 +4,10 @@ import { createServerClient } from "@supabase/ssr";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // This mutation verifies origin and Supabase Auth itself, then checks staff access in its RPC.
+  // Avoid a second network call to Auth before the route is reached.
+  if (pathname === "/api/orders" && request.method === "POST") return NextResponse.next();
+
   // 1. Create a response that Next.js will return
   let response = NextResponse.next({
     request: {

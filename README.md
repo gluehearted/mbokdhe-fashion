@@ -123,6 +123,8 @@ Akses `http://localhost:3000/login` untuk admin; halaman `/` adalah landing page
 
 Respons sukses menyediakan `Server-Timing` (`auth`, `db`) dan correlation ID. Log baru hanya memuat durasi, jumlah tas, dan ID request acak; tidak memuat nama, nomor WhatsApp, alamat, payload, atau token. Bandingkan pengukuran browser dari klik submit sampai daftar tampil, serta p50/p95 pada jumlah tas dan region yang sama. Pengurangan request database tidak dengan sendirinya membuktikan angka latency produksi tertentu.
 
+Vercel Functions dijalankan di `syd1` agar dekat dengan Supabase di Sydney. `POST /api/orders` memeriksa origin dan sesi di handler serta kewenangan staff di RPC; middleware melewati panggilan Auth yang duplikat untuk metode/rute itu saja. GET dan rute lain tetap memakai pemeriksaan sebelumnya.
+
 ## Maintenance Storage
 
 Untuk cron, set `SUPABASE_SERVICE_ROLE_KEY` dan `CRON_SECRET` pada environment server/hosting melalui pengelolaan secret. Jangan masukkan keduanya ke frontend atau commit. Endpoint `/api/cron/cleanup-storage` hanya menerima `Authorization: Bearer <CRON_SECRET>`; user-agent bukan bukti otorisasi. `vercel.json` menjadwalkan maintenance setiap hari, 00:00 UTC.
