@@ -68,6 +68,29 @@ test('transactional CRM with synthetic PostgreSQL fixture', async t => {
     assert.equal(updated[0].price, 52000); assert.equal(updated[0].capitalPrice, 36000);
     assert.equal(await sql(`select price from public.products where id=${quote(saved[1].id)}`), '60000');
   });
+  await t.test('customer classification conditional updates detect conflicts and isolate fields under staff RLS', async () => {
+    // Also supports older disposable fixtures without rebuilding unrelated test data.
+    await sql('alter table public.customers add column if not exists behavioral text; alter table public.customers add column if not exists "relationshipStatus" text;', null);
+    const id = `classification-${randomUUID()}`;
+    await sql(`insert into public.customers(id,name,whatsapp,"addressDetail",behavioral,"relationshipStatus") values(${quote(id)},'Synthetic Classification','000','Synthetic Address','Value Seeker','New Customer')`);
+    try {
+      const results = await Promise.all([
+        sql(`update public.customers set behavioral='Price Sensitive' where id=${quote(id)} and behavioral='Value Seeker' returning behavioral`, STAFF),
+        sql(`update public.customers set behavioral='Design Oriented' where id=${quote(id)} and behavioral='Value Seeker' returning behavioral`, SECOND),
+      ]);
+      assert.equal(results.filter(Boolean).length, 1);
+      const winner = results.find(Boolean);
+      assert.equal(await sql(`select name||'|'||whatsapp||'|'||"addressDetail"||'|'||"relationshipStatus" from public.customers where id=${quote(id)}`), 'Synthetic Classification|000|Synthetic Address|New Customer');
+      const independent = await Promise.all([
+        sql(`update public.customers set behavioral='Convenience Seeker' where id=${quote(id)} and behavioral=${quote(winner)} returning id`, STAFF),
+        sql(`update public.customers set "relationshipStatus"='Repeat Buyer' where id=${quote(id)} and "relationshipStatus"='New Customer' returning id`, SECOND),
+      ]);
+      assert(independent.every(Boolean));
+      assert.equal(await sql(`update public.customers set behavioral='Price Sensitive' where id=${quote(id)} returning id`, OUTSIDER),'');
+      await sql(`update public.customers set behavioral=null where id=${quote(id)} and behavioral='Convenience Seeker'`);
+      assert.equal(await sql(`select count(*) from public.customers where id=${quote(id)} and behavioral is null and "relationshipStatus"='Repeat Buyer'`),'1');
+    } finally { await sql(`delete from public.customers where id=${quote(id)}`); }
+  });
   let bags;
   await t.test('batch with shared prices and independent optional fields; replay returns same products', async () => {
     const p = payload(); p.items[1].description = '';

@@ -87,3 +87,24 @@ test('origin guard accepts bound preview host while rejecting cross-site and for
   assert(!isSameOrigin(req('http://evil.test', {'x-forwarded-host':'evil.test'})));
   assert(isSameOrigin(new Request('https://crm.example.test/api/orders', {headers:{origin:'https://crm.example.test',host:'crm.example.test'}})));
 });
+
+test('inline classification accepts only known fields/options and explicit legacy compare values', async () => {
+  const { parseClassificationChange } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'customer-classification.js')).href)).default;
+  const change = {field:'behavioral',value:'Price Sensitive',expectedValue:'Loyal'};
+  assert.deepEqual(parseClassificationChange(change), change);
+  assert.deepEqual(parseClassificationChange({field:'relationshipStatus',value:null,expectedValue:'Active'}),{field:'relationshipStatus',value:null,expectedValue:'Active'});
+  for (const invalid of [
+    {...change,field:'name'}, {...change,value:'Unknown'}, {...change,value:3}, {...change,value:''},
+    {...change,expectedValue:undefined}, {...change,expectedValue:123}, {...change,name:'Overwrite'},
+    {field:'relationshipStatus',value:'Price Sensitive',expectedValue:null}, null, [],
+  ]) assert.throws(() => parseClassificationChange(invalid));
+});
+test('typed customer statistics retain settled status, discount clamp and legacy total fallback', async () => {
+  const { customerStatistics } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'customer-statistics.js')).href)).default;
+  assert.deepEqual(customerStatistics(null),{totalTransactions:0,totalSpending:0});
+  assert.deepEqual(customerStatistics([
+    {status:'Dikirim',products:[{price:70000,discount:5000},{price:10000,discount:20000}],shippingCost:10000,totalPrice:999},
+    {status:'Siap_Kirim',products:[],totalPrice:45000},
+    {status:'Menunggu',totalPrice:900000}, {status:'Dibatalkan',totalPrice:800000},
+  ]),{totalTransactions:2,totalSpending:120000});
+});

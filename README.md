@@ -136,13 +136,21 @@ UI baru mengirim manifest multipart versi 2. Harga setiap item wajib berupa rupi
 
 Payload lama tanpa `version`, dengan `capitalPrice`/`price` di tingkat batch, tetap didukung. Bentuk canonical dan fingerprint lama tidak diubah agar batch pending/committed sebelum rilis masih bisa di-retry. PATCH edit produk tunggal tetap menggunakan adapter kompatibel ini. Pasang migrasi `20261111112528_product_batch_item_prices.sql` setelah migrasi awal dan sebelum UI/API baru.
 
+## Edit klasifikasi pelanggan di tabel
+
+Di `/customers`, Behavioral dan Status Hubungan dapat diganti langsung melalui dropdown. Pilihan mengikuti form pelanggan; nilai lama yang belum termasuk opsi tetap ditampilkan sampai admin memilih penggantinya. Pilihan **Belum ditentukan** menyimpan `null`.
+
+Setiap perubahan dikirim ke `PATCH /api/customers/:id/classification` sebagai `{field, value, expectedValue}`. Endpoint memeriksa origin/staff, whitelist field dan opsi, lalu melakukan conditional update terhadap satu kolom. Jika admin lain telah mengubah nilai awal, respons 409 memuat klasifikasi terbaru sehingga perubahan tidak menimpa data tersebut diam-diam. Respons hanya memuat ID dan dua kolom klasifikasi, dengan `no-store`.
+
+Selama menyimpan, kedua dropdown pada baris tersebut dikunci. Form edit untuk pelanggan yang sama juga mengunci dropdown agar snapshot form tidak menimpa perubahan lokal. Kegagalan mempertahankan nilai sebelumnya dan memuat ulang data; respons jaringan yang hilang direkonsiliasi melalui pembacaan terbaru. Search/page tetap dipertahankan. Tidak diperlukan migrasi database baru.
+
 ## Order, keamanan, dan pengukuran latency
 
 `POST /api/orders` memakai satu RPC `crm_create_order`: validasi staff/customer/produk, penguncian tas dengan urutan konsisten, perhitungan total di server, insert order, dan update harga/status secara set-based berada dalam satu transaksi. Dua admin tidak dapat mengambil tas yang sama. Request UUID dan fingerprint mencegah order ganda saat retry. Respons hanya berisi ID dan total yang dibutuhkan caller; pembacaan order lengkap setelah insert dihilangkan.
 
 Respons sukses menyediakan `Server-Timing` (`auth`, `db`) dan correlation ID. Log baru hanya memuat durasi, jumlah tas, dan ID request acak; tidak memuat nama, nomor WhatsApp, alamat, payload, atau token. Bandingkan pengukuran browser dari klik submit sampai daftar tampil, serta p50/p95 pada jumlah tas dan region yang sama. Pengurangan request database tidak dengan sendirinya membuktikan angka latency produksi tertentu.
 
-Vercel Functions dijalankan di `syd1` agar dekat dengan Supabase di Sydney. `POST /api/orders` memeriksa origin dan sesi di handler serta kewenangan staff di RPC; middleware melewati panggilan Auth yang duplikat untuk metode/rute itu saja. GET dan rute lain tetap memakai pemeriksaan sebelumnya.
+Vercel Functions dijalankan di `syd1` agar dekat dengan Supabase di Sydney. `POST /api/orders` memeriksa origin dan sesi di handler serta kewenangan staff di RPC; `proxy.ts` melewati panggilan Auth yang duplikat untuk metode/rute itu saja. GET dan rute lain tetap memakai pemeriksaan sebelumnya.
 
 ## Maintenance Storage
 
@@ -171,7 +179,7 @@ psql -X -h 127.0.0.1 -p 55439 -d crm_verification -v ON_ERROR_STOP=1 --single-tr
 npm run test:db
 ```
 
-Tes database memeriksa upgrade/replay batch versi lama, harga per tas versi 2, rollback batch/order, foto belum lengkap, edit tunggal, retry, izin akses, staging kedaluwarsa, dan concurrency. Browser smoke check memakai data API sintetis; screenshot lokal ada di `output/playwright/` (diabaikan Git). Jika Turbopack tidak dapat membuka port internal pada sandbox, verifikasi alternatif: `npm run build -- --webpack`. Error lint yang sudah ada pada modul di luar perubahan harus dipisahkan dari lint file baru.
+Tes database memeriksa upgrade/replay batch versi lama, harga per tas versi 2, rollback batch/order, foto belum lengkap, edit tunggal, retry, izin akses, staging kedaluwarsa, dan concurrency. Browser smoke check memakai data API sintetis; screenshot lokal ada di `output/playwright/` (diabaikan Git). Jika Turbopack tidak dapat membuka port internal pada sandbox, verifikasi alternatif: `npm run build -- --webpack`. Lint dijalankan untuk seluruh proyek. Font UI memakai `next/font` dan ikon Material Symbols dilayani dari aset lokal (lisensi di `public/fonts/`), sehingga browser tidak bergantung pada CSS font eksternal.
 
 ## Rollout
 

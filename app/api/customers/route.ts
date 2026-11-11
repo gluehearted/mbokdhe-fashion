@@ -1,3 +1,4 @@
+import { customerStatistics } from "@/lib/crm/customer-statistics";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
@@ -73,38 +74,9 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     // Compute live totalSpending & totalTransactions (hanya pesanan berstatus 'Siap Kirim' atau 'Dikirim')
-    const mapped = (customers || []).map((c: any) => {
-      const orders = c.orders || [];
-      const validOrders = orders.filter((o: any) => {
-        const st = o.status;
-        return (
-          st === "Siap Kirim" ||
-          st === "Siap_Kirim" ||
-          st === "Siap Packing" ||
-          st === "Dikirim" ||
-          st === "Shipped"
-        );
-      });
-
-      const validTransactionsCount = validOrders.length;
-      const validTotalSpending = validOrders.reduce((sum: number, o: any) => {
-        let computed = o.totalPrice || 0;
-        if (o.products && Array.isArray(o.products) && o.products.length > 0) {
-          const itemNet = o.products.reduce(
-            (pSum: number, p: any) => pSum + Math.max(0, (p.price || 0) - (p.discount || 0)),
-            0
-          );
-          computed = itemNet + (o.shippingCost || 0);
-        }
-        return sum + computed;
-      }, 0);
-
-      return {
-        ...c,
-        _count: { orders: validTransactionsCount },
-        totalTransactions: validTransactionsCount,
-        totalSpending: validTotalSpending,
-      };
+    const mapped = (customers || []).map(c => {
+      const stats = customerStatistics(c.orders);
+      return { ...c, _count: { orders: stats.totalTransactions }, ...stats };
     });
 
     const totalCount = count !== null ? count : mapped.length;

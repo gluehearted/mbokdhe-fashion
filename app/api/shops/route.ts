@@ -15,11 +15,11 @@ export async function GET() {
 
     if (error) throw error;
 
-    const mapped = (shops || []).map((s: any) => {
-      const productsList = s.products || [];
+    const mapped = (shops || []).map(s => {
+      const productsList: { id: string; status: string }[] = s.products || [];
       const totalProducts = productsList.length;
       const availableProducts = productsList.filter(
-        (p: any) => p.status === "Tersedia" || p.status === "Available"
+        p => p.status === "Tersedia" || p.status === "Available"
       ).length;
       return {
         id: s.id,

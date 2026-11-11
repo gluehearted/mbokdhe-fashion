@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
@@ -14,31 +14,32 @@ const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
+let memoryTheme: Theme = "light";
+let storageUnavailable = false;
+const THEME_EVENT = "mbokdhe-theme-change";
+function readTheme(): Theme {
+  if (storageUnavailable) return memoryTheme;
+  try { return localStorage.getItem("mbokdhe_theme") === "dark" ? "dark" : "light"; }
+  catch { storageUnavailable = true; return memoryTheme; }
+}
+function subscribeTheme(listener: () => void) {
+  window.addEventListener("storage", listener);
+  window.addEventListener(THEME_EVENT, listener);
+  return () => { window.removeEventListener("storage", listener); window.removeEventListener(THEME_EVENT, listener); };
+}
+const serverTheme = (): Theme => "light";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  const applyTheme = (targetTheme: Theme) => {
-    if (targetTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.body.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.body.classList.remove("dark");
-    }
-  };
-
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, serverTheme);
   useEffect(() => {
-    const savedTheme = localStorage.getItem("mbokdhe_theme") as Theme | null;
-    const initialTheme = savedTheme === "dark" ? "dark" : "light";
-    setTheme(initialTheme);
-    applyTheme(initialTheme);
-  }, []);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.body.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const toggleTheme = () => {
-    const nextTheme: Theme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    localStorage.setItem("mbokdhe_theme", nextTheme);
-    applyTheme(nextTheme);
+    memoryTheme = readTheme() === "light" ? "dark" : "light";
+    try { localStorage.setItem("mbokdhe_theme", memoryTheme); } catch { storageUnavailable = true; }
+    window.dispatchEvent(new Event(THEME_EVENT));
   };
 
   return (

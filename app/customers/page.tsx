@@ -6,6 +6,7 @@ import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import CustomerForm from "@/components/forms/CustomerForm";
+import { BEHAVIORAL_OPTIONS, RELATIONSHIP_STATUS_OPTIONS, type CustomerClassificationField } from "@/lib/crm/customer-classification";
 
 interface Customer {
   id: string;
@@ -32,6 +33,20 @@ function CustomersPageContent() {
   const [loading, setLoading] = useState(true);
   const [listRevision, setListRevision] = useState(0);
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Record<string, { field: CustomerClassificationField; value: string | null }>>({});
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const pendingRows = useRef(new Set<string>());
+  const mutationRevision = useRef(0);
+  const lastQuery = useRef("");
+  const mounted = useRef(true);
+  const hasPendingChanges = Object.keys(pendingChanges).length > 0;
+
+  useEffect(() => {
+    mounted.current = true;
+    const leave = (event: BeforeUnloadEvent) => { if (pendingRows.current.size) event.preventDefault(); };
+    window.addEventListener("beforeunload", leave);
+    return () => { mounted.current = false; window.removeEventListener("beforeunload", leave); };
+  }, []);
   
   const [formTarget, setFormTarget] = useState<Customer | "new" | null>();
   const openFromUrl = searchParams.get("action") === "new" || searchParams.get("new") === "true";
@@ -53,16 +68,18 @@ function CustomersPageContent() {
   const itemsPerPage = 10;
 
   const fetchCustomers = useCallback(async (signal: AbortSignal) => {
-    setLoading(true);
+    const revision = mutationRevision.current;
     try {
       const params = new URLSearchParams();
       params.set("page", String(currentPage));
       params.set("limit", String(itemsPerPage));
       if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
 
+      if (lastQuery.current !== params.toString()) setLoading(true);
+      lastQuery.current = params.toString();
       const res = await fetch(`/api/customers?${params.toString()}`, { signal });
       const data = await res.json();
-      if (signal.aborted) return;
+      if (signal.aborted || revision !== mutationRevision.current) return;
       if (!res.ok || !data.success) throw new Error("Gagal memuat data pelanggan.");
       setCustomers(data.data || []);
       setTotalCount(data.totalCount || 0);
@@ -100,7 +117,7 @@ function CustomersPageContent() {
   }, [formKey]);
 
   const confirmDeleteCustomer = async () => {
-    if (!customerToDelete) return;
+    if (!customerToDelete || pendingRows.current.size || isSavingCustomer || isDeletingCustomer) return;
     setIsDeletingCustomer(true);
     try {
       const res = await fetch(`/api/customers/${customerToDelete.id}`, { method: "DELETE" });
@@ -119,6 +136,64 @@ function CustomersPageContent() {
     }
   };
 
+  const changeClassification = async (customer: Customer, field: CustomerClassificationField, rawValue: string) => {
+    const value = rawValue || null;
+    if (pendingRows.current.has(customer.id) || isSavingCustomer || editingCustomer?.id === customer.id || isDeletingCustomer || value === (customer[field] ?? null)) return;
+    pendingRows.current.add(customer.id);
+    setPendingChanges(prev => ({ ...prev, [customer.id]: { field, value } }));
+    setRowErrors(prev => { const next = { ...prev }; delete next[customer.id]; return next; });
+    try {
+      const res = await fetch(`/api/customers/${encodeURIComponent(customer.id)}/classification`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field, value, expectedValue: customer[field] ?? null }),
+      });
+      const result = await res.json().catch(() => null);
+      if (!mounted.current) return;
+      if (res.redirected || res.status === 401) throw new Error("Sesi berakhir. Login kembali sebelum mengubah data.");
+      if (!result) throw new Error("Status simpan belum dapat dipastikan. Data dimuat ulang; periksa nilainya sebelum mencoba lagi.");
+      if (!res.ok || !result.success) {
+        if (res.status === 409 && result.data?.id === customer.id) {
+          setCustomers(prev => prev.map(c => c.id === customer.id ? { ...c, [field]: result.data[field] } : c));
+        }
+        throw new Error(result.error || "Perubahan gagal disimpan.");
+      }
+      setCustomers(prev => prev.map(c => c.id === customer.id ? { ...c, [field]: result.data[field] } : c));
+      showToast(`${field === "behavioral" ? "Behavioral" : "Status hubungan"} berhasil diperbarui.`, "success");
+    } catch (error) {
+      if (mounted.current) {
+        const message = error instanceof Error && error.message !== "Failed to fetch" ? error.message : "Status simpan belum dapat dipastikan. Data dimuat ulang; periksa nilainya sebelum mencoba lagi.";
+        setRowErrors(prev => ({ ...prev, [customer.id]: message }));
+        showToast(message, "error");
+      }
+    } finally {
+      pendingRows.current.delete(customer.id);
+      if (mounted.current) {
+        // Invalidate reads started before this write, then reconcile the current search/page.
+        mutationRevision.current++;
+        setPendingChanges(prev => { const next = { ...prev }; delete next[customer.id]; return next; });
+        setListRevision(revision => revision + 1);
+      }
+    }
+  };
+
+  const classificationSelect = (customer: Customer, field: CustomerClassificationField) => {
+    const pending = pendingChanges[customer.id];
+    const value = pending?.field === field ? pending.value : customer[field];
+    const options: readonly string[] = field === "behavioral" ? BEHAVIORAL_OPTIONS : RELATIONSHIP_STATUS_OPTIONS;
+    const label = field === "behavioral" ? "Behavioral" : "Status hubungan";
+    return <div className="space-y-1">
+      <select aria-label={`${label} ${customer.name}`} aria-busy={Boolean(pending)}
+        value={value ?? ""} disabled={Boolean(pending) || isSavingCustomer || editingCustomer?.id === customer.id || isDeletingCustomer}
+        onChange={e => void changeClassification(customer, field, e.target.value)}
+        className="w-full min-w-40 max-w-52 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#141517] px-2 py-2 text-[11px] text-slate-900 dark:text-slate-100 disabled:opacity-60 focus:outline-offset-2">
+        <option value="">Belum ditentukan</option>
+        {value && !options.includes(value) && <option value={value}>{value} (nilai lama)</option>}
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+      </select>
+      {pending?.field === field && <span role="status" className="block text-[10px] text-slate-500">Menyimpan…</span>}
+    </div>;
+  };
+
   const currentTableData = customers;
 
   return (
@@ -135,7 +210,7 @@ function CustomersPageContent() {
         </div>
         <button
           type="button"
-          disabled={isSavingCustomer}
+          disabled={isSavingCustomer || hasPendingChanges}
           onClick={() => {
             if (formKey === "new") {
               formSection.current?.scrollIntoView({ block: "start" });
@@ -241,15 +316,12 @@ function CustomersPageContent() {
                         <span className="bg-[#111111] text-white dark:bg-white dark:text-[#111111] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
                           {c.consumerType || "Value Seeker"}
                         </span>
-                        <span className="bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] border border-[#eaeaea] dark:border-slate-800 px-2.5 py-0.5 rounded-full text-[9px] font-bold block mx-auto max-w-[120px] truncate uppercase tracking-wider">
-                          {c.behavioral || "Pelanggan Setia"}
-                        </span>
+                        {classificationSelect(c, "behavioral")}
                       </td>
 
                       <td className="p-4 text-center max-w-xs space-y-1">
-                        <span className="bg-[#787774] text-white dark:bg-slate-700 dark:text-slate-200 px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
-                          {c.relationshipStatus || "New Customer"}
-                        </span>
+                        {classificationSelect(c, "relationshipStatus")}
+                        {rowErrors[c.id] && <p role="alert" className="max-w-52 text-[10px] text-rose-700 dark:text-rose-400">{rowErrors[c.id]}</p>}
                         {c.crisisStatus ? (
                           <span className="bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] border border-[#eaeaea] dark:border-slate-800 px-2 py-0.5 rounded-[4px] text-[9px] font-medium block truncate max-w-[140px] mx-auto uppercase tracking-wide" title={c.crisisStatus}>
                             Catatan: {c.crisisStatus}
@@ -272,12 +344,12 @@ function CustomersPageContent() {
                             {
                               label: "Edit Pelanggan",
                               icon: "edit",
-                              disabled: isSavingCustomer,
+                              disabled: isSavingCustomer || hasPendingChanges,
                               onClick: () => setFormTarget(c),
                             },
                             {
                               label: "Hapus Pelanggan",
-                              disabled: isSavingCustomer,
+                              disabled: isSavingCustomer || hasPendingChanges,
                               icon: "delete",
                               danger: true,
                               onClick: () => setCustomerToDelete(c),

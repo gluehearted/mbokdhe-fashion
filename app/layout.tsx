@@ -1,17 +1,18 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Instrument_Serif, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import Link from "next/link";
 import { Sidebar } from "@/components/Sidebar";
 import { ToastProvider } from "@/components/ToastProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-plus-jakarta", display: "swap" });
+const editorial = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-instrument-serif", display: "swap", preload: false });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
+const symbols = localFont({ src: "../public/fonts/material-symbols-outlined.woff2", variable: "--font-material-symbols", weight: "400", display: "block" });
 
 export default function RootLayout({
   children,
@@ -22,22 +23,12 @@ export default function RootLayout({
   const isPublicPage = pathname === "/" || pathname === "/landing-page" || pathname === "/login";
 
   return (
-    <html lang="id" className={`${inter.variable} h-full antialiased`}>
+    <html lang="id" className={`${jakarta.variable} ${editorial.variable} ${mono.variable} ${symbols.variable} h-full antialiased`}>
       <head>
         <title>Mbokdhe Fashion // Sistem Manajemen Inventaris & Order</title>
         <meta name="description" content="Sistem Manajemen Katalog Tas, Inventaris, dan Rekap Pesanan Mbokdhe Fashion" />
         <link rel="icon" href="/icon/icon_mbokdhe.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icon/icon_mbokdhe.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="h-full font-ui text-[#111111] dark:text-[#f3f3f3] bg-[#fbfbfa] dark:bg-[#0c0d0f] flex flex-row overflow-hidden">
         <ThemeProvider>
@@ -48,7 +39,7 @@ export default function RootLayout({
               </div>
             ) : (
               <div className="flex h-screen bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui overflow-hidden w-full relative">
-                <Sidebar />
+                <Sidebar key={pathname} />
                 <main className="flex-1 flex flex-col h-screen ml-0 md:ml-[260px] relative w-full overflow-hidden transition-all duration-200">
                   {children}
                 </main>

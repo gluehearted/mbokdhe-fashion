@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -62,40 +62,34 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
-  const loadDashboardData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [prodRes, orderRes] = await Promise.all([
-        fetch("/api/products"),
-        fetch("/api/orders"),
-      ]);
-
-      const prodData = await prodRes.json();
-      const orderData = await orderRes.json();
-
-      if (prodData.success) {
-        setProducts(prodData.data || []);
-      }
-      if (orderData.success) {
-        setOrders(orderData.data || []);
-      }
-      setLastUpdated(new Date().toLocaleTimeString("id-ID"));
-    } catch (err) {
-      console.error("Gagal memuat data dashboard dari Supabase:", err);
-    } finally {
-      setLoading(false);
-    }
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
+  const loadDashboardData = useCallback((signal: AbortSignal) => {
+    return Promise.all([fetch("/api/products", { signal }), fetch("/api/orders", { signal })])
+      .then(async ([prodRes, orderRes]) => {
+        const [prodData, orderData] = await Promise.all([prodRes.json(), orderRes.json()]);
+        if (signal.aborted) return;
+        if (!prodRes.ok || !orderRes.ok || !prodData.success || !orderData.success) throw new Error("Dashboard unavailable");
+        setProducts(prodData.data || []); setOrders(orderData.data || []);
+        setLoadError(null); setLastUpdated(new Date().toLocaleTimeString("id-ID"));
+      })
+      .catch(() => { if (!signal.aborted) setLoadError("Dashboard belum dapat dimuat. Coba Refresh kembali."); })
+      .finally(() => { if (!signal.aborted) setLoading(false); });
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted) {
-      loadDashboardData();
-    }
-    return () => {
-      isMounted = false;
-    };
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    void loadDashboardData(controller.signal);
+    return () => { controller.abort(); activeRequest.current?.abort(); };
   }, [loadDashboardData]);
+
+  const refreshDashboard = () => {
+    activeRequest.current?.abort();
+    const controller = new AbortController(); activeRequest.current = controller;
+    setLoading(true);
+    void loadDashboardData(controller.signal);
+  };
 
   // --- Metrics Calculation ---
   const { totalAvailableBags, todayOrderCount, readyToShipCount, totalProfit } = useMemo(() => {
@@ -151,6 +145,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col h-screen w-full overflow-hidden bg-[#fbfbfa] dark:bg-[#0c0d0f] text-[#111111] dark:text-[#f3f3f3] font-ui transition-colors duration-200">
       
+      {loadError && <p role="alert" className="bg-rose-50 text-rose-700 p-3 text-xs">{loadError}</p>}
       {/* Top Header Bar */}
       <header className="flex justify-between items-center w-full pl-14 pr-4 md:px-6 h-16 bg-white dark:bg-[#141517] border-b border-[#eaeaea] dark:border-slate-800/80 z-30 sticky top-0 shrink-0 transition-colors">
         <div className="flex flex-col">
@@ -158,13 +153,13 @@ export default function DashboardPage() {
             Dashboard Overview
           </h1>
           <span className="text-[10px] text-[#787774] dark:text-slate-400 font-technical uppercase mt-0.5 tracking-wider">
-            [ Realtime Telemetry // Supabase Live ]
+            [ Realtime Telemetry // Supabase Live ] {lastUpdated && `· Diperbarui ${lastUpdated}`}
           </span>
         </div>
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={loadDashboardData}
+            onClick={refreshDashboard}
             disabled={loading}
             className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-[#f5f5f5] hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-[6px] text-xs font-technical uppercase font-bold border border-[#eaeaea] dark:border-slate-700 transition-all cursor-pointer disabled:opacity-50 active:scale-95 shadow-sm"
             title="Refresh data dari database"

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 
 interface ToastMessage {
   id: string;
@@ -17,17 +17,18 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+  const showToast = useCallback((message: string, type: "success" | "error" | "info" = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, type, message }]);
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
-  };
+  }, []);
+  const contextValue = useMemo(() => ({ showToast }), [showToast]);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       {/* Toast Floating Notification Container */}
       <div className="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none font-ui">

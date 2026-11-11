@@ -1,3 +1,4 @@
+import { customerStatistics, type CustomerOrderSummary } from "@/lib/crm/customer-statistics";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
@@ -28,36 +29,10 @@ export async function GET(
       );
     }
 
-    // Sort orders in memory & compute totalSpending / totalTransactions
-    if (customer.orders && Array.isArray(customer.orders)) {
-      customer.orders.sort(
-        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-      const validOrders = customer.orders.filter((o: any) => {
-        const st = o.status;
-        return (
-          st === "Siap Kirim" ||
-          st === "Siap_Kirim" ||
-          st === "Siap Packing" ||
-          st === "Dikirim" ||
-          st === "Shipped"
-        );
-      });
-
-      customer.totalTransactions = validOrders.length;
-      customer.totalSpending = validOrders.reduce((sum: number, o: any) => {
-        let computed = o.totalPrice || 0;
-        if (o.products && Array.isArray(o.products) && o.products.length > 0) {
-          const itemNet = o.products.reduce(
-            (pSum: number, p: any) => pSum + Math.max(0, (p.price || 0) - (p.discount || 0)),
-            0
-          );
-          computed = itemNet + (o.shippingCost || 0);
-        }
-        return sum + computed;
-      }, 0);
-    }
+    const orders: CustomerOrderSummary[] = customer.orders || [];
+    orders.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    customer.orders = orders;
+    Object.assign(customer, customerStatistics(orders));
 
     return NextResponse.json({
       success: true,

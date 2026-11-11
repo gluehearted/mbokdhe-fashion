@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { BEHAVIORAL_OPTIONS, RELATIONSHIP_STATUS_OPTIONS } from "@/lib/crm/customer-classification";
+export { BEHAVIORAL_OPTIONS, RELATIONSHIP_STATUS_OPTIONS } from "@/lib/crm/customer-classification";
 
 export interface Customer {
   id: string;
@@ -22,18 +24,6 @@ export const COURIER_OPTIONS = [
   "TIKI",
   "Wahana",
   "Lion Parcel",
-];
-
-export const BEHAVIORAL_OPTIONS = [
-  "Value Seeker",
-  "Price Sensitive",
-  "Design Oriented",
-  "Convenience Seeker",
-];
-
-export const RELATIONSHIP_STATUS_OPTIONS = [
-  "New Customer",
-  "Repeat Buyer",
 ];
 
 interface CustomerFormProps {
@@ -258,6 +248,7 @@ export default function CustomerForm({
                   className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:outline-none font-medium cursor-pointer"
                 >
                   <option value="">-- Pilih Behavioral --</option>
+                  {behavioral && !(BEHAVIORAL_OPTIONS as readonly string[]).includes(behavioral) && <option value={behavioral}>{behavioral} (nilai lama)</option>}
                   {BEHAVIORAL_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
@@ -291,6 +282,7 @@ export default function CustomerForm({
                   className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white px-2.5 py-1.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:outline-none font-medium cursor-pointer"
                 >
                   <option value="">-- Pilih Status --</option>
+                  {relationshipStatus && !(RELATIONSHIP_STATUS_OPTIONS as readonly string[]).includes(relationshipStatus) && <option value={relationshipStatus}>{relationshipStatus} (nilai lama)</option>}
                   {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}

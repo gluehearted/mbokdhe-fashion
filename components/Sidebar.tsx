@@ -20,23 +20,20 @@ export function Sidebar() {
 
   useEffect(() => {
     if (pathname === "/login") return;
+    const controller = new AbortController();
     async function loadUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { signal: controller.signal });
         const data = await res.json();
-        if (data.success && data.user) {
+        if (!controller.signal.aborted && data.success && data.user) {
           setUser(data.user);
         }
       } catch {
         // Ignore
       }
     }
-    loadUser();
-  }, [pathname]);
-
-  // Otomatis tutup sidebar mobile saat rute halaman berpindah
-  useEffect(() => {
-    setIsMobileOpen(false);
+    void loadUser();
+    return () => controller.abort();
   }, [pathname]);
 
   if (pathname === "/login") return null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useSyncExternalStore } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 export interface ActionMenuItem {
@@ -33,20 +33,24 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
     () => false
   );
 
-  const toggleMenu = () => {
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const spaceBelow = windowHeight - rect.bottom;
-      const openUp = spaceBelow < 160;
-
-      setMenuCoords({
-        top: openUp ? rect.top - 8 : rect.bottom + 6,
-        right: window.innerWidth - rect.right,
-        openUp,
-      });
+  const updateMenuPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) {
+      setIsOpen(false); return;
     }
-    setIsOpen((prev) => !prev);
+    const height = Math.min(items.length * 40 + 12, window.innerHeight - 16);
+    const openUp = window.innerHeight - rect.bottom < height + 6 && rect.top > height + 8;
+    const left = Math.max(8, Math.min(rect.right - 192, window.innerWidth - 200));
+    setMenuCoords({
+      top: openUp ? rect.top - 8 : Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - height - 8)),
+      right: Math.max(8, window.innerWidth - left - 192), openUp,
+    });
+  }, [items.length]);
+
+  const toggleMenu = () => {
+    if (!isOpen) updateMenuPosition();
+    setIsOpen(prev => !prev);
   };
 
   useEffect(() => {
@@ -61,24 +65,25 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
       }
     }
 
-    function handleScrollOrResize() {
-      if (isOpen) {
-        setIsOpen(false);
-      }
+    function handleScrollOrResize() { updateMenuPosition(); }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") { setIsOpen(false); buttonRef.current?.focus({ preventScroll: true }); }
     }
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       window.addEventListener("scroll", handleScrollOrResize, true);
       window.addEventListener("resize", handleScrollOrResize);
+      document.addEventListener("keydown", handleKeyDown);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, updateMenuPosition]);
 
   const menuContent = isOpen && mounted ? (
     <div
@@ -135,6 +140,7 @@ export function TableActionsMenu({ items }: TableActionsMenuProps) {
         onClick={toggleMenu}
         className="w-8 h-8 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-400 flex items-center justify-center transition-colors active:scale-95 border border-[#eaeaea] dark:border-slate-700 mx-auto cursor-pointer"
         title="Menu Aksi"
+        aria-expanded={isOpen}
       >
         <span className="material-symbols-outlined text-base">more_vert</span>
       </button>

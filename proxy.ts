@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // This mutation verifies origin and Supabase Auth itself, then checks staff access in its RPC.
@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // 2. Initialize Supabase Client in middleware
+  // 2. Initialize Supabase Client in proxy
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
