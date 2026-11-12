@@ -91,6 +91,32 @@ test('transactional CRM with synthetic PostgreSQL fixture', async t => {
       assert.equal(await sql(`select count(*) from public.customers where id=${quote(id)} and behavioral is null and "relationshipStatus"='Repeat Buyer'`),'1');
     } finally { await sql(`delete from public.customers where id=${quote(id)}`); }
   });
+  await t.test('inline consumer type and crisis text stay isolated and reject concurrent stale writes', async () => {
+    await sql('alter table public.customers add column if not exists "consumerType" text; alter table public.customers add column if not exists "crisisStatus" text;', null);
+    await sql(readFileSync('supabase/migrations/20261112080922_customer_inline_text.sql','utf8').replace('create function','create or replace function'),null);
+    const id = `inline-text-${randomUUID()}`;
+    const update = (field,value,expected,actor=STAFF) => rpc('crm_update_customer_text',[quote(id),quote(field),value===null?'null':quote(value),expected===null?'null':quote(expected)],actor);
+    await sql(`insert into public.customers(id,name,whatsapp,"addressDetail","consumerType","crisisStatus") values(${quote(id)},'Synthetic Text','000','Synthetic Address','Retail','Normal')`);
+    try {
+      const independent = await Promise.all([update('consumerType','Reseller','Retail'), update('crisisStatus','Synthetic note','Normal',SECOND)]);
+      assert(independent.every(result=>result.status==='saved'));
+      assert.deepEqual(Object.keys(independent[0].data).sort(),['consumerType','id']);
+      const races = await Promise.all([update('crisisStatus','Admin A','Synthetic note'),update('crisisStatus','Admin B','Synthetic note',SECOND)]);
+      assert.deepEqual(races.map(r=>r.status).sort(),['conflict','saved']);
+      const winner = races.find(r=>r.status==='saved').data.crisisStatus;
+      assert.equal((await update('crisisStatus',winner,'Synthetic note')).status,'saved');
+      const unicode='漢'.repeat(2000);
+      assert.equal((await update('crisisStatus',unicode,winner)).data.crisisStatus,unicode);
+      assert.equal((await update('crisisStatus',null,unicode)).data.crisisStatus,null);
+      await assert.rejects(update('name','Overwrite',null),/Kolom/);
+      await assert.rejects(update('consumerType','x'.repeat(121),'Reseller'),/batas/);
+      await assert.rejects(update('crisisStatus','x'.repeat(2001),null),/batas/);
+      await assert.rejects(update('crisisStatus','note',null,OUTSIDER),/permission|insufficient/i);
+      assert.equal(await sql(`select name||'|'||whatsapp||'|'||"addressDetail"||'|'||"consumerType" from public.customers where id=${quote(id)}`),'Synthetic Text|000|Synthetic Address|Reseller');
+      assert.equal(await sql(`select count(*) from information_schema.routine_privileges where routine_name='crm_update_customer_text' and grantee in ('PUBLIC','anon')`,null),'0');
+      assert.equal(await sql(`select prosecdef from pg_proc where oid='public.crm_update_customer_text(text,text,text,text)'::regprocedure`,null),'f');
+    } finally { await sql(`delete from public.customers where id=${quote(id)}`); }
+  });
   let bags;
   await t.test('batch with shared prices and independent optional fields; replay returns same products', async () => {
     const p = payload(); p.items[1].description = '';

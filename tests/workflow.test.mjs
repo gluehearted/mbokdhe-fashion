@@ -108,3 +108,20 @@ test('typed customer statistics retain settled status, discount clamp and legacy
     {status:'Menunggu',totalPrice:900000}, {status:'Dibatalkan',totalPrice:800000},
   ]),{totalTransactions:2,totalSpending:120000});
 });
+
+test('inline text limits, normalization, control bytes and field isolation', async () => {
+  const { parseClassificationChange } = (await import(pathToFileURL(join(process.env.CRM_TEST_BUILD_DIR,'customer-classification.js')).href)).default;
+  for (const [field,max] of [['consumerType',120],['crisisStatus',2000]]) {
+    const base = {field,value:'  Retail  ',expectedValue:null};
+    assert.equal(parseClassificationChange(base).value,'Retail');
+    assert.equal(parseClassificationChange({...base,value:'   '}).value,null);
+    assert.equal(parseClassificationChange({...base,value:null}).value,null);
+    assert.equal(parseClassificationChange({...base,value:'x'.repeat(max)}).value.length,max);
+    for (const value of ['x'.repeat(max+1),'text\u0000byte','text\u0007byte',123,{},undefined]) assert.throws(()=>parseClassificationChange({...base,value}));
+    assert.throws(()=>parseClassificationChange({...base,name:'Overwrite'}));
+    assert.throws(()=>parseClassificationChange({...base,expectedValue:undefined}));
+  }
+  assert.throws(()=>parseClassificationChange({field:'consumerType',value:'Line 1\nLine 2',expectedValue:null}));
+  const text = '<img src=x onerror=alert(1)>\nCatatan & \"kutipan\"';
+  assert.equal(parseClassificationChange({field:'crisisStatus',value:text,expectedValue:'Normal'}).value,text);
+});

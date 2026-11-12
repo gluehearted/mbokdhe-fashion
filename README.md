@@ -90,6 +90,7 @@ Migrasi `supabase/migrations/20261110165507_crm_product_batches_atomic_orders.sq
 node tooling/database.mjs audit tooling/audit.sql
 node tooling/database.mjs apply supabase/migrations/20261110165507_crm_product_batches_atomic_orders.sql
 node tooling/database.mjs apply supabase/migrations/20261111112528_product_batch_item_prices.sql
+node tooling/database.mjs apply supabase/migrations/20261112080922_customer_inline_text.sql
 node tooling/database.mjs audit tooling/verify-crm.sql
 ```
 
@@ -138,11 +139,11 @@ Payload lama tanpa `version`, dengan `capitalPrice`/`price` di tingkat batch, te
 
 ## Edit klasifikasi pelanggan di tabel
 
-Di `/customers`, Behavioral dan Status Hubungan dapat diganti langsung melalui dropdown. Pilihan mengikuti form pelanggan; nilai lama yang belum termasuk opsi tetap ditampilkan sampai admin memilih penggantinya. Pilihan **Belum ditentukan** menyimpan `null`.
+Di `/customers`, Behavioral dan Status Hubungan dapat diganti langsung melalui dropdown. Tipe Konsumen dan Status Krisis juga dapat diubah lewat tombol **Ubah** di sel tabel, kemudian **Simpan/Batal**. Tipe Konsumen dibatasi 120 karakter dalam satu baris, sedangkan catatan krisis menerima hingga 2.000 karakter dan baris baru. Teks kosong disimpan sebagai null; teks ditampilkan sebagai teks biasa, bukan HTML. Pilihan mengikuti form pelanggan; nilai lama yang belum termasuk opsi tetap ditampilkan sampai admin memilih penggantinya. Pilihan **Belum ditentukan** menyimpan `null`.
 
-Setiap perubahan dikirim ke `PATCH /api/customers/:id/classification` sebagai `{field, value, expectedValue}`. Endpoint memeriksa origin/staff, whitelist field dan opsi, lalu melakukan conditional update terhadap satu kolom. Jika admin lain telah mengubah nilai awal, respons 409 memuat klasifikasi terbaru sehingga perubahan tidak menimpa data tersebut diam-diam. Respons hanya memuat ID dan dua kolom klasifikasi, dengan `no-store`.
+Setiap perubahan dikirim ke `PATCH /api/customers/:id/classification` sebagai `{field, value, expectedValue}`. Endpoint memeriksa origin/staff, whitelist field dan opsi, lalu melakukan conditional update terhadap satu kolom. Jika admin lain telah mengubah nilai awal, respons 409 memuat klasifikasi terbaru sehingga perubahan tidak menimpa data tersebut diam-diam. Respons dropdown tetap memuat ID dan dua kolom klasifikasi. Respons edit teks hanya memuat ID dan kolom yang diubah; catatan krisis tidak ikut respons pembaruan kolom lain. Semua memakai `no-store`. Update teks memakai RPC `crm_update_customer_text` melalui POST sehingga isi/snapshot catatan tidak masuk parameter URL. RPC bersifat SECURITY INVOKER, memeriksa staff, dan tetap mengikuti RLS.
 
-Selama menyimpan, kedua dropdown pada baris tersebut dikunci. Form edit untuk pelanggan yang sama juga mengunci dropdown agar snapshot form tidak menimpa perubahan lokal. Kegagalan mempertahankan nilai sebelumnya dan memuat ulang data; respons jaringan yang hilang direkonsiliasi melalui pembacaan terbaru. Search/page tetap dipertahankan. Tidak diperlukan migrasi database baru.
+Selama menyimpan, kedua dropdown pada baris tersebut dikunci. Form edit untuk pelanggan yang sama juga mengunci dropdown agar snapshot form tidak menimpa perubahan lokal. Kegagalan mempertahankan nilai sebelumnya dan memuat ulang data; respons jaringan yang hilang direkonsiliasi melalui pembacaan terbaru. Search/page tetap dipertahankan. Draf teks hanya berada di memori browser, dipertahankan saat gagal, dan menyimpan snapshot nilai awal saat editor dibuka. Konflik mempertahankan draf dan memerlukan **Muat nilai terbaru** atau pembatalan sebelum menyimpan lagi. Pencarian/paginasi dikunci sementara selama editor teks terbuka. Terapkan migrasi `20261112080922_customer_inline_text.sql` sebelum deploy versi ini; tidak ada kolom atau izin tabel yang diperluas.
 
 ## Order, keamanan, dan pengukuran latency
 

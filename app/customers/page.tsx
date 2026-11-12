@@ -6,7 +6,7 @@ import { TableActionsMenu } from "@/components/TableActionsMenu";
 import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import CustomerForm from "@/components/forms/CustomerForm";
-import { BEHAVIORAL_OPTIONS, RELATIONSHIP_STATUS_OPTIONS, type CustomerClassificationField } from "@/lib/crm/customer-classification";
+import { BEHAVIORAL_OPTIONS, RELATIONSHIP_STATUS_OPTIONS, CUSTOMER_TEXT_LIMITS, CUSTOMER_FIELD_LABELS, type CustomerTextField, type CustomerClassificationField } from "@/lib/crm/customer-classification";
 
 interface Customer {
   id: string;
@@ -34,6 +34,8 @@ function CustomersPageContent() {
   const [listRevision, setListRevision] = useState(0);
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Record<string, { field: CustomerClassificationField; value: string | null }>>({});
+  const [textDraft, setTextDraft] = useState<{ customerId: string; field: CustomerTextField; value: string; expectedValue: string | null } | null>(null);
+  const hasTextDraft = useRef(false);
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const pendingRows = useRef(new Set<string>());
   const mutationRevision = useRef(0);
@@ -43,7 +45,7 @@ function CustomersPageContent() {
 
   useEffect(() => {
     mounted.current = true;
-    const leave = (event: BeforeUnloadEvent) => { if (pendingRows.current.size) event.preventDefault(); };
+    const leave = (event: BeforeUnloadEvent) => { if (pendingRows.current.size || hasTextDraft.current) event.preventDefault(); };
     window.addEventListener("beforeunload", leave);
     return () => { mounted.current = false; window.removeEventListener("beforeunload", leave); };
   }, []);
@@ -117,7 +119,7 @@ function CustomersPageContent() {
   }, [formKey]);
 
   const confirmDeleteCustomer = async () => {
-    if (!customerToDelete || pendingRows.current.size || isSavingCustomer || isDeletingCustomer) return;
+    if (!customerToDelete || pendingRows.current.size || hasTextDraft.current || isSavingCustomer || isDeletingCustomer) return;
     setIsDeletingCustomer(true);
     try {
       const res = await fetch(`/api/customers/${customerToDelete.id}`, { method: "DELETE" });
@@ -136,19 +138,23 @@ function CustomersPageContent() {
     }
   };
 
-  const changeClassification = async (customer: Customer, field: CustomerClassificationField, rawValue: string) => {
-    const value = rawValue || null;
-    if (pendingRows.current.has(customer.id) || isSavingCustomer || editingCustomer?.id === customer.id || isDeletingCustomer || value === (customer[field] ?? null)) return;
+  const changeClassification = async (customer: Customer, field: CustomerClassificationField, rawValue: string, expectedValue = customer[field] ?? null): Promise<boolean> => {
+    const value = (field === "consumerType" || field === "crisisStatus" ? rawValue.trim() : rawValue) || null;
+    if (pendingRows.current.has(customer.id) || isSavingCustomer || editingCustomer?.id === customer.id || isDeletingCustomer || (textDraft?.customerId === customer.id && textDraft.field !== field)) return false;
+    if (value === expectedValue) {
+      setRowErrors(prev => { const next = { ...prev }; delete next[customer.id]; return next; });
+      return true;
+    }
     pendingRows.current.add(customer.id);
     setPendingChanges(prev => ({ ...prev, [customer.id]: { field, value } }));
     setRowErrors(prev => { const next = { ...prev }; delete next[customer.id]; return next; });
     try {
       const res = await fetch(`/api/customers/${encodeURIComponent(customer.id)}/classification`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field, value, expectedValue: customer[field] ?? null }),
+        body: JSON.stringify({ field, value, expectedValue }),
       });
       const result = await res.json().catch(() => null);
-      if (!mounted.current) return;
+      if (!mounted.current) return false;
       if (res.redirected || res.status === 401) throw new Error("Sesi berakhir. Login kembali sebelum mengubah data.");
       if (!result) throw new Error("Status simpan belum dapat dipastikan. Data dimuat ulang; periksa nilainya sebelum mencoba lagi.");
       if (!res.ok || !result.success) {
@@ -158,13 +164,15 @@ function CustomersPageContent() {
         throw new Error(result.error || "Perubahan gagal disimpan.");
       }
       setCustomers(prev => prev.map(c => c.id === customer.id ? { ...c, [field]: result.data[field] } : c));
-      showToast(`${field === "behavioral" ? "Behavioral" : "Status hubungan"} berhasil diperbarui.`, "success");
+      showToast(`${CUSTOMER_FIELD_LABELS[field]} berhasil diperbarui.`, "success");
+      return true;
     } catch (error) {
       if (mounted.current) {
         const message = error instanceof Error && error.message !== "Failed to fetch" ? error.message : "Status simpan belum dapat dipastikan. Data dimuat ulang; periksa nilainya sebelum mencoba lagi.";
         setRowErrors(prev => ({ ...prev, [customer.id]: message }));
         showToast(message, "error");
       }
+      return false;
     } finally {
       pendingRows.current.delete(customer.id);
       if (mounted.current) {
@@ -176,14 +184,14 @@ function CustomersPageContent() {
     }
   };
 
-  const classificationSelect = (customer: Customer, field: CustomerClassificationField) => {
+  const classificationSelect = (customer: Customer, field: "behavioral" | "relationshipStatus") => {
     const pending = pendingChanges[customer.id];
     const value = pending?.field === field ? pending.value : customer[field];
     const options: readonly string[] = field === "behavioral" ? BEHAVIORAL_OPTIONS : RELATIONSHIP_STATUS_OPTIONS;
     const label = field === "behavioral" ? "Behavioral" : "Status hubungan";
     return <div className="space-y-1">
       <select aria-label={`${label} ${customer.name}`} aria-busy={Boolean(pending)}
-        value={value ?? ""} disabled={Boolean(pending) || isSavingCustomer || editingCustomer?.id === customer.id || isDeletingCustomer}
+        value={value ?? ""} disabled={Boolean(pending) || isSavingCustomer || editingCustomer?.id === customer.id || isDeletingCustomer || textDraft?.customerId === customer.id}
         onChange={e => void changeClassification(customer, field, e.target.value)}
         className="w-full min-w-40 max-w-52 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#141517] px-2 py-2 text-[11px] text-slate-900 dark:text-slate-100 disabled:opacity-60 focus:outline-offset-2">
         <option value="">Belum ditentukan</option>
@@ -191,6 +199,57 @@ function CustomersPageContent() {
         {options.map(option => <option key={option} value={option}>{option}</option>)}
       </select>
       {pending?.field === field && <span role="status" className="block text-[10px] text-slate-500">Menyimpan…</span>}
+    </div>;
+  };
+
+  const cancelTextDraft = () => {
+    if (textDraft && pendingRows.current.has(textDraft.customerId)) return;
+    if (textDraft) setRowErrors(prev => { const next = { ...prev }; delete next[textDraft.customerId]; return next; });
+    hasTextDraft.current = false; setTextDraft(null);
+  };
+
+  const saveTextDraft = async (customer: Customer) => {
+    if (!textDraft || textDraft.customerId !== customer.id) return;
+    const draft = textDraft;
+    if ((customer[draft.field] ?? null) !== draft.expectedValue) return;
+    if (await changeClassification(customer, draft.field, draft.value, draft.expectedValue)) {
+      if (mounted.current) { hasTextDraft.current = false; setTextDraft(null); }
+    }
+  };
+
+  const textCell = (customer: Customer, field: CustomerTextField) => {
+    const label = CUSTOMER_FIELD_LABELS[field];
+    const pending = Boolean(pendingChanges[customer.id]);
+    const draft = textDraft?.customerId === customer.id && textDraft.field === field ? textDraft : null;
+    const busy = pending || isSavingCustomer || isDeletingCustomer;
+    if (!draft) return <div className="space-y-1 min-w-40 max-w-60 font-ui">
+      <p className="text-[11px] whitespace-pre-wrap break-words line-clamp-3">{customer[field] || (field === "crisisStatus" ? "Belum ada catatan" : "Belum ditentukan")}</p>
+      <button type="button" aria-label={`Ubah ${label.toLowerCase()} ${customer.name}`} disabled={busy || Boolean(textDraft) || Boolean(formKey) || loading || searchInput !== debouncedSearch}
+        onClick={() => { hasTextDraft.current = true; setTextDraft({ customerId: customer.id, field, value: customer[field] || "", expectedValue: customer[field] ?? null }); }}
+        className="text-[10px] underline underline-offset-2 disabled:opacity-50">Ubah {label.toLowerCase()}</button>
+    </div>;
+    const changed = (customer[field] ?? null) !== draft.expectedValue;
+    const props = {
+      "aria-label": `${label} ${customer.name}`, autoFocus: true, value: draft.value, maxLength: CUSTOMER_TEXT_LIMITS[field], disabled: busy,
+      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTextDraft({ ...draft, value: event.target.value }),
+      onKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (event.nativeEvent.isComposing) return;
+        if (event.key === "Escape") { event.preventDefault(); cancelTextDraft(); }
+        if (event.key === "Enter" && (field === "consumerType" || event.ctrlKey || event.metaKey)) { event.preventDefault(); void saveTextDraft(customer); }
+      },
+      className: "w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#141517] px-2 py-2 text-xs disabled:opacity-60",
+    };
+    return <div className="space-y-2 min-w-48 max-w-64 font-ui">
+      {field === "crisisStatus" ? <textarea {...props} rows={4} /> : <input {...props} type="text" />}
+      <small className="block text-slate-500">{draft.value.length}/{CUSTOMER_TEXT_LIMITS[field]}</small>
+      {changed && <div role="status" className="text-[11px] text-amber-700 dark:text-amber-400">
+        Nilai tersimpan telah berubah. Draf kamu tetap tersedia.
+        <button type="button" disabled={busy} onClick={() => setTextDraft({ ...draft, value: customer[field] || "", expectedValue: customer[field] ?? null })} className="block underline">Muat nilai terbaru</button>
+      </div>}
+      <div className="flex gap-2">
+        <button type="button" aria-label={`Simpan ${label.toLowerCase()} ${customer.name}`} disabled={busy || changed || draft.value.length > CUSTOMER_TEXT_LIMITS[field]} onClick={() => void saveTextDraft(customer)} className="border rounded px-3 py-2 disabled:opacity-50">{pending ? "Menyimpan…" : "Simpan"}</button>
+        <button type="button" disabled={busy} onClick={cancelTextDraft} className="border rounded px-3 py-2">Batal</button>
+      </div>
     </div>;
   };
 
@@ -210,7 +269,7 @@ function CustomersPageContent() {
         </div>
         <button
           type="button"
-          disabled={isSavingCustomer || hasPendingChanges}
+          disabled={isSavingCustomer || hasPendingChanges || Boolean(textDraft)}
           onClick={() => {
             if (formKey === "new") {
               formSection.current?.scrollIntoView({ block: "start" });
@@ -246,11 +305,16 @@ function CustomersPageContent() {
           </section>
         )}
 
+        {textDraft && <div role="status" className="border rounded p-3 text-xs flex flex-wrap items-center gap-3">
+          <p>Sedang mengubah {CUSTOMER_FIELD_LABELS[textDraft.field].toLowerCase()}. Simpan atau batalkan sebelum mengganti pencarian/halaman.</p>
+          <button type="button" disabled={Boolean(pendingChanges[textDraft.customerId])} onClick={cancelTextDraft} className="underline">Batalkan edit teks</button>
+        </div>}
         {/* Search Bar */}
         <div className="bg-white dark:bg-[#141517] border border-[#eaeaea] dark:border-slate-800/80 p-3.5 sm:p-5 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
           <input
             type="text"
             placeholder="Cari CUST ID, nama pelanggan, WhatsApp, domisili, ekspedisi..."
+            disabled={Boolean(textDraft)}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full bg-white dark:bg-[#1c1d1f] text-[#111111] dark:text-white text-xs px-3.5 py-2.5 rounded-[6px] border border-[#eaeaea] dark:border-slate-800 focus:border-[#111111] dark:focus:border-slate-500 focus:outline-none font-medium transition-colors"
@@ -313,22 +377,14 @@ function CustomersPageContent() {
                       </td>
 
                       <td className="p-4 text-center space-y-1">
-                        <span className="bg-[#111111] text-white dark:bg-white dark:text-[#111111] px-2.5 py-0.5 rounded-full text-[9px] font-bold inline-block uppercase tracking-wider">
-                          {c.consumerType || "Value Seeker"}
-                        </span>
+                        {textCell(c, "consumerType")}
                         {classificationSelect(c, "behavioral")}
                       </td>
 
                       <td className="p-4 text-center max-w-xs space-y-1">
                         {classificationSelect(c, "relationshipStatus")}
                         {rowErrors[c.id] && <p role="alert" className="max-w-52 text-[10px] text-rose-700 dark:text-rose-400">{rowErrors[c.id]}</p>}
-                        {c.crisisStatus ? (
-                          <span className="bg-white dark:bg-[#141517] text-[#111111] dark:text-[#f3f3f3] border border-[#eaeaea] dark:border-slate-800 px-2 py-0.5 rounded-[4px] text-[9px] font-medium block truncate max-w-[140px] mx-auto uppercase tracking-wide" title={c.crisisStatus}>
-                            Catatan: {c.crisisStatus}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-normal">-</span>
-                        )}
+                        {textCell(c, "crisisStatus")}
                       </td>
 
                       <td className="p-4 text-center">
@@ -344,12 +400,12 @@ function CustomersPageContent() {
                             {
                               label: "Edit Pelanggan",
                               icon: "edit",
-                              disabled: isSavingCustomer || hasPendingChanges,
+                              disabled: isSavingCustomer || hasPendingChanges || Boolean(textDraft),
                               onClick: () => setFormTarget(c),
                             },
                             {
                               label: "Hapus Pelanggan",
-                              disabled: isSavingCustomer || hasPendingChanges,
+                              disabled: isSavingCustomer || hasPendingChanges || Boolean(textDraft),
                               icon: "delete",
                               danger: true,
                               onClick: () => setCustomerToDelete(c),
@@ -377,7 +433,7 @@ function CustomersPageContent() {
                 <div className="flex items-center gap-2 text-xs font-bold">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    disabled={currentPage === 1 || Boolean(textDraft)}
                     className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
                   >
                     PREV
@@ -389,7 +445,7 @@ function CustomersPageContent() {
 
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || Boolean(textDraft)}
                     className="px-3 py-1.5 rounded-[6px] bg-[#f5f5f5] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-[#eaeaea] dark:border-slate-700 cursor-pointer text-[10px] tracking-wider"
                   >
                     NEXT
